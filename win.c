@@ -83,6 +83,7 @@ static void window_class_init(WindowClass *class) {
 Window *window_new(App *app) {
   return g_object_new(WINDOW_TYPE, "application", app, NULL);
 }
+
 void window_open(Window *win, GFile *file) {
   // TODO: New tab for each file
   // NOTE: https://docs.gtk.org/gtk4/getting_started.html#opening-files
@@ -91,7 +92,6 @@ void window_open(Window *win, GFile *file) {
   win->doc = poppler_document_new_from_gfile(
       file, NULL, NULL, &err); // TODO: Destroy on object destruction
 
-  // TODO: Exit on errors
   if (!win->doc) {
     g_printerr("Poppler: %s\n", err->message);
     g_error_free(err);
@@ -99,6 +99,10 @@ void window_open(Window *win, GFile *file) {
     win->n_pages = poppler_document_get_n_pages(win->doc);
 
     win->pages = malloc(sizeof(PopplerPage *) * win->n_pages);
+    if (!win->pages) {
+      return;
+    }
+
     for (int i = 0; i < win->n_pages; i++) {
       win->pages[i] = poppler_document_get_page(win->doc, i);
 
@@ -160,6 +164,10 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   int i;
 
   win = (Window *)user_data;
+  if (!win->doc || !win->pages) {
+    return;
+  }
+
   page = win->pages[win->current_page];
   error = NULL;
 
