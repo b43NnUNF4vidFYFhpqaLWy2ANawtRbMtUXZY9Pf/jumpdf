@@ -206,9 +206,13 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
 
   cairo_get_matrix(cr_pdf, &start_matrix);
 
+  cairo_translate(cr_pdf, win->view_width / 2.0, win->view_height / 2.0);
   cairo_scale(cr_pdf, win->scale, win->scale);
+  cairo_translate(cr_pdf, -win->view_width / 2.0, -win->view_height / 2.0);
+
   cairo_translate(cr_pdf, win->x_offset * win->pdf_width / STEPS,
                   win->y_offset * win->pdf_height / STEPS);
+
   cairo_get_matrix(cr_pdf, &transformed_matrix);
 
   poppler_page_render(page, cr_pdf);
@@ -252,8 +256,8 @@ void window_toggle_center_mode(Window *win) {
 
 void window_center(Window *win) {
   win->x_offset =
-      (((double)win->view_width / 2) - (win->pdf_width * win->scale / 2)) /
-      (win->pdf_width * win->scale / STEPS);
+      ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
+      (win->pdf_width / STEPS);
 }
 
 void window_fit_scale(Window *win) {
