@@ -21,21 +21,14 @@ static void app_activate(GApplication *app) {
 
 static void app_open(GApplication *app, GFile **files, int n_files,
                      const char *hint) {
-  GList *windows;
   Window *win;
 
-  windows = gtk_application_get_windows(GTK_APPLICATION(app));
-  if (windows) {
-    // If there's existing windows, use first one
-    win = MANYPDF_WINDOW(windows->data);
-  } else {
+  for (int i = 0; i < n_files; i++) {
     win = window_new(MANYPDF_APP(app));
-  }
-
-  for (int i = 0; i < n_files; i++)
     window_open(win, files[i]);
 
-  gtk_window_present(GTK_WINDOW(win));
+    gtk_window_present(GTK_WINDOW(win));
+  }
 }
 
 static void app_class_init(AppClass *class) {
