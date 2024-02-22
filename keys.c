@@ -14,6 +14,9 @@ void handle_key(Window *win, guint keyval) {
   case KEY_0:
     window_set_scale(win, 1.0);
     break;
+  case KEY_c:
+    window_toggle_center_mode(win);
+    break;
   case KEY_s:
     window_fit_scale(win);
     break;
@@ -23,11 +26,17 @@ void handle_key(Window *win, guint keyval) {
   case KEY_d:
     window_set_y_offset(win, window_get_y_offset(win) - STEPS / 2.0);
     break;
+  case KEY_h:
+    window_set_x_offset(win, window_get_x_offset(win) + 1);
+    break;
   case KEY_j:
     window_set_y_offset(win, window_get_y_offset(win) - 1);
     break;
   case KEY_k:
     window_set_y_offset(win, window_get_y_offset(win) + 1);
+    break;
+  case KEY_l:
+    window_set_x_offset(win, window_get_x_offset(win) - 1);
     break;
   }
 

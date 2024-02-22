@@ -1,6 +1,7 @@
 #include <cairo.h>
 #include <gtk/gtk.h>
 #include <poppler.h>
+#include <stdbool.h>
 
 #include "app.h"
 #include "config.h"
@@ -13,6 +14,8 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                GtkEventControllerKey *event_controller);
 static void on_scroll(GtkEventControllerScroll *controller, double dx,
                       double dy, gpointer user_data);
+static void on_resize(GtkDrawingArea *area, int width, int height,
+                      gpointer user_data);
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data);
 
@@ -33,6 +36,8 @@ struct _Window {
   int view_width, view_height;
   double pdf_width, pdf_height;
   double x_offset, y_offset, scale;
+
+  bool center_mode;
 };
 
 G_DEFINE_TYPE(Window, window, GTK_TYPE_APPLICATION_WINDOW)
@@ -50,13 +55,15 @@ static void window_init(Window *win) {
   win->y_offset = 0.0;
   win->scale = 1.0;
 
+  win->center_mode = true;
+
   win->event_controller = gtk_event_controller_key_new();
   g_signal_connect_object(win->event_controller, "key-pressed",
                           G_CALLBACK(on_key_pressed), win, G_CONNECT_SWAPPED);
   gtk_widget_add_controller(GTK_WIDGET(win), win->event_controller);
 
   win->scroll_controller =
-      gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
+      gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_BOTH_AXES);
   g_signal_connect(win->scroll_controller, "scroll", G_CALLBACK(on_scroll),
                    win);
   gtk_widget_add_controller(GTK_WIDGET(win),
@@ -68,6 +75,7 @@ static void window_init(Window *win) {
   gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(win->view), draw_function,
                                  win, NULL);
   gtk_window_set_child(GTK_WINDOW(win), win->view);
+  g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
 
   gtk_window_set_title(GTK_WINDOW(win), "Manypdf");
 }
@@ -151,19 +159,30 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
 static void on_scroll(GtkEventControllerScroll *controller, double dx,
                       double dy, gpointer user_data) {
   Window *win;
+
   win = (Window *)user_data;
 
-  win->y_offset += -dy;
+  win->x_offset -= dx;
+  win->y_offset -= dy;
   window_handle_offset_update(win);
 
   window_redraw(win);
+}
+
+static void on_resize(GtkDrawingArea *area, int width, int height,
+                      gpointer user_data) {
+  Window *win;
+
+  win = (Window *)user_data;
+
+  win->view_width = width;
+  win->view_height = height;
 }
 
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data) {
   Window *win;
   PopplerPage *page;
-  GError *error;
   cairo_surface_t *surface;
   cairo_t *cr_pdf;
   cairo_matrix_t start_matrix, transformed_matrix;
@@ -175,11 +194,11 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   }
 
   page = win->pages[win->current_page];
-  error = NULL;
-
-  win->view_width = width;
-  win->view_height = height;
   poppler_page_get_size(page, &win->pdf_width, &win->pdf_height);
+
+  if (win->center_mode) {
+    window_center(win);
+  }
 
   surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->view_width,
                                        win->view_height);
@@ -188,7 +207,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_get_matrix(cr_pdf, &start_matrix);
 
   cairo_scale(cr_pdf, win->scale, win->scale);
-  window_center(win);
   cairo_translate(cr_pdf, win->x_offset * win->pdf_width / STEPS,
                   win->y_offset * win->pdf_height / STEPS);
   cairo_get_matrix(cr_pdf, &transformed_matrix);
@@ -228,6 +246,10 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_surface_destroy(surface);
 }
 
+void window_toggle_center_mode(Window *win) {
+  win->center_mode = !win->center_mode;
+}
+
 void window_center(Window *win) {
   win->x_offset =
       (((double)win->view_width / 2) - (win->pdf_width * win->scale / 2)) /
@@ -236,6 +258,7 @@ void window_center(Window *win) {
 
 void window_fit_scale(Window *win) {
   win->scale = win->view_width / win->pdf_width;
+  window_center(win);
 }
 
 void window_redraw(Window *win) { gtk_widget_queue_draw(win->view); }

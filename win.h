@@ -10,6 +10,7 @@ Window *window_new(App *app);
 void window_open(Window *win, GFile *file);
 
 void window_fit_scale(Window *win);
+void window_toggle_center_mode(Window *win);
 void window_center(Window *win);
 void window_redraw(Window *win);
 
