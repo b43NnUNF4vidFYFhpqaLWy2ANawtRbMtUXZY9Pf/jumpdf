@@ -85,9 +85,10 @@ Window *window_new(App *app) {
 }
 
 void window_open(Window *win, GFile *file) {
-  // TODO: New tab for each file
-  // NOTE: https://docs.gtk.org/gtk4/getting_started.html#opening-files
-  GError *err = NULL;
+  GError *err;
+  double default_width, default_height;
+
+  err = NULL;
 
   win->doc = poppler_document_new_from_gfile(
       file, NULL, NULL, &err); // TODO: Destroy on object destruction
@@ -111,6 +112,11 @@ void window_open(Window *win, GFile *file) {
         g_object_unref(win->pages[i]);
       }
     }
+
+    gtk_window_set_title(GTK_WINDOW(win), g_file_get_basename(file));
+    poppler_page_get_size(win->pages[0], &default_width, &default_height);
+    gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
+                                (int)default_width);
   }
 }
 
