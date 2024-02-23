@@ -277,4 +277,6 @@ void window_set_y_offset(Window *win, double new) { win->y_offset = new; }
 
 double window_get_scale(Window *win) { return win->scale; }
 
-void window_set_scale(Window *win, double new) { win->scale = new; }
+void window_set_scale(Window *win, double new) {
+  win->scale = MAX(MIN_SCALE, new);
+}

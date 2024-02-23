@@ -9,7 +9,7 @@ void handle_key(Window *win, guint keyval) {
     window_set_scale(win, window_get_scale(win) + SCALE_STEP);
     break;
   case KEY_MINUS:
-    window_set_scale(win, MAX(0, window_get_scale(win) - SCALE_STEP));
+    window_set_scale(win, window_get_scale(win) - SCALE_STEP);
     break;
   case KEY_0:
     window_set_scale(win, 1.0);
