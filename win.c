@@ -269,9 +269,8 @@ void window_toggle_center_mode(Window *win) {
 }
 
 void window_center(Window *win) {
-  win->x_offset =
-      ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
-      (win->pdf_width / STEPS);
+  win->x_offset = ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
+                  (win->pdf_width / STEPS);
 }
 
 void window_fit_scale(Window *win) {
