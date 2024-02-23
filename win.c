@@ -159,12 +159,26 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
 static void on_scroll(GtkEventControllerScroll *controller, double dx,
                       double dy, gpointer user_data) {
   Window *win;
+  GdkEvent *event;
+  GdkModifierType state;
 
   win = (Window *)user_data;
 
-  win->x_offset -= dx;
-  win->y_offset -= dy;
-  window_handle_offset_update(win);
+  event =
+      gtk_event_controller_get_current_event(GTK_EVENT_CONTROLLER(controller));
+  if (event) {
+    GdkModifierType state = gdk_event_get_modifier_state(event);
+    switch (state) {
+    case GDK_CONTROL_MASK:
+      window_set_scale(win, MAX(MIN_SCALE, win->scale - dy * SCALE_STEP));
+      break;
+    default:
+      win->x_offset -= dx;
+      win->y_offset -= dy;
+
+      window_handle_offset_update(win);
+    }
+  }
 
   window_redraw(win);
 }
