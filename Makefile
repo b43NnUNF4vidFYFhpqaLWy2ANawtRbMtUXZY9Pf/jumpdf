@@ -7,15 +7,15 @@ SRC = main.c app.c win.c keys.c
 
 OBJS = $(BUILT_SRC:.c=.o) $(SRC:.c=.o)
 
-all: manypdf
+all: jumpdf
 
 %.o: %.c
 	$(CC) -c -o $(@F) $(CFLAGS) $<
 
-manypdf: $(OBJS)
+jumpdf: $(OBJS)
 	$(CC) -o $(@F) $(OBJS) $(LIBS)
 
 clean:
 	rm -f $(BUILT_SRC)
 	rm -f $(OBJS)
-	rm -f manypdf
+	rm -f jumpdf

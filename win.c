@@ -77,7 +77,7 @@ static void window_init(Window *win) {
   gtk_window_set_child(GTK_WINDOW(win), win->view);
   g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
 
-  gtk_window_set_title(GTK_WINDOW(win), "Manypdf");
+  gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
 }
 
 static void window_dispose(GObject *object) {
