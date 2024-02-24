@@ -8,8 +8,14 @@
 #include "keys.h"
 #include "win.h"
 
+static void window_fit_scale(Window *win);
+static void window_toggle_center_mode(Window *win);
+static void window_center(Window *win);
+static void window_redraw(Window *win);
+static void window_set_scale(Window *win, double new);
 static void window_handle_offset_update(Window *win);
 static void window_handle_key(Window *win, guint keyval);
+
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
                                GtkEventControllerKey *event_controller);
@@ -127,6 +133,26 @@ void window_open(Window *win, GFile *file) {
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
                                 (int)default_width);
   }
+}
+
+static void window_fit_scale(Window *win) {
+  win->scale = win->view_width / win->pdf_width;
+  window_center(win);
+}
+
+static void window_toggle_center_mode(Window *win) {
+  win->center_mode = !win->center_mode;
+}
+
+static void window_center(Window *win) {
+  win->x_offset = ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
+                  (win->pdf_width / STEPS);
+}
+
+static void window_redraw(Window *win) { gtk_widget_queue_draw(win->view); }
+
+static void window_set_scale(Window *win, double new) {
+  win->scale = MAX(MIN_SCALE, new);
 }
 
 static void window_handle_offset_update(Window *win) {
@@ -304,34 +330,4 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
 
   cairo_destroy(cr_pdf);
   cairo_surface_destroy(surface);
-}
-
-void window_toggle_center_mode(Window *win) {
-  win->center_mode = !win->center_mode;
-}
-
-void window_center(Window *win) {
-  win->x_offset = ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
-                  (win->pdf_width / STEPS);
-}
-
-void window_fit_scale(Window *win) {
-  win->scale = win->view_width / win->pdf_width;
-  window_center(win);
-}
-
-void window_redraw(Window *win) { gtk_widget_queue_draw(win->view); }
-
-double window_get_x_offset(Window *win) { return win->x_offset; }
-
-void window_set_x_offset(Window *win, double new) { win->x_offset = new; }
-
-double window_get_y_offset(Window *win) { return win->y_offset; }
-
-void window_set_y_offset(Window *win, double new) { win->y_offset = new; }
-
-double window_get_scale(Window *win) { return win->scale; }
-
-void window_set_scale(Window *win, double new) {
-  win->scale = MAX(MIN_SCALE, new);
 }

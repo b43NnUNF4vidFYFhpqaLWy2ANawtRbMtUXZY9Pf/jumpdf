@@ -1,7 +1,5 @@
 #pragma once
 
-#include "win.h"
-
 typedef enum {
   KEY_PLUS = 43,
   KEY_MINUS = 45,
