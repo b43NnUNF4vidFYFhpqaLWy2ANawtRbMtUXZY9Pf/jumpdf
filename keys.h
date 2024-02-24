@@ -15,5 +15,3 @@ typedef enum {
   KEY_l = 108,
   KEY_s = 115,
 } Key;
-
-void handle_key(Window *win, guint keyval);

@@ -9,6 +9,7 @@
 #include "win.h"
 
 static void window_handle_offset_update(Window *win);
+static void window_handle_key(Window *win, guint keyval);
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
                                GtkEventControllerKey *event_controller);
@@ -142,6 +143,47 @@ static void window_handle_offset_update(Window *win) {
   }
 }
 
+static void window_handle_key(Window *win, guint keyval) {
+  // TODO(?): Separate into functions
+  switch (keyval) {
+  case KEY_PLUS:
+    window_set_scale(win, win->scale + SCALE_STEP);
+    break;
+  case KEY_MINUS:
+    window_set_scale(win, win->scale - SCALE_STEP);
+    break;
+  case KEY_0:
+    window_set_scale(win, 1.0);
+    break;
+  case KEY_c:
+    window_toggle_center_mode(win);
+    break;
+  case KEY_s:
+    window_fit_scale(win);
+    break;
+  case KEY_u:
+    win->y_offset += STEPS / 2.0;
+    break;
+  case KEY_d:
+    win->y_offset -= STEPS / 2.0;
+    break;
+  case KEY_h:
+    win->x_offset++;
+    break;
+  case KEY_j:
+    win->y_offset--;
+    break;
+  case KEY_k:
+    win->y_offset++;
+    break;
+  case KEY_l:
+    win->x_offset--;
+    break;
+  }
+
+  window_redraw(win);
+}
+
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
                                GtkEventControllerKey *event_controller) {
@@ -150,7 +192,7 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   Window *win;
   win = (Window *)user_data;
 
-  handle_key(win, keyval);
+  window_handle_key(win, keyval);
   window_handle_offset_update(win);
 
   return TRUE;
@@ -255,7 +297,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     i++;
   } while (real_y + i * win->pdf_height * win->scale < win->view_height);
 
-  cairo_set_matrix(cr_pdf, &transformed_matrix);
+  cairo_set_matrix(cr_pdf, &start_matrix);
 
   cairo_set_source_surface(cr, surface, 0, 0);
   cairo_paint(cr);
