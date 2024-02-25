@@ -13,6 +13,7 @@ static void window_toggle_center_mode(Window *win);
 static void window_center(Window *win);
 static void window_redraw(Window *win);
 static void window_set_scale(Window *win, double new);
+static void window_update_page_label(Window *win);
 static void window_handle_offset_update(Window *win);
 static void window_handle_key(Window *win, guint keyval);
 
@@ -32,6 +33,8 @@ struct _Window {
   GtkEventController *event_controller;
   GtkEventController *scroll_controller;
 
+  GtkWidget *page_label;
+  GtkWidget *header_bar;
   GtkWidget *view;
 
   PopplerDocument *doc;
@@ -75,6 +78,11 @@ static void window_init(Window *win) {
                    win);
   gtk_widget_add_controller(GTK_WIDGET(win),
                             GTK_EVENT_CONTROLLER(win->scroll_controller));
+
+  win->page_label = gtk_label_new(NULL);
+  win->header_bar = gtk_header_bar_new();
+  gtk_header_bar_pack_start(GTK_HEADER_BAR(win->header_bar), win->page_label);
+  gtk_window_set_titlebar(GTK_WINDOW(win), win->header_bar);
 
   win->view = gtk_drawing_area_new();
   gtk_widget_set_hexpand(win->view, TRUE);
@@ -128,6 +136,7 @@ void window_open(Window *win, GFile *file) {
       }
     }
 
+    window_update_page_label(win);
     gtk_window_set_title(GTK_WINDOW(win), g_file_get_basename(file));
     poppler_page_get_size(win->pages[0], &default_width, &default_height);
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
@@ -149,10 +158,24 @@ static void window_center(Window *win) {
                   (win->pdf_width / STEPS);
 }
 
-static void window_redraw(Window *win) { gtk_widget_queue_draw(win->view); }
+static void window_redraw(Window *win) {
+  window_update_page_label(win);
+  gtk_widget_queue_draw(win->view);
+}
 
 static void window_set_scale(Window *win, double new) {
   win->scale = MAX(MIN_SCALE, new);
+}
+
+static void window_update_page_label(Window *win) {
+  char *page_str;
+
+  if (asprintf(&page_str, "%d/%d", win->current_page + 1, win->n_pages) != -1) {
+    gtk_label_set_text(GTK_LABEL(win->page_label), page_str);
+    free(page_str);
+  } else {
+    g_printerr("Error: Failed to update page label");
+  }
 }
 
 static void window_handle_offset_update(Window *win) {
