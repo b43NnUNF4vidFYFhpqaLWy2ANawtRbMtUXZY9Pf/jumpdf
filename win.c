@@ -291,6 +291,8 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_surface_t *surface;
   cairo_t *cr_pdf;
   cairo_matrix_t start_matrix, transformed_matrix;
+  double center_x, background_x, background_width, background_y,
+      background_height;
   int i;
 
   win = (Window *)user_data;
@@ -308,6 +310,23 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->view_width,
                                        win->view_height);
   cr_pdf = cairo_create(surface);
+
+  // Clear to white background (for PDFs with missing background)
+  center_x = ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
+             (win->pdf_width / STEPS);
+  // First term gets you x-coordinate of left side of PDF as if it was centered,
+  // then second term moves it by the offset from center,
+  // i.e. win->x_offset - center_x
+  background_x =
+      (win->view_width - win->scale * win->pdf_width) / 2 +
+      ((win->x_offset - center_x) / STEPS) * win->scale * win->pdf_width;
+  background_y = 0;
+  background_width = win->scale * win->pdf_width;
+  background_height = win->view_height;
+  cairo_set_source_rgb(cr, 1, 1, 1);
+  cairo_rectangle(cr, background_x, background_y, background_width,
+                  background_height);
+  cairo_fill(cr);
 
   cairo_get_matrix(cr_pdf, &start_matrix);
 
