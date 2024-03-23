@@ -218,19 +218,19 @@ static void window_handle_key(Window *win, guint keyval) {
     window_fit_scale(win);
     break;
   case KEY_u:
-    win->y_offset += STEPS / 2.0;
+    win->y_offset -= STEPS / 2.0;
     break;
   case KEY_d:
-    win->y_offset -= STEPS / 2.0;
+    win->y_offset += STEPS / 2.0;
     break;
   case KEY_h:
     win->x_offset++;
     break;
   case KEY_j:
-    win->y_offset--;
+    win->y_offset++;
     break;
   case KEY_k:
-    win->y_offset++;
+    win->y_offset--;
     break;
   case KEY_l:
     win->x_offset--;
@@ -272,7 +272,7 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
       break;
     default:
       win->x_offset -= dx;
-      win->y_offset -= dy;
+      win->y_offset += dy;
 
       window_handle_offset_update(win);
     }
@@ -342,9 +342,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_translate(cr_pdf, -win->view_width / 2.0, -win->view_height / 2.0);
 
   cairo_translate(cr_pdf, win->x_offset * win->pdf_width / STEPS,
-                  win->y_offset * win->pdf_height / STEPS);
-
-  cairo_get_matrix(cr_pdf, &transformed_matrix);
+                          -win->y_offset * win->pdf_height / STEPS);
 
   poppler_page_render(page, cr_pdf);
 
