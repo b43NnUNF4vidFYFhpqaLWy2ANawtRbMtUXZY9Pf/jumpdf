@@ -38,7 +38,7 @@ struct _Window {
   GtkWidget *view;
 
   PopplerDocument *doc;
-  PopplerPage **pages; // TODO: free on object destruction
+  PopplerPage **pages;
   int n_pages;
   int current_page;
 
@@ -95,12 +95,26 @@ static void window_init(Window *win) {
   gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
 }
 
-static void window_dispose(GObject *object) {
-  G_OBJECT_CLASS(window_parent_class)->dispose(object);
+static void window_finalize(GObject *object) {
+  Window *win;
+  win = (Window *)object;
+
+  if (win->doc) {
+    g_object_unref(win->doc);
+  }
+
+  if (win->pages) {
+    for (int i = 0; i < win->n_pages; i++) {
+      g_object_unref(win->pages[i]);
+    }
+    free(win->pages);
+  }
+  
+  G_OBJECT_CLASS(window_parent_class)->finalize(object);
 }
 
 static void window_class_init(WindowClass *class) {
-  G_OBJECT_CLASS(class)->dispose = window_dispose;
+  G_OBJECT_CLASS(class)->finalize = window_finalize;
 }
 
 Window *window_new(App *app) {
