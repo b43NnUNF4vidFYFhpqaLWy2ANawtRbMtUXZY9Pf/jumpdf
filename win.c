@@ -179,15 +179,22 @@ static void window_update_page_label(Window *win) {
 }
 
 static void window_handle_offset_update(Window *win) {
+  win->current_page =
+      MIN(win->n_pages - 1,
+          MAX(0, win->current_page + win->y_offset / STEPS)
+          );
+
   if (win->y_offset < 0) {
-    win->y_offset = STEPS - 1;
-    if (win->current_page < win->n_pages - 1) {
-      win->current_page++;
+    if (win->current_page > 0) {
+      win->y_offset = STEPS - 1;
+    } else if (win->current_page == 0) {
+      win->y_offset = 0;
     }
   } else if (win->y_offset >= STEPS) {
-    win->y_offset = 0;
-    if (win->current_page > 0) {
-      win->current_page--;
+    if (win->current_page < win->n_pages - 1) {
+      win->y_offset = 0;
+    } else if (win->current_page == win->n_pages - 1) {
+      win->y_offset = STEPS - 1;
     }
   }
 }
