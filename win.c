@@ -297,7 +297,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   PopplerPage *page;
   cairo_surface_t *surface;
   cairo_t *cr_pdf;
-  cairo_matrix_t start_matrix, transformed_matrix;
   double center_x, background_x, background_width, background_y,
       background_height;
   int i;
@@ -335,8 +334,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                   background_height);
   cairo_fill(cr);
 
-  cairo_get_matrix(cr_pdf, &start_matrix);
-
   cairo_translate(cr_pdf, win->view_width / 2.0, win->view_height / 2.0);
   cairo_scale(cr_pdf, win->scale, win->scale);
   cairo_translate(cr_pdf, -win->view_width / 2.0, -win->view_height / 2.0);
@@ -348,6 +345,8 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
 
   double real_y = win->y_offset * win->pdf_width / STEPS * win->scale;
 
+  cairo_save(cr_pdf);
+
   // Render pages before current that can be seen.
   i = 1;
   do {
@@ -358,7 +357,8 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     i++;
   } while (real_y - i * win->pdf_height * win->scale > 0);
 
-  cairo_set_matrix(cr_pdf, &transformed_matrix);
+  cairo_restore(cr_pdf);
+  cairo_save(cr_pdf);
 
   // Render pages after current that can be seen.
   i = 1;
@@ -370,7 +370,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     i++;
   } while (real_y + i * win->pdf_height * win->scale < win->view_height);
 
-  cairo_set_matrix(cr_pdf, &start_matrix);
+  cairo_restore(cr_pdf);
 
   cairo_set_source_surface(cr, surface, 0, 0);
   cairo_paint(cr);
