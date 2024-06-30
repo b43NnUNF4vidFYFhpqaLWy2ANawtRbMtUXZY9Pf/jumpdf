@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <stdio.h>
 #include <cairo.h>
 #include <gtk/gtk.h>
 #include <poppler.h>
@@ -363,6 +365,28 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           -win->y_offset * win->pdf_height / STEPS);
 
   poppler_page_render(page, cr_pdf);
+
+  // for (int j = 0; j < win->n_pages; j++) {
+  //   PopplerPage *search_page = win->pages[j];
+  //   GList *matches = poppler_page_find_text(search_page, "the");
+  //   PopplerRectangle *match_rect;
+  //   double match_rect_x, match_rect_y, match_rect_width, match_rect_height;
+  //
+  //   for (GList * elem = matches; elem; elem = elem->next) {
+  //     match_rect = elem->data;
+  //     match_rect_x = background_x + match_rect->x1;
+  //     match_rect_y = win->pdf_width - match_rect->y1;
+  //     match_rect_width = match_rect->x2 - match_rect->x1;
+  //     match_rect_height = match_rect->y2 - match_rect->y1;
+  //
+  //     cairo_set_source_rgba(cr_pdf, 0.0, 1.0, 0.0, 0.5);
+  //     cairo_rectangle(cr_pdf, match_rect_x, match_rect_y, match_rect_width,
+  //     match_rect_height);
+  //     cairo_fill(cr_pdf);
+  //   }
+  //
+  //   g_list_free(matches);
+  // }
 
   double real_y = win->y_offset * win->pdf_width / STEPS * win->scale;
 
