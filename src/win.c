@@ -9,15 +9,10 @@
 #include "config.h"
 #include "keys.h"
 #include "win.h"
+#include "viewer.h"
 
-static void window_fit_scale(Window *win);
-static void window_toggle_center_mode(Window *win);
-static void window_center(Window *win);
 static void window_redraw(Window *win);
-static void window_set_scale(Window *win, double new);
 static void window_update_page_label(Window *win);
-static void window_handle_offset_update(Window *win);
-static void window_handle_key(Window *win, guint keyval);
 
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
@@ -39,35 +34,13 @@ struct _Window {
   GtkWidget *header_bar;
   GtkWidget *view;
 
-  PopplerDocument *doc;
-  PopplerPage **pages;
-  int n_pages;
-  int current_page;
-
-  // View dimensions not known until drawn, so use draw_function to update
-  int view_width, view_height;
-  double pdf_width, pdf_height;
-  double x_offset, y_offset, scale;
-
-  bool center_mode;
+  Viewer* viewer;
 };
 
 G_DEFINE_TYPE(Window, window, GTK_TYPE_APPLICATION_WINDOW)
 
 static void window_init(Window *win) {
-  win->doc = NULL;
-  win->pages = NULL;
-  win->current_page = 0;
-
-  win->view_width = 0;
-  win->view_height = 0;
-  win->pdf_width = 0;
-  win->pdf_height = 0;
-  win->x_offset = 0.0;
-  win->y_offset = 0.0;
-  win->scale = 1.0;
-
-  win->center_mode = true;
+  win->viewer = NULL;
 
   win->event_controller = gtk_event_controller_key_new();
   g_signal_connect_object(win->event_controller, "key-pressed",
@@ -101,19 +74,8 @@ static void window_finalize(GObject *object) {
   Window *win;
   win = (Window *)object;
 
-  if (win->doc) {
-    g_object_unref(win->doc);
-    win->doc = NULL;
-  }
-
-  if (win->pages) {
-    for (int i = 0; i < win->n_pages; i++) {
-      g_object_unref(win->pages[i]);
-      win->pages[i] = NULL;
-    }
-
-    free(win->pages);
-    win->pages = NULL;
+  if (win->viewer) {
+    viewer_destroy(win->viewer);
   }
   
   G_OBJECT_CLASS(window_parent_class)->finalize(object);
@@ -129,138 +91,40 @@ Window *window_new(App *app) {
 
 void window_open(Window *win, GFile *file) {
   GError *err;
+  PopplerDocument* doc;
   double default_width, default_height;
 
   err = NULL;
 
-  win->doc = poppler_document_new_from_gfile(file, NULL, NULL, &err);
+  doc = poppler_document_new_from_gfile(file, NULL, NULL, &err);
 
-  if (!win->doc) {
+  if (!doc) {
     g_printerr("Poppler: %s\n", err->message);
     g_error_free(err);
   } else {
-    win->n_pages = poppler_document_get_n_pages(win->doc);
-
-    win->pages = malloc(sizeof(PopplerPage *) * win->n_pages);
-    if (!win->pages) {
-      return;
-    }
-
-    for (int i = 0; i < win->n_pages; i++) {
-      win->pages[i] = poppler_document_get_page(win->doc, i);
-
-      if (!win->pages[i]) {
-        g_printerr("Could not open %i'th page of document\n", i);
-        g_object_unref(win->pages[i]);
-      }
-    }
+    win->viewer = viewer_new(doc);
 
     window_update_page_label(win);
     gtk_window_set_title(GTK_WINDOW(win), g_file_get_basename(file));
-    poppler_page_get_size(win->pages[0], &default_width, &default_height);
+    poppler_page_get_size(win->viewer->pages[0], &default_width, &default_height);
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
                                 (int)default_width);
   }
-}
-
-static void window_fit_scale(Window *win) {
-  win->scale = win->view_width / win->pdf_width;
-  window_center(win);
-}
-
-static void window_toggle_center_mode(Window *win) {
-  win->center_mode = !win->center_mode;
-}
-
-static void window_center(Window *win) {
-  win->x_offset = ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
-                  (win->pdf_width / STEPS);
 }
 
 static void window_redraw(Window *win) {
   window_update_page_label(win);
   gtk_widget_queue_draw(win->view);
 }
-
-static void window_set_scale(Window *win, double new) {
-  win->scale = MAX(MIN_SCALE, new);
-}
-
 static void window_update_page_label(Window *win) {
   char *page_str;
 
-  if (asprintf(&page_str, "%d/%d", win->current_page + 1, win->n_pages) != -1) {
+  if (asprintf(&page_str, "%d/%d", win->viewer->current_page + 1, win->viewer->n_pages) != -1) {
     gtk_label_set_text(GTK_LABEL(win->page_label), page_str);
     free(page_str);
   } else {
     g_printerr("Error: Failed to update page label");
   }
-}
-
-static void window_handle_offset_update(Window *win) {
-  int old_page;
-
-  old_page = win->current_page;
-  win->current_page =
-      MIN(win->n_pages - 1,
-          MAX(0, win->current_page + win->y_offset / STEPS)
-          );
-
-  if (win->y_offset < 0) {
-    // If win->current_page just updated to 0, we still want to scroll up
-    if (win->current_page > 0 || old_page > 0) {
-      win->y_offset = STEPS - 1;
-    } else if (win->current_page == 0) {
-      win->y_offset = 0;
-    }
-  } else if (win->y_offset >= STEPS) {
-    if (win->current_page < win->n_pages - 1 || old_page < win->n_pages - 1) {
-      win->y_offset = 0;
-    } else if (win->current_page == win->n_pages - 1) {
-      win->y_offset = STEPS - 1;
-    }
-  }
-}
-
-static void window_handle_key(Window *win, guint keyval) {
-  // TODO(?): Separate into functions
-  switch (keyval) {
-  case KEY_PLUS:
-    window_set_scale(win, win->scale + SCALE_STEP);
-    break;
-  case KEY_MINUS:
-    window_set_scale(win, win->scale - SCALE_STEP);
-    break;
-  case KEY_0:
-    window_set_scale(win, 1.0);
-    break;
-  case KEY_c:
-    window_toggle_center_mode(win);
-    break;
-  case KEY_s:
-    window_fit_scale(win);
-    break;
-  case KEY_u:
-    win->y_offset -= STEPS / 2.0;
-    break;
-  case KEY_d:
-    win->y_offset += STEPS / 2.0;
-    break;
-  case KEY_h:
-    win->x_offset++;
-    break;
-  case KEY_j:
-    win->y_offset++;
-    break;
-  case KEY_k:
-    win->y_offset--;
-    break;
-  case KEY_l:
-    win->x_offset--;
-    break;
-  }
-
-  window_redraw(win);
 }
 
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
@@ -271,8 +135,9 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   Window *win;
   win = (Window *)user_data;
 
-  window_handle_key(win, keyval);
-  window_handle_offset_update(win);
+  viewer_handle_key(win->viewer, keyval);
+  viewer_handle_offset_update(win->viewer);
+  window_redraw(win);
 
   return TRUE;
 }
@@ -291,13 +156,13 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
     GdkModifierType state = gdk_event_get_modifier_state(event);
     switch (state) {
     case GDK_CONTROL_MASK:
-      window_set_scale(win, MAX(MIN_SCALE, win->scale - dy * SCALE_STEP));
+      viewer_set_scale(win->viewer, MAX(MIN_SCALE, win->viewer->scale - dy * SCALE_STEP));
       break;
     default:
-      win->x_offset -= dx;
-      win->y_offset += dy;
+      win->viewer->x_offset -= dx;
+      win->viewer->y_offset += dy;
 
-      window_handle_offset_update(win);
+      viewer_handle_offset_update(win->viewer);
     }
   }
 
@@ -310,8 +175,8 @@ static void on_resize(GtkDrawingArea *area, int width, int height,
 
   win = (Window *)user_data;
 
-  win->view_width = width;
-  win->view_height = height;
+  win->viewer->view_width = width;
+  win->viewer->view_height = height;
 }
 
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
@@ -325,44 +190,44 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   int i;
 
   win = (Window *)user_data;
-  if (!win->doc || !win->pages) {
+  if (!win->viewer->doc || !win->viewer->pages) {
     return;
   }
 
-  page = win->pages[win->current_page];
-  poppler_page_get_size(page, &win->pdf_width, &win->pdf_height);
+  page = win->viewer->pages[win->viewer->current_page];
+  poppler_page_get_size(page, &win->viewer->pdf_width, &win->viewer->pdf_height);
 
-  if (win->center_mode) {
-    window_center(win);
+  if (win->viewer->center_mode) {
+    viewer_center(win->viewer);
   }
 
-  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->view_width,
-                                       win->view_height);
+  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->viewer->view_width,
+                                       win->viewer->view_height);
   cr_pdf = cairo_create(surface);
 
   // Clear to white background (for PDFs with missing background)
-  center_x = ((win->view_width / 2.0) - (win->pdf_width / 2.0)) /
-             (win->pdf_width / STEPS);
+  center_x = ((win->viewer->view_width / 2.0) - (win->viewer->pdf_width / 2.0)) /
+             (win->viewer->pdf_width / STEPS);
   // First term gets you x-coordinate of left side of PDF as if it was centered,
   // then second term moves it by the offset from center,
   // i.e. win->x_offset - center_x
   background_x =
-      (win->view_width - win->scale * win->pdf_width) / 2 +
-      ((win->x_offset - center_x) / STEPS) * win->scale * win->pdf_width;
+      (win->viewer->view_width - win->viewer->scale * win->viewer->pdf_width) / 2 +
+      ((win->viewer->x_offset - center_x) / STEPS) * win->viewer->scale * win->viewer->pdf_width;
   background_y = 0;
-  background_width = win->scale * win->pdf_width;
-  background_height = win->view_height;
+  background_width = win->viewer->scale * win->viewer->pdf_width;
+  background_height = win->viewer->view_height;
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_rectangle(cr, background_x, background_y, background_width,
                   background_height);
   cairo_fill(cr);
 
-  cairo_translate(cr_pdf, win->view_width / 2.0, win->view_height / 2.0);
-  cairo_scale(cr_pdf, win->scale, win->scale);
-  cairo_translate(cr_pdf, -win->view_width / 2.0, -win->view_height / 2.0);
+  cairo_translate(cr_pdf, win->viewer->view_width / 2.0, win->viewer->view_height / 2.0);
+  cairo_scale(cr_pdf, win->viewer->scale, win->viewer->scale);
+  cairo_translate(cr_pdf, -win->viewer->view_width / 2.0, -win->viewer->view_height / 2.0);
 
-  cairo_translate(cr_pdf, win->x_offset * win->pdf_width / STEPS,
-                          -win->y_offset * win->pdf_height / STEPS);
+  cairo_translate(cr_pdf, win->viewer->x_offset * win->viewer->pdf_width / STEPS,
+                          -win->viewer->y_offset * win->viewer->pdf_height / STEPS);
 
   poppler_page_render(page, cr_pdf);
 
@@ -388,19 +253,19 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   //   g_list_free(matches);
   // }
 
-  double real_y = win->y_offset * win->pdf_width / STEPS * win->scale;
+  double real_y = win->viewer->y_offset * win->viewer->pdf_width / STEPS * win->viewer->scale;
 
   cairo_save(cr_pdf);
 
   // Render pages before current that can be seen.
   i = 1;
   do {
-    if (win->current_page - i < 0)
+    if (win->viewer->current_page - i < 0)
       break;
-    cairo_translate(cr_pdf, 0, -win->pdf_height);
-    poppler_page_render(win->pages[win->current_page - i], cr_pdf);
+    cairo_translate(cr_pdf, 0, -win->viewer->pdf_height);
+    poppler_page_render(win->viewer->pages[win->viewer->current_page - i], cr_pdf);
     i++;
-  } while (real_y - i * win->pdf_height * win->scale > 0);
+  } while (real_y - i * win->viewer->pdf_height * win->viewer->scale > 0);
 
   cairo_restore(cr_pdf);
   cairo_save(cr_pdf);
@@ -408,12 +273,12 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   // Render pages after current that can be seen.
   i = 1;
   do {
-    if (win->current_page + i >= win->n_pages)
+    if (win->viewer->current_page + i >= win->viewer->n_pages)
       break;
-    cairo_translate(cr_pdf, 0, win->pdf_height);
-    poppler_page_render(win->pages[win->current_page + i], cr_pdf);
+    cairo_translate(cr_pdf, 0, win->viewer->pdf_height);
+    poppler_page_render(win->viewer->pages[win->viewer->current_page + i], cr_pdf);
     i++;
-  } while (real_y + i * win->pdf_height * win->scale < win->view_height);
+  } while (real_y + i * win->viewer->pdf_height * win->viewer->scale < win->viewer->view_height);
 
   cairo_restore(cr_pdf);
 

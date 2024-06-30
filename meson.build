@@ -6,6 +6,7 @@ src_files = [
         'src/main.c',
         'src/app.c',
         'src/win.c',
+        'src/viewer.c',
         ]
 
 gtk_dep = dependency('gtk4')
