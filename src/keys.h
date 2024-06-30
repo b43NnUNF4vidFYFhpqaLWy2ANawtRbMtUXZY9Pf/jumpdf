@@ -12,4 +12,6 @@ typedef enum {
   KEY_k = 107,
   KEY_l = 108,
   KEY_s = 115,
+  KEY_g = 103,
+  KEY_G = 71,
 } Key;

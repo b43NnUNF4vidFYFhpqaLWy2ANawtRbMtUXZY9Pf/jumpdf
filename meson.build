@@ -7,6 +7,7 @@ src_files = [
         'src/app.c',
         'src/win.c',
         'src/viewer.c',
+        'src/input_FSM.c',
         ]
 
 gtk_dep = dependency('gtk4')

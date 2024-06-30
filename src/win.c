@@ -10,6 +10,7 @@
 #include "keys.h"
 #include "win.h"
 #include "viewer.h"
+#include "input_FSM.h"
 
 static void window_redraw(Window *win);
 static void window_update_page_label(Window *win);
@@ -35,12 +36,14 @@ struct _Window {
   GtkWidget *view;
 
   Viewer* viewer;
+  InputState current_input_state;
 };
 
 G_DEFINE_TYPE(Window, window, GTK_TYPE_APPLICATION_WINDOW)
 
 static void window_init(Window *win) {
   win->viewer = NULL;
+  win->current_input_state = STATE_NORMAL;
 
   win->event_controller = gtk_event_controller_key_new();
   g_signal_connect_object(win->event_controller, "key-pressed",
@@ -135,7 +138,8 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   Window *win;
   win = (Window *)user_data;
 
-  viewer_handle_key(win->viewer, keyval);
+  win->current_input_state = execute_state(win->current_input_state, win->viewer, keyval);
+  g_print("%d\n", win->current_input_state);
   viewer_handle_offset_update(win->viewer);
   window_redraw(win);
 
