@@ -25,4 +25,3 @@ void viewer_toggle_center_mode(Viewer* viewer);
 void viewer_center(Viewer* viewer);
 void viewer_set_scale(Viewer* viewer, double new_scale);
 void viewer_handle_offset_update(Viewer* viewer);
-void viewer_handle_key(Viewer* viewer, guint keyval);
