@@ -101,13 +101,17 @@ static void window_finalize(GObject *object) {
 
   if (win->doc) {
     g_object_unref(win->doc);
+    win->doc = NULL;
   }
 
   if (win->pages) {
     for (int i = 0; i < win->n_pages; i++) {
       g_object_unref(win->pages[i]);
+      win->pages[i] = NULL;
     }
+
     free(win->pages);
+    win->pages = NULL;
   }
   
   G_OBJECT_CLASS(window_parent_class)->finalize(object);
@@ -127,8 +131,7 @@ void window_open(Window *win, GFile *file) {
 
   err = NULL;
 
-  win->doc = poppler_document_new_from_gfile(
-      file, NULL, NULL, &err); // TODO: Destroy on object destruction
+  win->doc = poppler_document_new_from_gfile(file, NULL, NULL, &err);
 
   if (!win->doc) {
     g_printerr("Poppler: %s\n", err->message);
