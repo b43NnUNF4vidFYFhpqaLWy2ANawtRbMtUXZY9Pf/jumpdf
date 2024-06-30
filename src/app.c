@@ -13,10 +13,7 @@ G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION);
 static void app_init(App *app) {}
 
 static void app_activate(GApplication *app) {
-  Window *win;
-
-  win = window_new(JUMPDF_APP(app));
-  gtk_window_present(GTK_WINDOW(win));
+  g_printerr("Jumpdf: Files not specified\n");
 }
 
 static void app_open(GApplication *app, GFile **files, int n_files,
