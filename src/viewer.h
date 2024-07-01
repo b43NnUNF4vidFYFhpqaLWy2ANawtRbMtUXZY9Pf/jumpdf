@@ -13,8 +13,9 @@ typedef struct Viewer {
   int view_width, view_height;
   double pdf_width, pdf_height;
   double x_offset, y_offset, scale;
-
   bool center_mode;
+
+  const char *search_text;
 } Viewer;
 
 Viewer* viewer_new(PopplerDocument* doc);

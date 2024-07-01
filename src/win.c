@@ -14,6 +14,7 @@
 
 static void window_redraw(Window *win);
 static void window_update_page_label(Window *win);
+static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page);
 
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
@@ -130,6 +131,29 @@ static void window_update_page_label(Window *win) {
   }
 }
 
+static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page) {
+  PopplerRectangle *highlight_rect;
+  double highlight_rect_x, highlight_rect_y, highlight_rect_width,
+      highlight_rect_height;
+
+  GList *matches = poppler_page_find_text(page, win->viewer->search_text);
+
+  for (GList *elem = matches; elem; elem = elem->next) {
+    highlight_rect = elem->data;
+    highlight_rect_x = highlight_rect->x1;
+    highlight_rect_y = win->viewer->pdf_height - highlight_rect->y1;
+    highlight_rect_width = highlight_rect->x2 - highlight_rect->x1;
+    highlight_rect_height = highlight_rect->y1 - highlight_rect->y2;
+
+    cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 0.5);
+    cairo_rectangle(cr, highlight_rect_x, highlight_rect_y, highlight_rect_width,
+                    highlight_rect_height);
+    cairo_fill(cr);
+  }
+
+  g_list_free(matches);
+}
+
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
                                GtkEventControllerKey *event_controller) {
@@ -235,28 +259,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           -win->viewer->y_offset * win->viewer->pdf_height / STEPS);
 
   poppler_page_render(page, cr_pdf);
-
-  // for (int j = 0; j < win->n_pages; j++) {
-  //   PopplerPage *search_page = win->pages[j];
-  //   GList *matches = poppler_page_find_text(search_page, "the");
-  //   PopplerRectangle *match_rect;
-  //   double match_rect_x, match_rect_y, match_rect_width, match_rect_height;
-  //
-  //   for (GList * elem = matches; elem; elem = elem->next) {
-  //     match_rect = elem->data;
-  //     match_rect_x = background_x + match_rect->x1;
-  //     match_rect_y = win->pdf_width - match_rect->y1;
-  //     match_rect_width = match_rect->x2 - match_rect->x1;
-  //     match_rect_height = match_rect->y2 - match_rect->y1;
-  //
-  //     cairo_set_source_rgba(cr_pdf, 0.0, 1.0, 0.0, 0.5);
-  //     cairo_rectangle(cr_pdf, match_rect_x, match_rect_y, match_rect_width,
-  //     match_rect_height);
-  //     cairo_fill(cr_pdf);
-  //   }
-  //
-  //   g_list_free(matches);
-  // }
+  window_highlight_search(win, cr_pdf, page);
 
   double real_y = win->viewer->y_offset * win->viewer->pdf_width / STEPS * win->viewer->scale;
 
@@ -269,6 +272,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
       break;
     cairo_translate(cr_pdf, 0, -win->viewer->pdf_height);
     poppler_page_render(win->viewer->pages[win->viewer->current_page - i], cr_pdf);
+    window_highlight_search(win, cr_pdf, win->viewer->pages[win->viewer->current_page - i]);
     i++;
   } while (real_y - i * win->viewer->pdf_height * win->viewer->scale > 0);
 
@@ -282,6 +286,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
       break;
     cairo_translate(cr_pdf, 0, win->viewer->pdf_height);
     poppler_page_render(win->viewer->pages[win->viewer->current_page + i], cr_pdf);
+    window_highlight_search(win, cr_pdf, win->viewer->pages[win->viewer->current_page + i]);
     i++;
   } while (real_y + i * win->viewer->pdf_height * win->viewer->scale < win->viewer->view_height);
 
