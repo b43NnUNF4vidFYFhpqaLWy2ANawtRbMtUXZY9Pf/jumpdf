@@ -10,4 +10,6 @@ G_DECLARE_FINAL_TYPE(Window, window, JUMPDF, WINDOW, GtkApplicationWindow)
 Window *window_new(App *app);
 void window_open(Window *win, GFile *file);
 
+void window_show_search_dialog(Window *win);
+
 Viewer *window_get_viewer(Window *win);

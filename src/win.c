@@ -25,6 +25,8 @@ static void on_resize(GtkDrawingArea *area, int width, int height,
                       gpointer user_data);
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data);
+static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window *win);
+static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog);
 
 struct _Window {
   GtkApplicationWindow parent;
@@ -116,6 +118,26 @@ void window_open(Window *win, GFile *file) {
   }
 }
 
+void window_show_search_dialog(Window *win) {
+  GtkWidget *dialog;
+  GtkWidget *content_area;
+  GtkWidget *entry;
+
+  dialog = gtk_dialog_new_with_buttons("Search", GTK_WINDOW(win),
+                                       GTK_DIALOG_MODAL,
+                                       "_Cancel", GTK_RESPONSE_CANCEL,
+                                       "_Search", GTK_RESPONSE_ACCEPT,
+                                       NULL);
+  content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+  entry = gtk_entry_new();
+  gtk_box_append(GTK_BOX(content_area), entry);
+
+  g_signal_connect(entry, "activate", G_CALLBACK(on_search_entry_activate), dialog);
+  g_signal_connect(dialog, "response", G_CALLBACK(on_search_dialog_response), win);
+
+  gtk_widget_show(dialog);
+}
+
 Viewer *window_get_viewer(Window *win) {
   return win->viewer;
 }
@@ -139,9 +161,13 @@ static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page)
   PopplerRectangle *highlight_rect;
   double highlight_rect_x, highlight_rect_y, highlight_rect_width,
       highlight_rect_height;
+  GList *matches;
 
-  GList *matches = poppler_page_find_text(page, win->viewer->search_text);
+  if (!win->viewer->search_text) {
+    return;
+  }
 
+  matches = poppler_page_find_text(page, win->viewer->search_text);
   for (GList *elem = matches; elem; elem = elem->next) {
     highlight_rect = elem->data;
     highlight_rect_x = highlight_rect->x1;
@@ -301,4 +327,27 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
 
   cairo_destroy(cr_pdf);
   cairo_surface_destroy(surface);
+}
+
+static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window *win) {
+  GtkWidget *content_area;
+  GtkWidget *entry;
+  GtkEntryBuffer *buffer;
+  const char* search_text;
+
+  if (response_id == GTK_RESPONSE_ACCEPT) {
+    content_area = gtk_dialog_get_content_area(dialog);
+    entry = gtk_widget_get_first_child(content_area);
+    buffer = gtk_entry_get_buffer(GTK_ENTRY(entry));
+    search_text = gtk_entry_buffer_get_text(buffer);
+
+    win->viewer->search_text = strdup(search_text);
+    window_redraw(win);
+  }
+
+  gtk_window_destroy(GTK_WINDOW(dialog)); // Destroy the dialog
+}
+
+static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog) {
+  gtk_dialog_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
 }

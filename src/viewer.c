@@ -38,7 +38,7 @@ Viewer* viewer_new(PopplerDocument *doc) {
     viewer->scale = 1.0;
     viewer->center_mode = true;
 
-    viewer->search_text = "the";
+    viewer->search_text = NULL;
 
     return viewer;
 }
