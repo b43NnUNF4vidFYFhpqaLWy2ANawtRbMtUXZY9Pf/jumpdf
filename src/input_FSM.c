@@ -7,8 +7,9 @@ input_state_func input_state_funcs[] = {
     on_state_g,
 };
 
-InputState on_state_normal(Viewer* viewer, guint keyval) {
+InputState on_state_normal(Window* win, guint keyval) {
     InputState next_state = STATE_NORMAL;
+    Viewer* viewer = window_get_viewer(win);
 
     switch (keyval) {
         case KEY_PLUS:
@@ -48,17 +49,20 @@ InputState on_state_normal(Viewer* viewer, guint keyval) {
             next_state = STATE_g;
             break;
         case KEY_G:
-            g_print("G pressed\n");
             viewer->current_page = viewer->n_pages - 1;
             viewer->y_offset = STEPS - 1;
+            break;
+        case KEY_SLASH:
+            window_show_search_dialog(win);
             break;
     }
 
     return next_state;
 }
 
-InputState on_state_g(Viewer* viewer, guint keyval) {
+InputState on_state_g(Window* win, guint keyval) {
     InputState next_state = STATE_NORMAL;
+    Viewer* viewer = window_get_viewer(win);
 
     switch (keyval) {
         case KEY_g:
@@ -70,6 +74,6 @@ InputState on_state_g(Viewer* viewer, guint keyval) {
     return next_state;
 }
 
-InputState execute_state(InputState current_state, Viewer* viewer, guint keyval) {
-    return input_state_funcs[current_state](viewer, keyval);
+InputState execute_state(InputState current_state, Window* win, guint keyval) {
+    return input_state_funcs[current_state](win, keyval);
 }

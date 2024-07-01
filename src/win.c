@@ -116,6 +116,10 @@ void window_open(Window *win, GFile *file) {
   }
 }
 
+Viewer *window_get_viewer(Window *win) {
+  return win->viewer;
+}
+
 static void window_redraw(Window *win) {
   window_update_page_label(win);
   gtk_widget_queue_draw(win->view);
@@ -162,7 +166,7 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   Window *win;
   win = (Window *)user_data;
 
-  win->current_input_state = execute_state(win->current_input_state, win->viewer, keyval);
+  win->current_input_state = execute_state(win->current_input_state, win, keyval);
   g_print("%d\n", win->current_input_state);
   viewer_handle_offset_update(win->viewer);
   window_redraw(win);

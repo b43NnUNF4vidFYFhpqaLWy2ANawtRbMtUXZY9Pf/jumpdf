@@ -8,9 +8,9 @@ typedef enum {
     STATE_g, // g pressed once
 } InputState;
 
-typedef InputState (*input_state_func)(Viewer*, guint);
+typedef InputState (*input_state_func)(Window*, guint);
 
-InputState on_state_normal(Viewer* viewer, guint keyval);
-InputState on_state_g(Viewer* viewer, guint keyval);
+InputState on_state_normal(Window* window, guint keyval);
+InputState on_state_g(Window* window, guint keyval);
 
-InputState execute_state(InputState current_state, Viewer* viewer, guint keyval);
+InputState execute_state(InputState current_state, Window* window, guint keyval);
