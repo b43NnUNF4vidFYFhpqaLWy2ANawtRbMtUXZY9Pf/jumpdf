@@ -189,7 +189,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   PopplerPage *page;
   cairo_surface_t *surface;
   cairo_t *cr_pdf;
-  double center_x, background_x, background_width, background_y,
+  double center_x_offset, background_x, background_width, background_y,
       background_height;
   int i;
 
@@ -210,14 +210,15 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cr_pdf = cairo_create(surface);
 
   // Clear to white background (for PDFs with missing background)
-  center_x = ((win->viewer->view_width / 2.0) - (win->viewer->pdf_width / 2.0)) /
+  center_x_offset = ((win->viewer->view_width / 2.0) - (win->viewer->pdf_width / 2.0)) /
              (win->viewer->pdf_width / STEPS);
-  // First term gets you x-coordinate of left side of PDF as if it was centered,
+  // First term gets you x-coordinate of left side of PDF as if it was centered
+  // (2*margin + real_pdf_width = view_width, where margin = center_x_offset),
   // then second term moves it by the offset from center,
-  // i.e. win->x_offset - center_x
+  // i.e. x_offset - center_x_offset
   background_x =
       (win->viewer->view_width - win->viewer->scale * win->viewer->pdf_width) / 2 +
-      ((win->viewer->x_offset - center_x) / STEPS) * win->viewer->scale * win->viewer->pdf_width;
+      ((win->viewer->x_offset - center_x_offset) / STEPS) * win->viewer->scale * win->viewer->pdf_width;
   background_y = 0;
   background_width = win->viewer->scale * win->viewer->pdf_width;
   background_height = win->viewer->view_height;
