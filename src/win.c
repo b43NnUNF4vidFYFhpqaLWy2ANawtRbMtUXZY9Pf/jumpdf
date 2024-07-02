@@ -14,6 +14,7 @@
 
 static void window_redraw(Window *win);
 static void window_update_page_label(Window *win);
+static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page);
 static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page);
 
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
@@ -157,6 +158,11 @@ static void window_update_page_label(Window *win) {
   }
 }
 
+static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page) {
+  poppler_page_render(page, cr);
+  window_highlight_search(win, cr, page);
+}
+
 static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page) {
   PopplerRectangle *highlight_rect;
   double highlight_rect_x, highlight_rect_y, highlight_rect_width,
@@ -245,7 +251,8 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_t *cr_pdf;
   double center_x_offset, background_x, background_width, background_y,
       background_height;
-  int i;
+  double visible_pages;
+  unsigned int visible_pages_before, visible_pages_after;
 
   win = (Window *)user_data;
   if (!win->viewer->doc || !win->viewer->pages) {
@@ -288,38 +295,27 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_translate(cr_pdf, win->viewer->x_offset * win->viewer->pdf_width / STEPS,
                           -win->viewer->y_offset * win->viewer->pdf_height / STEPS);
 
-  poppler_page_render(page, cr_pdf);
-  window_highlight_search(win, cr_pdf, page);
+  window_render_page(win, cr_pdf, page);
 
-  double real_y = win->viewer->y_offset * win->viewer->pdf_width / STEPS * win->viewer->scale;
+  visible_pages = win->viewer->view_height / (win->viewer->scale * win->viewer->pdf_height) - 1;
+  visible_pages_before = ceil(visible_pages / 2);
+  visible_pages_after = ceil(visible_pages / 2) + 1;
 
   cairo_save(cr_pdf);
-
-  // Render pages before current that can be seen.
-  i = 1;
-  do {
-    if (win->viewer->current_page - i < 0)
-      break;
-    cairo_translate(cr_pdf, 0, -win->viewer->pdf_height);
-    poppler_page_render(win->viewer->pages[win->viewer->current_page - i], cr_pdf);
-    window_highlight_search(win, cr_pdf, win->viewer->pages[win->viewer->current_page - i]);
-    i++;
-  } while (real_y - i * win->viewer->pdf_height * win->viewer->scale > 0);
-
+  for (int i = 1; i <= visible_pages_before; i++) {
+    if (win->viewer->current_page - i >= 0) {
+      cairo_translate(cr_pdf, 0, -win->viewer->pdf_height);
+      window_render_page(win, cr_pdf, win->viewer->pages[win->viewer->current_page - i]);
+    }
+  }
   cairo_restore(cr_pdf);
   cairo_save(cr_pdf);
-
-  // Render pages after current that can be seen.
-  i = 1;
-  do {
-    if (win->viewer->current_page + i >= win->viewer->n_pages)
-      break;
-    cairo_translate(cr_pdf, 0, win->viewer->pdf_height);
-    poppler_page_render(win->viewer->pages[win->viewer->current_page + i], cr_pdf);
-    window_highlight_search(win, cr_pdf, win->viewer->pages[win->viewer->current_page + i]);
-    i++;
-  } while (real_y + i * win->viewer->pdf_height * win->viewer->scale < win->viewer->view_height);
-
+  for (int i = 1; i <= visible_pages_after; i++) {
+    if (win->viewer->current_page + i < win->viewer->n_pages) {
+      cairo_translate(cr_pdf, 0, win->viewer->pdf_height);
+      window_render_page(win, cr_pdf, win->viewer->pages[win->viewer->current_page + i]);
+    }
+  }
   cairo_restore(cr_pdf);
 
   cairo_set_source_surface(cr, surface, 0, 0);
