@@ -25,7 +25,10 @@ InputState on_state_normal(Window* win, guint keyval) {
             viewer_toggle_center_mode(viewer);
             break;
         case KEY_s:
-            viewer_fit_scale(viewer);
+            viewer_fit_horizontal(viewer);
+            break;
+        case KEY_v:
+            viewer_fit_vertical(viewer);
             break;
         case KEY_u:
             viewer->y_offset -= STEPS / 2.0;

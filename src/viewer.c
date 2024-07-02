@@ -60,8 +60,13 @@ void viewer_destroy(Viewer* viewer) {
     }
 }
 
-void viewer_fit_scale(Viewer *viewer) {
+void viewer_fit_horizontal(Viewer *viewer) {
     viewer->scale = viewer->view_width / viewer->pdf_width;
+    viewer_center(viewer);
+}
+
+void viewer_fit_vertical(Viewer* viewer) {
+    viewer->scale = viewer->view_height / viewer->pdf_height;
     viewer_center(viewer);
 }
 

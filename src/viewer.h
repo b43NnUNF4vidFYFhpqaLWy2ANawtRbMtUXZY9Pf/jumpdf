@@ -21,7 +21,8 @@ typedef struct Viewer {
 Viewer* viewer_new(PopplerDocument* doc);
 void viewer_destroy(Viewer* viewer);
 
-void viewer_fit_scale(Viewer* viewer);
+void viewer_fit_horizontal(Viewer* viewer);
+void viewer_fit_vertical(Viewer* viewer);
 void viewer_toggle_center_mode(Viewer* viewer);
 void viewer_center(Viewer* viewer);
 void viewer_set_scale(Viewer* viewer, double new_scale);
