@@ -10,10 +10,13 @@ src_files = [
         'src/input_FSM.c',
         ]
 
+cc = meson.get_compiler('c')
+
 gtk_dep = dependency('gtk4')
 poppler_glib_dep = dependency('poppler-glib')
+math_dep = cc.find_library('m', required : true)
 
 executable('jumpdf',
            sources : src_files,
-           dependencies : [gtk_dep, poppler_glib_dep],
+           dependencies : [gtk_dep, poppler_glib_dep, math_dep],
            install : true)
