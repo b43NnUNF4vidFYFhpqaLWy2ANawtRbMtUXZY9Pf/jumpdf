@@ -16,6 +16,7 @@ typedef struct Viewer {
   bool center_mode;
 
   const char *search_text;
+  int last_goto_page;
 } Viewer;
 
 Viewer* viewer_new(PopplerDocument* doc);
@@ -27,3 +28,6 @@ void viewer_toggle_center_mode(Viewer* viewer);
 void viewer_center(Viewer* viewer);
 void viewer_set_scale(Viewer* viewer, double new_scale);
 void viewer_handle_offset_update(Viewer* viewer);
+
+void viewer_goto_next_search(Viewer* viewer);
+void viewer_goto_prev_search(Viewer* viewer);

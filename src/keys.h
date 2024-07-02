@@ -6,6 +6,7 @@ typedef enum {
   KEY_SLASH = 47,
   KEY_0 = 48,
   KEY_G = 71,
+  KEY_N = 78,
   KEY_c = 99,
   KEY_d = 100,
   KEY_u = 117,
@@ -14,6 +15,7 @@ typedef enum {
   KEY_j = 106,
   KEY_k = 107,
   KEY_l = 108,
+  KEY_n = 110,
   KEY_s = 115,
   KEY_v = 118,
 } Key;

@@ -48,6 +48,12 @@ InputState on_state_normal(Window* win, guint keyval) {
         case KEY_l:
             viewer->x_offset--;
             break;
+        case KEY_n:
+            viewer_goto_next_search(viewer);
+            break;
+        case KEY_N:
+            viewer_goto_prev_search(viewer);
+            break;
         case KEY_g:
             next_state = STATE_g;
             break;

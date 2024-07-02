@@ -39,6 +39,7 @@ Viewer* viewer_new(PopplerDocument *doc) {
     viewer->center_mode = true;
 
     viewer->search_text = NULL;
+    viewer->last_goto_page = -1;
 
     return viewer;
 }
@@ -106,4 +107,47 @@ void viewer_handle_offset_update(Viewer *viewer) {
             viewer->y_offset = STEPS - 1;
         }
     }
+}
+
+void viewer_goto_next_search(Viewer* viewer) {
+    GList *matches;
+
+    if (!viewer->search_text) {
+        return;
+    }
+
+    for (int i = viewer->current_page; i < viewer->n_pages; i++) {
+        // What happens to the memory of 'matches' in previous iterations?
+        matches = poppler_page_find_text(viewer->pages[i], viewer->search_text);
+        if (matches && i != viewer->last_goto_page) {
+            viewer->current_page = viewer->last_goto_page = i;
+            viewer->y_offset = 0;
+            viewer_fit_vertical(viewer);
+
+            break;
+        }
+    }
+
+    g_list_free(matches);
+}
+
+void viewer_goto_prev_search(Viewer* viewer) {
+    GList *matches;
+
+    if (!viewer->search_text) {
+        return;
+    }
+
+    for (int i = viewer->current_page; i >= 0; i--) {
+        matches = poppler_page_find_text(viewer->pages[i], viewer->search_text);
+        if (matches && i != viewer->last_goto_page) {
+            viewer->current_page = viewer->last_goto_page = i;
+            viewer->y_offset = 0;
+            viewer_fit_vertical(viewer);
+
+            break;
+        }
+    }
+
+    g_list_free(matches);
 }
