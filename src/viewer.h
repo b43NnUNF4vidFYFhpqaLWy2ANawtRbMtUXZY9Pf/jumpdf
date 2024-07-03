@@ -17,6 +17,9 @@ typedef struct Viewer {
 
   const char *search_text;
   int last_goto_page;
+
+  unsigned int repeat_count;
+  unsigned int repeat_digits;
 } Viewer;
 
 Viewer* viewer_new(PopplerDocument* doc);
