@@ -198,10 +198,13 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   Window *win;
   win = (Window *)user_data;
 
-  win->current_input_state = execute_state(win->current_input_state, win, keyval);
-  g_print("%d\n", win->current_input_state);
-  viewer_handle_offset_update(win->viewer);
-  window_redraw(win);
+  // Ignore shift key. Necessary for working with capital letter inputs
+  if (keyval != KEY_SHIFT) {
+    win->current_input_state = execute_state(win->current_input_state, win, keyval);
+    g_print("%d\n", win->current_input_state);
+    viewer_handle_offset_update(win->viewer);
+    window_redraw(win);
+  }
 
   return TRUE;
 }

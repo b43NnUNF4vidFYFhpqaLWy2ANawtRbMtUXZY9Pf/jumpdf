@@ -27,4 +27,5 @@ typedef enum {
   KEY_n = 110,
   KEY_s = 115,
   KEY_v = 118,
+  KEY_SHIFT = 65505,
 } Key;
