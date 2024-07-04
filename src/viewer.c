@@ -62,6 +62,11 @@ void viewer_destroy(Viewer* viewer) {
         free(viewer->pages);
         viewer->pages = NULL;
     }
+
+    if (viewer->search_text) {
+        free(viewer->search_text);
+        viewer->search_text = NULL;
+    }
 }
 
 void viewer_fit_horizontal(Viewer *viewer) {
