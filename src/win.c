@@ -168,8 +168,8 @@ static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsi
 
   if (win->viewer->follow_links_mode) {
     links_to_draw = viewer_get_links(win->viewer, page);
-  window_draw_links(win, cr, *links_drawn_sofar, *links_drawn_sofar + links_to_draw);
-  *links_drawn_sofar += links_to_draw;
+    window_draw_links(win, cr, *links_drawn_sofar, *links_drawn_sofar + links_to_draw);
+    *links_drawn_sofar += links_to_draw;
     }
 }
 
