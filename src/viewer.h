@@ -22,6 +22,8 @@ typedef struct Viewer {
   unsigned int repeat_digits;
 
   GPtrArray *visible_links;
+  bool follow_links_mode;
+  unsigned int link_index;
 } Viewer;
 
 Viewer* viewer_new(PopplerDocument* doc);

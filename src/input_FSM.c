@@ -8,6 +8,7 @@ input_state_func input_state_funcs[] = {
     on_state_normal,
     on_state_g,
     on_state_repeat,
+    on_state_follow_links,
 };
 
 InputState on_state_normal(Window* window, guint keyval) {
@@ -37,6 +38,11 @@ InputState on_state_normal(Window* window, guint keyval) {
             case KEY_G:
                 viewer->current_page = viewer->n_pages - 1;
                 viewer->y_offset = STEPS - 1;
+                break;
+            case KEY_f:
+                viewer->follow_links_mode = true;
+                viewer->link_index = 0;
+                next_state = STATE_FOLLOW_LINKS;
                 break;
             case KEY_SLASH:
                 window_show_search_dialog(window);
@@ -76,6 +82,43 @@ InputState on_state_repeat(Window* window, guint keyval) {
         next_state = execute_command(window, keyval, viewer->repeat_count);
         viewer->repeat_count = 0;
         viewer->repeat_digits = 0;
+    }
+
+    return next_state;
+}
+
+InputState on_state_follow_links(Window* window, guint keyval) {
+    InputState next_state;
+    Viewer* viewer = window_get_viewer(window);
+    PopplerLinkMapping *link_mapping;
+    PopplerActionUri *action_uri;
+    GError *error = NULL;
+
+    if (keyval >= KEY_0 && keyval <= KEY_9) {
+        viewer->link_index = viewer->link_index * 10 + (keyval - KEY_0);
+        next_state = STATE_FOLLOW_LINKS;
+    } else if (keyval == KEY_ENTER && viewer->link_index - 1 < viewer->visible_links->len) {
+        link_mapping = g_ptr_array_index(viewer->visible_links, viewer->link_index - 1);
+
+        switch (link_mapping->action->type) {
+            case POPPLER_ACTION_URI:
+                action_uri = (PopplerActionUri *)link_mapping->action;
+                g_app_info_launch_default_for_uri(action_uri->uri, NULL, &error);
+                if (error != NULL) {
+                    g_printerr("Poppler: Error launching URI: %s\n", error->message);
+                    g_error_free(error);
+                }
+                break;
+            default:
+                g_printerr("Poppler: Unsupported link type\n");
+                break;
+        }
+
+        viewer->follow_links_mode = false;
+        next_state = STATE_NORMAL;
+    } else {
+        viewer->follow_links_mode = false;
+        next_state = STATE_NORMAL;
     }
 
     return next_state;

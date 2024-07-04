@@ -161,13 +161,16 @@ static void window_update_page_label(Window *win) {
 }
 
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar) {
-  unsigned int links_to_draw = viewer_get_links(win->viewer, page);
+  unsigned int links_to_draw;
 
   poppler_page_render(page, cr);
   window_highlight_search(win, cr, page);
-  window_draw_links(win, cr, *links_drawn_sofar, *links_drawn_sofar + links_to_draw);
 
+  if (win->viewer->follow_links_mode) {
+    links_to_draw = viewer_get_links(win->viewer, page);
+  window_draw_links(win, cr, *links_drawn_sofar, *links_drawn_sofar + links_to_draw);
   *links_drawn_sofar += links_to_draw;
+    }
 }
 
 static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page) {
