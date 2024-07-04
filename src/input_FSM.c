@@ -75,13 +75,11 @@ InputState on_state_repeat(Window* window, guint keyval) {
     Viewer* viewer = window_get_viewer(window);
 
     if (keyval >= KEY_0 && keyval <= KEY_9) {
-        viewer->repeat_digits++;
         viewer->repeat_count = viewer->repeat_count * 10 + (keyval - KEY_0);
         next_state = STATE_REPEAT;
     } else {
         next_state = execute_command(window, keyval, viewer->repeat_count);
         viewer->repeat_count = 0;
-        viewer->repeat_digits = 0;
     }
 
     return next_state;

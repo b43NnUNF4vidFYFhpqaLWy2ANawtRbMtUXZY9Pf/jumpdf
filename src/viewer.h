@@ -3,6 +3,7 @@
 #include <gtk/gtk.h>
 #include <poppler.h>
 
+// TODO: Consider splitting Viewer into ViewerPosition, ViewerSearch, ViewerLinks
 typedef struct Viewer {
   PopplerDocument *doc;
   PopplerPage **pages;
@@ -17,9 +18,7 @@ typedef struct Viewer {
 
   const char *search_text;
   int last_goto_page;
-
   unsigned int repeat_count;
-  unsigned int repeat_digits;
 
   GPtrArray *visible_links;
   bool follow_links_mode;
