@@ -42,7 +42,6 @@ Viewer* viewer_new(PopplerDocument *doc) {
     viewer->last_goto_page = -1;
 
     viewer->repeat_count = 0;
-    viewer->repeat_digits = 0;
 
     viewer->visible_links = g_ptr_array_new();
     viewer->follow_links_mode = false;
