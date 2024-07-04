@@ -44,6 +44,8 @@ Viewer* viewer_new(PopplerDocument *doc) {
     viewer->repeat_count = 0;
     viewer->repeat_digits = 0;
 
+    viewer->visible_links = g_ptr_array_new();
+
     return viewer;
 }
 
@@ -67,6 +69,8 @@ void viewer_destroy(Viewer* viewer) {
         free((void *)viewer->search_text);
         viewer->search_text = NULL;
     }
+
+    g_ptr_array_free(viewer->visible_links, TRUE);
 }
 
 void viewer_fit_horizontal(Viewer *viewer) {
@@ -158,4 +162,22 @@ void viewer_goto_prev_search(Viewer* viewer) {
     }
 
     g_list_free(matches);
+}
+
+unsigned int viewer_get_links(Viewer* viewer, PopplerPage* page) {
+  GList *links = poppler_page_get_link_mapping(page);
+  unsigned int link_count = g_list_length(links);
+  PopplerLinkMapping *link_mapping;
+
+  for (GList *l = links; l; l = l->next) {
+    link_mapping = l->data;
+    g_ptr_array_add(viewer->visible_links, link_mapping);
+  }
+
+  return link_count;
+}
+
+void viewer_clear_links(Viewer* viewer) {
+    g_ptr_array_foreach(viewer->visible_links, (GFunc)poppler_link_mapping_free, NULL);
+    g_ptr_array_set_size(viewer->visible_links, 0);
 }

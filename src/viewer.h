@@ -20,6 +20,8 @@ typedef struct Viewer {
 
   unsigned int repeat_count;
   unsigned int repeat_digits;
+
+  GPtrArray *visible_links;
 } Viewer;
 
 Viewer* viewer_new(PopplerDocument* doc);
@@ -34,3 +36,6 @@ void viewer_handle_offset_update(Viewer* viewer);
 
 void viewer_goto_next_search(Viewer* viewer);
 void viewer_goto_prev_search(Viewer* viewer);
+
+unsigned int viewer_get_links(Viewer* viewer, PopplerPage* page);
+void viewer_clear_links(Viewer* viewer);
