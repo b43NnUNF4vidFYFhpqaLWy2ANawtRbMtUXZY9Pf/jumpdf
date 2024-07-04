@@ -318,6 +318,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_translate(cr_pdf, win->viewer->x_offset * win->viewer->pdf_width / STEPS,
                           -win->viewer->y_offset * win->viewer->pdf_height / STEPS);
 
+  viewer_clear_links(win->viewer);
   window_render_page(win, cr_pdf, page, &links_drawn_sofar);
 
   visible_pages = win->viewer->view_height / (win->viewer->scale * win->viewer->pdf_height) - 1;
@@ -340,7 +341,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     }
   }
   cairo_restore(cr_pdf);
-  viewer_clear_links(win->viewer);
 
   cairo_set_source_surface(cr, surface, 0, 0);
   cairo_paint(cr);
