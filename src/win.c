@@ -205,7 +205,7 @@ static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsig
 
       cairo_set_source_rgb(cr, 1, 0, 0);
       cairo_move_to(cr, link_mapping->area.x1, win->viewer->pdf_height - link_mapping->area.y1);
-      cairo_show_text(cr, g_strdup_printf("%d", i));
+      cairo_show_text(cr, g_strdup_printf("%d", i + 1));
   }
 }
 
