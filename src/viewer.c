@@ -64,7 +64,7 @@ void viewer_destroy(Viewer* viewer) {
     }
 
     if (viewer->search_text) {
-        free(viewer->search_text);
+        free((void *)viewer->search_text);
         viewer->search_text = NULL;
     }
 }
