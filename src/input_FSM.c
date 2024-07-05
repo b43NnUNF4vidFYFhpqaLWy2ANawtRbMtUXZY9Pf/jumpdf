@@ -110,6 +110,12 @@ InputState on_state_follow_links(Window* window, guint keyval) {
                     g_error_free(error);
                 }
                 break;
+            case POPPLER_ACTION_GOTO_DEST:
+                // FIXME: page_num always 0
+                viewer->current_page = link_mapping->action->goto_dest.dest->page_num;
+                viewer->y_offset = 0;
+                viewer_fit_vertical(viewer);
+                break;
             default:
                 g_printerr("Poppler: Unsupported link type\n");
                 break;
