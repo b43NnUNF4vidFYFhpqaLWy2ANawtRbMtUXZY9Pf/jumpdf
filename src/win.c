@@ -17,6 +17,8 @@ static void window_update_page_label(Window *win);
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
 static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page);
 static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to);
+static void window_populate_toc(Window *win);
+static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int level);
 
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
@@ -29,13 +31,16 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data);
 static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window *win);
 static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog);
-static void on_area_click(GtkGestureClick *gesture, int n_press, double x, double y, gpointer user_data);
+static void on_toc_selection_changed(GtkListBox *box, GtkListBoxRow *row, gpointer user_data);
+static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data);
 
 struct _Window {
   GtkApplicationWindow parent;
 
   GtkEventController *event_controller;
   GtkEventController *scroll_controller;
+
+  GtkWidget *main_container;
 
   GtkWidget *page_label;
   GtkWidget *header_bar;
@@ -44,6 +49,11 @@ struct _Window {
   GtkWidget *search_dialog;
   GtkWidget *search_content_area;
   GtkWidget *search_entry;
+
+  GtkWidget *toc_scroll_window;
+  GtkWidget *toc_box;
+  GtkWidget *toc_search_entry;
+  GtkWidget *toc_container;
 
   Viewer* viewer;
   InputState current_input_state;
@@ -77,7 +87,6 @@ static void window_init(Window *win) {
   gtk_widget_set_vexpand(win->view, TRUE);
   gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(win->view), draw_function,
                                  win, NULL);
-  gtk_window_set_child(GTK_WINDOW(win), win->view);
   g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
 
   win->search_dialog = gtk_dialog_new_with_buttons("Search", GTK_WINDOW(win),
@@ -92,6 +101,24 @@ static void window_init(Window *win) {
   g_signal_connect(win->search_entry, "activate", G_CALLBACK(on_search_entry_activate), win->search_dialog);
   g_signal_connect(win->search_dialog, "response", G_CALLBACK(on_search_dialog_response), win);
 
+  win->toc_search_entry = gtk_search_entry_new();
+  g_signal_connect(win->toc_search_entry, "search-changed", G_CALLBACK(on_toc_search_changed), win);
+
+  win->toc_container = gtk_list_box_new();
+  gtk_widget_set_hexpand(win->toc_container, TRUE);
+  g_signal_connect(win->toc_container, "row-selected", G_CALLBACK(on_toc_selection_changed), win);
+
+  win->toc_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  gtk_box_append(GTK_BOX(win->toc_box), win->toc_search_entry);
+  gtk_box_append(GTK_BOX(win->toc_box), win->toc_container);
+
+  win->main_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_window_set_child(GTK_WINDOW(win), win->main_container);
+  win->toc_scroll_window = gtk_scrolled_window_new();
+  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(win->toc_scroll_window), win->toc_box);
+  gtk_widget_set_visible(win->toc_scroll_window, FALSE);
+  gtk_box_append(GTK_BOX(win->main_container), win->view);
+
   gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
 }
 
@@ -102,6 +129,8 @@ static void window_finalize(GObject *object) {
   if (win->viewer) {
     viewer_destroy(win->viewer);
   }
+
+  g_object_unref(win->toc_scroll_window);
   
   G_OBJECT_CLASS(window_parent_class)->finalize(object);
 }
@@ -129,6 +158,7 @@ void window_open(Window *win, GFile *file) {
   } else {
     win->viewer = viewer_new(doc);
 
+    window_populate_toc(win);
     window_update_page_label(win);
     gtk_window_set_title(GTK_WINDOW(win), g_file_get_basename(file));
     poppler_page_get_size(win->viewer->pages[0], &default_width, &default_height);
@@ -139,6 +169,22 @@ void window_open(Window *win, GFile *file) {
 
 void window_show_search_dialog(Window *win) {
   gtk_widget_show(win->search_dialog);
+}
+
+void window_toggle_toc(Window *win) {
+  gboolean is_visible = gtk_widget_get_visible(win->toc_scroll_window);
+
+  // It is necessary to remove from main_container,
+  // otherwise it will still occupy space
+  if (is_visible) {
+    gtk_widget_set_visible(win->toc_scroll_window, FALSE);
+    // Prevents the widget from being destroyed when temporarily removed from container
+    g_object_ref(win->toc_scroll_window);
+    gtk_box_remove(GTK_BOX(win->main_container), win->toc_scroll_window);
+  } else {
+    gtk_widget_set_visible(win->toc_scroll_window, TRUE);
+    gtk_box_prepend(GTK_BOX(win->main_container), win->toc_scroll_window);
+  }
 }
 
 Viewer *window_get_viewer(Window *win) {
@@ -373,4 +419,85 @@ static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window
 
 static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog) {
   gtk_dialog_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
+}
+
+static void window_populate_toc(Window *win) {
+  PopplerIndexIter *iter = poppler_index_iter_new(win->viewer->doc);
+  if (iter) {
+      window_add_toc_entries(win, iter, 0);
+      poppler_index_iter_free(iter);
+  }
+}
+
+static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int level) {
+  PopplerAction *action;
+  gchar *markup;
+  GtkWidget *label;
+  PopplerIndexIter *child;
+
+  while (iter) {
+    action = poppler_index_iter_get_action(iter);
+    if (action && action->type == POPPLER_ACTION_GOTO_DEST) {
+      markup = g_markup_printf_escaped("%*s%s", level * 2, " ", action->any.title);
+      label = gtk_label_new(NULL);
+      gtk_label_set_markup(GTK_LABEL(label), markup);
+      g_free(markup);
+      gtk_label_set_xalign(GTK_LABEL(label), 0.0); // Align to the left to maintain indentation
+      gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+      // FIXME: page_num always 0
+      g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(action->goto_dest.dest->page_num));
+
+      gtk_list_box_insert(GTK_LIST_BOX(win->toc_container), label, -1);
+
+      child = poppler_index_iter_get_child(iter);
+      if (child) {
+        window_add_toc_entries(win, child, level + 1);
+        poppler_index_iter_free(child);
+      }
+    }
+
+    poppler_action_free(action);
+
+    if (!poppler_index_iter_next(iter)) {
+      break;
+    }
+  }
+}
+
+static void on_toc_selection_changed(GtkListBox *box, GtkListBoxRow *row, gpointer user_data) {
+  Window *win = (Window *)user_data;
+  GtkWidget *label;
+  unsigned int page_num;
+  GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(box);
+
+  if (selected_row != NULL) {
+    label = gtk_list_box_row_get_child(selected_row);
+    page_num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(label), "page_num"));
+    win->viewer->current_page = page_num;
+    win->viewer->y_offset = 0;
+    viewer_fit_vertical(win->viewer);
+
+    window_redraw(win);
+  }
+}
+
+static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data) {
+  Window *win = (Window *)user_data;
+  const gchar *text = gtk_editable_get_text(GTK_EDITABLE(entry));
+  GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(win->toc_container));
+  GtkWidget *label;
+  const gchar *child_text;
+  gboolean visible;
+
+  while (child) {
+      label = gtk_widget_get_first_child(child);
+      if (GTK_IS_LABEL(label)) {
+          child_text = gtk_label_get_text(GTK_LABEL(label));
+          
+          visible = strcasestr(child_text, text) != NULL;
+          gtk_widget_set_visible(child, visible);
+      }
+
+      child = gtk_widget_get_next_sibling(child);
+  }
 }

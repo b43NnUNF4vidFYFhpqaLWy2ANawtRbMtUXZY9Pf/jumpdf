@@ -44,6 +44,9 @@ InputState on_state_normal(Window* window, guint keyval) {
                 viewer->link_index = 0;
                 next_state = STATE_FOLLOW_LINKS;
                 break;
+            case KEY_t:
+                window_toggle_toc(window);
+                break;
             case KEY_SLASH:
                 window_show_search_dialog(window);
                 break;
