@@ -41,6 +41,10 @@ struct _Window {
   GtkWidget *header_bar;
   GtkWidget *view;
 
+  GtkWidget *search_dialog;
+  GtkWidget *search_content_area;
+  GtkWidget *search_entry;
+
   Viewer* viewer;
   InputState current_input_state;
 };
@@ -75,6 +79,18 @@ static void window_init(Window *win) {
                                  win, NULL);
   gtk_window_set_child(GTK_WINDOW(win), win->view);
   g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
+
+  win->search_dialog = gtk_dialog_new_with_buttons("Search", GTK_WINDOW(win),
+                                            GTK_DIALOG_MODAL,
+                                            "_Cancel", GTK_RESPONSE_CANCEL,
+                                            "_Search", GTK_RESPONSE_ACCEPT,
+                                            NULL);
+  win->search_content_area = gtk_dialog_get_content_area(GTK_DIALOG(win->search_dialog));
+  win->search_entry = gtk_entry_new();
+  gtk_box_append(GTK_BOX(win->search_content_area), win->search_entry);
+
+  g_signal_connect(win->search_entry, "activate", G_CALLBACK(on_search_entry_activate), win->search_dialog);
+  g_signal_connect(win->search_dialog, "response", G_CALLBACK(on_search_dialog_response), win);
 
   gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
 }
@@ -122,23 +138,7 @@ void window_open(Window *win, GFile *file) {
 }
 
 void window_show_search_dialog(Window *win) {
-  GtkWidget *dialog;
-  GtkWidget *content_area;
-  GtkWidget *entry;
-
-  dialog = gtk_dialog_new_with_buttons("Search", GTK_WINDOW(win),
-                                       GTK_DIALOG_MODAL,
-                                       "_Cancel", GTK_RESPONSE_CANCEL,
-                                       "_Search", GTK_RESPONSE_ACCEPT,
-                                       NULL);
-  content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-  entry = gtk_entry_new();
-  gtk_box_append(GTK_BOX(content_area), entry);
-
-  g_signal_connect(entry, "activate", G_CALLBACK(on_search_entry_activate), dialog);
-  g_signal_connect(dialog, "response", G_CALLBACK(on_search_dialog_response), win);
-
-  gtk_widget_show(dialog);
+  gtk_widget_show(win->search_dialog);
 }
 
 Viewer *window_get_viewer(Window *win) {
@@ -368,7 +368,7 @@ static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window
     window_redraw(win);
   }
 
-  gtk_window_destroy(GTK_WINDOW(dialog)); // Destroy the dialog
+  gtk_widget_hide(GTK_WIDGET(dialog));
 }
 
 static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog) {
