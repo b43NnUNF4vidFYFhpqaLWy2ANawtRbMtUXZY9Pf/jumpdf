@@ -112,11 +112,14 @@ static void window_init(Window *win) {
   gtk_box_append(GTK_BOX(win->toc_box), win->toc_search_entry);
   gtk_box_append(GTK_BOX(win->toc_box), win->toc_container);
 
-  win->main_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_window_set_child(GTK_WINDOW(win), win->main_container);
   win->toc_scroll_window = gtk_scrolled_window_new();
   gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(win->toc_scroll_window), win->toc_box);
   gtk_widget_set_visible(win->toc_scroll_window, FALSE);
+  // Prevents the widget from being destroyed when temporarily removed from container
+  g_object_ref(win->toc_scroll_window);
+
+  win->main_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_window_set_child(GTK_WINDOW(win), win->main_container);
   gtk_box_append(GTK_BOX(win->main_container), win->view);
 
   gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
@@ -178,8 +181,6 @@ void window_toggle_toc(Window *win) {
   // otherwise it will still occupy space
   if (is_visible) {
     gtk_widget_set_visible(win->toc_scroll_window, FALSE);
-    // Prevents the widget from being destroyed when temporarily removed from container
-    g_object_ref(win->toc_scroll_window);
     gtk_box_remove(GTK_BOX(win->main_container), win->toc_scroll_window);
   } else {
     gtk_widget_set_visible(win->toc_scroll_window, TRUE);
