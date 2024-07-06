@@ -94,6 +94,7 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     PopplerLinkMapping *link_mapping;
     PopplerActionUri *action_uri;
     GError *error = NULL;
+    PopplerDest *dest;
 
     if (keyval >= KEY_0 && keyval <= KEY_9) {
         viewer->link_index = viewer->link_index * 10 + (keyval - KEY_0);
@@ -111,10 +112,12 @@ InputState on_state_follow_links(Window* window, guint keyval) {
                 }
                 break;
             case POPPLER_ACTION_GOTO_DEST:
-                // FIXME: page_num always 0
-                viewer->current_page = link_mapping->action->goto_dest.dest->page_num;
+                dest = poppler_document_find_dest(viewer->doc, link_mapping->action->goto_dest.dest->named_dest);
+                viewer->current_page = dest->page_num - 1;
                 viewer->y_offset = 0;
                 viewer_fit_vertical(viewer);
+
+                poppler_dest_free(dest);
                 break;
             default:
                 g_printerr("Poppler: Unsupported link type\n");

@@ -434,6 +434,7 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
   gchar *markup;
   GtkWidget *label;
   PopplerIndexIter *child;
+  PopplerDest *dest;
 
   while (iter) {
     action = poppler_index_iter_get_action(iter);
@@ -441,11 +442,19 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
       markup = g_markup_printf_escaped("%*s%s", level * 2, " ", action->any.title);
       label = gtk_label_new(NULL);
       gtk_label_set_markup(GTK_LABEL(label), markup);
-      g_free(markup);
       gtk_label_set_xalign(GTK_LABEL(label), 0.0); // Align to the left to maintain indentation
       gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
-      // FIXME: page_num always 0
-      g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(action->goto_dest.dest->page_num));
+
+      if (action->goto_dest.dest->named_dest) {
+        dest = poppler_document_find_dest(win->viewer->doc, action->goto_dest.dest->named_dest);
+        g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(dest->page_num - 1));
+        poppler_dest_free(dest);
+      } else {
+        g_printerr("Poppler: Could not get destination for TOC entry \"%s\"\n", markup);
+        g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(-1));
+      }
+
+      g_free(markup);
 
       gtk_list_box_insert(GTK_LIST_BOX(win->toc_container), label, -1);
 
@@ -473,11 +482,15 @@ static void on_toc_selection_changed(GtkListBox *box, GtkListBoxRow *row, gpoint
   if (selected_row != NULL) {
     label = gtk_list_box_row_get_child(selected_row);
     page_num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(label), "page_num"));
+
+    if (page_num != -1) {
     win->viewer->current_page = page_num;
     win->viewer->y_offset = 0;
     viewer_fit_vertical(win->viewer);
-
     window_redraw(win);
+    } else {
+      g_printerr("Jumpdf: TOC entry has no destination\n");
+    }
   }
 }
 
