@@ -29,7 +29,7 @@ InputState on_state_normal(Window* window, guint keyval) {
             case KEY_s:
                 viewer_fit_horizontal(viewer);
                 break;
-            case KEY_v:
+            case KEY_a:
                 viewer_fit_vertical(viewer);
                 break;
             case KEY_g:
@@ -44,7 +44,7 @@ InputState on_state_normal(Window* window, guint keyval) {
                 viewer->link_index = 0;
                 next_state = STATE_FOLLOW_LINKS;
                 break;
-            case KEY_t:
+            case KEY_TAB:
                 window_toggle_toc(window);
                 break;
             case KEY_SLASH:
