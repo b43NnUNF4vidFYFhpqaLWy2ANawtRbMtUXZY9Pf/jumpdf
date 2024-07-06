@@ -435,6 +435,7 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
   GtkWidget *label;
   PopplerIndexIter *child;
   PopplerDest *dest;
+  unsigned int page_num;
 
   while (iter) {
     action = poppler_index_iter_get_action(iter);
@@ -442,19 +443,18 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
       markup = g_markup_printf_escaped("%*s%s", level * 2, " ", action->any.title);
       label = gtk_label_new(NULL);
       gtk_label_set_markup(GTK_LABEL(label), markup);
+      g_free(markup);
       gtk_label_set_xalign(GTK_LABEL(label), 0.0); // Align to the left to maintain indentation
       gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
 
-      if (action->goto_dest.dest->named_dest) {
+      if (action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
         dest = poppler_document_find_dest(win->viewer->doc, action->goto_dest.dest->named_dest);
-        g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(dest->page_num - 1));
+        page_num = dest->page_num - 1;
         poppler_dest_free(dest);
       } else {
-        g_printerr("Poppler: Could not get destination for TOC entry \"%s\"\n", markup);
-        g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(-1));
+        page_num = action->goto_dest.dest->page_num - 1;
       }
-
-      g_free(markup);
+      g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(page_num));
 
       gtk_list_box_insert(GTK_LIST_BOX(win->toc_container), label, -1);
 
