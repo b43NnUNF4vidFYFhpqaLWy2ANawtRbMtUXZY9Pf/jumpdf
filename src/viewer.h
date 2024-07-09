@@ -16,13 +16,14 @@ typedef struct Viewer {
   double x_offset, y_offset, scale;
   bool center_mode;
 
+  unsigned int input_number;
+
   const char *search_text;
   int last_goto_page;
-  unsigned int repeat_count;
 
   GPtrArray *visible_links;
   bool follow_links_mode;
-  unsigned int link_index;
+  unsigned int link_index_input;
 } Viewer;
 
 Viewer* viewer_new(PopplerDocument* doc);

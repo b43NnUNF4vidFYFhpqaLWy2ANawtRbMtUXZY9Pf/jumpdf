@@ -7,7 +7,7 @@ static InputState execute_command(Window* window, guint keyval, unsigned int rep
 input_state_func input_state_funcs[] = {
     on_state_normal,
     on_state_g,
-    on_state_repeat,
+    on_state_number,
     on_state_follow_links,
 };
 
@@ -16,8 +16,8 @@ InputState on_state_normal(Window* window, guint keyval) {
     Viewer* viewer = window_get_viewer(window);
     
     if (keyval >= KEY_1 && keyval <= KEY_9) {
-        viewer->repeat_count = keyval - KEY_0;
-        next_state = STATE_REPEAT;
+        viewer->input_number = keyval - KEY_0;
+        next_state = STATE_NUMBER;
     } else {
         switch (keyval) {
             case KEY_0:
@@ -41,7 +41,7 @@ InputState on_state_normal(Window* window, guint keyval) {
                 break;
             case KEY_f:
                 viewer->follow_links_mode = true;
-                viewer->link_index = 0;
+                viewer->link_index_input = 0;
                 next_state = STATE_FOLLOW_LINKS;
                 break;
             case KEY_TAB:
@@ -73,16 +73,22 @@ InputState on_state_g(Window* window, guint keyval) {
     return next_state;
 }
 
-InputState on_state_repeat(Window* window, guint keyval) {
+InputState on_state_number(Window* window, guint keyval) {
     InputState next_state;
     Viewer* viewer = window_get_viewer(window);
 
     if (keyval >= KEY_0 && keyval <= KEY_9) {
-        viewer->repeat_count = viewer->repeat_count * 10 + (keyval - KEY_0);
-        next_state = STATE_REPEAT;
+        viewer->input_number = viewer->input_number * 10 + (keyval - KEY_0);
+        next_state = STATE_NUMBER;
+    } else if (keyval == KEY_G) {
+        viewer->current_page = viewer->input_number - 1;
+        viewer->y_offset = 0;
+        viewer_fit_vertical(viewer);
+        viewer->input_number = 0;
+        next_state = STATE_NORMAL;
     } else {
-        next_state = execute_command(window, keyval, viewer->repeat_count);
-        viewer->repeat_count = 0;
+        next_state = execute_command(window, keyval, viewer->input_number);
+        viewer->input_number = 0;
     }
 
     return next_state;
@@ -98,10 +104,10 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     PopplerDest *dest;
 
     if (keyval >= KEY_0 && keyval <= KEY_9) {
-        viewer->link_index = viewer->link_index * 10 + (keyval - KEY_0);
+        viewer->link_index_input = viewer->link_index_input * 10 + (keyval - KEY_0);
         next_state = STATE_FOLLOW_LINKS;
-    } else if (keyval == KEY_ENTER && viewer->link_index - 1 < viewer->visible_links->len) {
-        link_mapping = g_ptr_array_index(viewer->visible_links, viewer->link_index - 1);
+    } else if (keyval == KEY_ENTER && viewer->link_index_input - 1 < viewer->visible_links->len) {
+        link_mapping = g_ptr_array_index(viewer->visible_links, viewer->link_index_input - 1);
 
         switch (link_mapping->action->type) {
             case POPPLER_ACTION_URI:

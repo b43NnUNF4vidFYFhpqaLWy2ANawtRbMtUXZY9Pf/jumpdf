@@ -41,11 +41,11 @@ Viewer* viewer_new(PopplerDocument *doc) {
     viewer->search_text = NULL;
     viewer->last_goto_page = -1;
 
-    viewer->repeat_count = 0;
+    viewer->input_number = 0;
 
     viewer->visible_links = g_ptr_array_new();
     viewer->follow_links_mode = false;
-    viewer->link_index = 0;
+    viewer->link_index_input = 0;
 
     return viewer;
 }
