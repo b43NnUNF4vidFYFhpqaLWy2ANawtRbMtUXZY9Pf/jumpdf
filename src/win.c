@@ -42,9 +42,10 @@ struct _Window {
 
   GtkWidget *main_container;
 
-  GtkWidget *page_label;
-  GtkWidget *header_bar;
+  GtkWidget *view_box;
   GtkWidget *view;
+  GtkWidget *bottom_bar;
+  GtkWidget *page_label;
 
   GtkWidget *search_dialog;
   GtkWidget *search_content_area;
@@ -62,6 +63,8 @@ struct _Window {
 G_DEFINE_TYPE(Window, window, GTK_TYPE_APPLICATION_WINDOW)
 
 static void window_init(Window *win) {
+  GtkCssProvider *provider = gtk_css_provider_new();
+
   win->viewer = NULL;
   win->current_input_state = STATE_NORMAL;
 
@@ -77,17 +80,27 @@ static void window_init(Window *win) {
   gtk_widget_add_controller(GTK_WIDGET(win),
                             GTK_EVENT_CONTROLLER(win->scroll_controller));
 
-  win->page_label = gtk_label_new(NULL);
-  win->header_bar = gtk_header_bar_new();
-  gtk_header_bar_pack_start(GTK_HEADER_BAR(win->header_bar), win->page_label);
-  gtk_window_set_titlebar(GTK_WINDOW(win), win->header_bar);
-
   win->view = gtk_drawing_area_new();
   gtk_widget_set_hexpand(win->view, TRUE);
   gtk_widget_set_vexpand(win->view, TRUE);
   gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(win->view), draw_function,
                                  win, NULL);
   g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
+
+  win->bottom_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_style_context_add_class(gtk_widget_get_style_context(win->bottom_bar), "bottom-bar");
+  gtk_css_provider_load_from_data(provider, "box.bottom-bar { background-color: black; }", -1);
+  gtk_style_context_add_provider(gtk_widget_get_style_context(win->bottom_bar),
+                                 GTK_STYLE_PROVIDER(provider),
+                                 GTK_STYLE_PROVIDER_PRIORITY_USER);
+  win->page_label = gtk_label_new(NULL);
+  gtk_box_append(GTK_BOX(win->bottom_bar), win->page_label);
+
+  win->view_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  gtk_widget_set_hexpand(win->view_box, TRUE);
+  gtk_widget_set_vexpand(win->view_box, TRUE);
+  gtk_box_append(GTK_BOX(win->view_box), win->view);
+  gtk_box_append(GTK_BOX(win->view_box), win->bottom_bar);
 
   win->search_dialog = gtk_dialog_new_with_buttons("Search", GTK_WINDOW(win),
                                             GTK_DIALOG_MODAL,
@@ -120,7 +133,7 @@ static void window_init(Window *win) {
 
   win->main_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_window_set_child(GTK_WINDOW(win), win->main_container);
-  gtk_box_append(GTK_BOX(win->main_container), win->view);
+  gtk_box_append(GTK_BOX(win->main_container), win->view_box);
 
   gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
 }
@@ -196,15 +209,11 @@ static void window_redraw(Window *win) {
   window_update_page_label(win);
   gtk_widget_queue_draw(win->view);
 }
-static void window_update_page_label(Window *win) {
-  char *page_str;
 
-  if (asprintf(&page_str, "%d/%d", win->viewer->current_page + 1, win->viewer->n_pages) != -1) {
-    gtk_label_set_text(GTK_LABEL(win->page_label), page_str);
-    free(page_str);
-  } else {
-    g_printerr("Error: Failed to update page label");
-  }
+static void window_update_page_label(Window *win) {
+  gchar *page_str = g_strdup_printf("%d/%d", win->viewer->current_page + 1, win->viewer->n_pages);
+  gtk_label_set_text(GTK_LABEL(win->page_label), page_str);
+  g_free(page_str);
 }
 
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar) {
@@ -253,7 +262,7 @@ static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsig
   for (int i = from; i < to; i++) {
       link_mapping = g_ptr_array_index(win->viewer->visible_links, i);
 
-      cairo_set_source_rgb(cr, 1, 0, 0);
+      cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
       cairo_move_to(cr, link_mapping->area.x1, win->viewer->pdf_height - link_mapping->area.y1);
       cairo_show_text(cr, g_strdup_printf("%d", i + 1));
   }
@@ -485,10 +494,10 @@ static void on_toc_selection_changed(GtkListBox *box, GtkListBoxRow *row, gpoint
     page_num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(label), "page_num"));
 
     if (page_num != -1) {
-    win->viewer->current_page = page_num;
-    win->viewer->y_offset = 0;
-    viewer_fit_vertical(win->viewer);
-    window_redraw(win);
+      win->viewer->current_page = page_num;
+      win->viewer->y_offset = 0;
+      viewer_fit_vertical(win->viewer);
+      window_redraw(win);
     } else {
       g_printerr("Jumpdf: TOC entry has no destination\n");
     }
