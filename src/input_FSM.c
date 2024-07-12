@@ -166,12 +166,18 @@ InputState on_state_toc_focus(Window* window, guint keyval) {
         case GDK_KEY_j:
             if (current_row != NULL) {
                 new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index + 1);
+                while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
+                    new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) + 1);
+                }
             }
             next_state = STATE_TOC_FOCUS;
             break;
         case GDK_KEY_k:
             if (current_row != NULL) {
                 new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index - 1);
+                while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
+                    new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) - 1);
+                }
             }
             next_state = STATE_TOC_FOCUS;
             break;

@@ -525,6 +525,7 @@ static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data) {
   GtkWidget *label;
   const gchar *child_text;
   gboolean visible;
+  GtkListBoxRow *first_visible_row;
 
   while (child) {
       label = gtk_widget_get_first_child(child);
@@ -536,5 +537,13 @@ static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data) {
       }
 
       child = gtk_widget_get_next_sibling(child);
+  }
+
+  first_visible_row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(win->toc_container), 0);
+  while (first_visible_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(first_visible_row))) {
+    first_visible_row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(win->toc_container), gtk_list_box_row_get_index(first_visible_row) + 1);
+  }
+  if (first_visible_row != NULL) {
+    gtk_list_box_select_row(GTK_LIST_BOX(win->toc_container), first_visible_row);
   }
 }
