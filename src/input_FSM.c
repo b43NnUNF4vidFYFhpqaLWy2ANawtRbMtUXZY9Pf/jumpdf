@@ -185,6 +185,10 @@ InputState on_state_toc_focus(Window* window, guint keyval) {
             window_execute_toc_row(window, current_row);
             next_state = STATE_TOC_FOCUS;
             break;
+        case GDK_KEY_slash:
+            window_focus_toc_search(window);
+            next_state = STATE_TOC_FOCUS;
+            break;
         default:
             next_state = STATE_TOC_FOCUS;
             break;

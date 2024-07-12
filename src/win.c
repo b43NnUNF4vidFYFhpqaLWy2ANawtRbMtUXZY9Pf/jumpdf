@@ -32,6 +32,7 @@ static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window
 static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog);
 static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data);
 static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data);
+static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data);
 
 struct _Window {
   GtkApplicationWindow parent;
@@ -115,6 +116,7 @@ static void window_init(Window *win) {
 
   win->toc_search_entry = gtk_search_entry_new();
   g_signal_connect(win->toc_search_entry, "search-changed", G_CALLBACK(on_toc_search_changed), win);
+  g_signal_connect(win->toc_search_entry, "stop-search", G_CALLBACK(on_toc_search_stopped), win);
 
   win->toc_container = gtk_list_box_new();
   gtk_widget_set_hexpand(win->toc_container, TRUE);
@@ -198,6 +200,10 @@ void window_toggle_toc(Window *win) {
     gtk_widget_set_visible(win->toc_scroll_window, TRUE);
     gtk_box_prepend(GTK_BOX(win->main_container), win->toc_scroll_window);
   }
+}
+
+void window_focus_toc_search(Window *win) {
+  gtk_widget_grab_focus(win->toc_search_entry);
 }
 
 void window_execute_toc_row(Window *win, GtkListBoxRow *row) {
@@ -546,4 +552,10 @@ static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data) {
   if (first_visible_row != NULL) {
     gtk_list_box_select_row(GTK_LIST_BOX(win->toc_container), first_visible_row);
   }
+}
+
+static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data) {
+  Window *win = (Window *)user_data;
+
+  gtk_widget_grab_focus(win->toc_scroll_window);
 }
