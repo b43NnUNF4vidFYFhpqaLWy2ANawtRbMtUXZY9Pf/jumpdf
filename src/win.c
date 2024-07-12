@@ -30,7 +30,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data);
 static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window *win);
 static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog);
-static void on_toc_selection_changed(GtkListBox *box, GtkListBoxRow *row, gpointer user_data);
+static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data);
 static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data);
 
 struct _Window {
@@ -118,7 +118,7 @@ static void window_init(Window *win) {
 
   win->toc_container = gtk_list_box_new();
   gtk_widget_set_hexpand(win->toc_container, TRUE);
-  g_signal_connect(win->toc_container, "row-selected", G_CALLBACK(on_toc_selection_changed), win);
+	g_signal_connect(win->toc_container, "row-activated", G_CALLBACK(on_toc_row_activated), win);
 
   win->toc_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_box_append(GTK_BOX(win->toc_box), win->toc_search_entry);
@@ -200,8 +200,31 @@ void window_toggle_toc(Window *win) {
   }
 }
 
+void window_execute_toc_row(Window *win, GtkListBoxRow *row) {
+  GtkWidget *label;
+  unsigned int page_num;
+
+  if (row != NULL) {
+    label = gtk_list_box_row_get_child(row);
+    page_num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(label), "page_num"));
+
+    if (page_num != -1) {
+      win->viewer->current_page = page_num;
+      win->viewer->y_offset = 0;
+      viewer_fit_vertical(win->viewer);
+      window_redraw(win);
+    } else {
+      g_printerr("Jumpdf: TOC entry has no destination\n");
+    }
+  }
+}
+
 Viewer *window_get_viewer(Window *win) {
   return win->viewer;
+}
+
+GtkListBox *window_get_toc_listbox(Window *win) {
+	return GTK_LIST_BOX(win->toc_container);
 }
 
 static void window_redraw(Window *win) {
@@ -276,7 +299,7 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   win = (Window *)user_data;
 
   // Ignore shift key. Necessary for working with capital letter inputs
-  if (keyval != GDK_KEY_Shift_L && keyval != GDK_KEY_Shift_R) {
+  if (state != GDK_SHIFT_MASK) {
     win->current_input_state = execute_state(win->current_input_state, win, keyval);
     g_print("%d\n", win->current_input_state);
     viewer_handle_offset_update(win->viewer);
@@ -445,6 +468,7 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
   PopplerIndexIter *child;
   PopplerDest *dest;
   unsigned int page_num;
+	GtkListBoxRow *first_row;
 
   while (iter) {
     action = poppler_index_iter_get_action(iter);
@@ -480,27 +504,18 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
       break;
     }
   }
+
+	first_row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(win->toc_container), 0);
+	if (first_row != NULL) {
+		gtk_list_box_select_row(GTK_LIST_BOX(win->toc_container), first_row);
+	}
 }
 
-static void on_toc_selection_changed(GtkListBox *box, GtkListBoxRow *row, gpointer user_data) {
+static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data) {
   Window *win = (Window *)user_data;
-  GtkWidget *label;
-  unsigned int page_num;
   GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(box);
 
-  if (selected_row != NULL) {
-    label = gtk_list_box_row_get_child(selected_row);
-    page_num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(label), "page_num"));
-
-    if (page_num != -1) {
-      win->viewer->current_page = page_num;
-      win->viewer->y_offset = 0;
-      viewer_fit_vertical(win->viewer);
-      window_redraw(win);
-    } else {
-      g_printerr("Jumpdf: TOC entry has no destination\n");
-    }
-  }
+  window_execute_toc_row(win, selected_row);
 }
 
 static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data) {

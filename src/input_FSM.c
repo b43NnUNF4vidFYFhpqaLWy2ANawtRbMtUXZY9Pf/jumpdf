@@ -8,6 +8,7 @@ input_state_func input_state_funcs[] = {
     on_state_g,
     on_state_number,
     on_state_follow_links,
+    on_state_toc_focus,
 };
 
 InputState on_state_normal(Window* window, guint keyval) {
@@ -45,6 +46,7 @@ InputState on_state_normal(Window* window, guint keyval) {
                 break;
             case GDK_KEY_Tab:
                 window_toggle_toc(window);
+                next_state = STATE_TOC_FOCUS;
                 break;
             case GDK_KEY_slash:
                 window_show_search_dialog(window);
@@ -140,6 +142,50 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     } else {
         viewer->follow_links_mode = false;
         next_state = STATE_NORMAL;
+    }
+
+    return next_state;
+}
+
+InputState on_state_toc_focus(Window* window, guint keyval) {
+    InputState next_state;
+    GtkListBox *toc_list_box = window_get_toc_listbox(window);
+    GtkListBoxRow *current_row = gtk_list_box_get_selected_row(toc_list_box);
+    int current_index;
+    GtkListBoxRow *new_row = NULL;
+
+    if (current_row != NULL) {
+        current_index = gtk_list_box_row_get_index(current_row);
+    }
+
+    switch (keyval) {
+        case GDK_KEY_Tab:
+            window_toggle_toc(window);
+            next_state = STATE_NORMAL;
+            break;
+        case GDK_KEY_j:
+            if (current_row != NULL) {
+                new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index + 1);
+            }
+            next_state = STATE_TOC_FOCUS;
+            break;
+        case GDK_KEY_k:
+            if (current_row != NULL) {
+                new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index - 1);
+            }
+            next_state = STATE_TOC_FOCUS;
+            break;
+        case GDK_KEY_Return:
+            window_execute_toc_row(window, current_row);
+            next_state = STATE_TOC_FOCUS;
+            break;
+        default:
+            next_state = STATE_TOC_FOCUS;
+            break;
+    }
+
+    if (new_row != NULL) {
+        gtk_list_box_select_row(toc_list_box, new_row);
     }
 
     return next_state;

@@ -12,5 +12,7 @@ void window_open(Window *win, GFile *file);
 
 void window_show_search_dialog(Window *win);
 void window_toggle_toc(Window *win);
+void window_execute_toc_row(Window *win, GtkListBoxRow *row);
 
 Viewer *window_get_viewer(Window *win);
+GtkListBox *window_get_toc_listbox(Window *win);
