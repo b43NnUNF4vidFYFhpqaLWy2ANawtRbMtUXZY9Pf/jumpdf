@@ -7,7 +7,6 @@
 
 #include "app.h"
 #include "config.h"
-#include "keys.h"
 #include "win.h"
 #include "viewer.h"
 #include "input_FSM.h"
@@ -277,7 +276,7 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   win = (Window *)user_data;
 
   // Ignore shift key. Necessary for working with capital letter inputs
-  if (keyval != KEY_SHIFT) {
+  if (keyval != GDK_KEY_Shift_L && keyval != GDK_KEY_Shift_R) {
     win->current_input_state = execute_state(win->current_input_state, win, keyval);
     g_print("%d\n", win->current_input_state);
     viewer_handle_offset_update(win->viewer);

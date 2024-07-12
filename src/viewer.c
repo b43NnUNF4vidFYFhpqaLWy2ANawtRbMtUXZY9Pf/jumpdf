@@ -3,7 +3,6 @@
 
 #include "viewer.h"
 #include "config.h"
-#include "keys.h"
 
 Viewer* viewer_new(PopplerDocument *doc) {
     Viewer* viewer = malloc(sizeof(Viewer));
