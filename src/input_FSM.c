@@ -41,7 +41,7 @@ InputState on_state_normal(Window* window, guint keyval) {
                 break;
             case GDK_KEY_f:
                 viewer->follow_links_mode = true;
-                viewer->link_index_input = 0;
+                viewer->input_number = 0;
                 next_state = STATE_FOLLOW_LINKS;
                 break;
             case GDK_KEY_Tab:
@@ -105,10 +105,10 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     PopplerDest *dest;
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
-        viewer->link_index_input = viewer->link_index_input * 10 + (keyval - GDK_KEY_0);
+        viewer->input_number = viewer->input_number * 10 + (keyval - GDK_KEY_0);
         next_state = STATE_FOLLOW_LINKS;
-    } else if (keyval == GDK_KEY_Return && viewer->link_index_input - 1 < viewer->visible_links->len) {
-        link_mapping = g_ptr_array_index(viewer->visible_links, viewer->link_index_input - 1);
+    } else if (keyval == GDK_KEY_Return && viewer->input_number - 1 < viewer->visible_links->len) {
+        link_mapping = g_ptr_array_index(viewer->visible_links, viewer->input_number - 1);
 
         switch (link_mapping->action->type) {
             case POPPLER_ACTION_URI:
@@ -140,6 +140,7 @@ InputState on_state_follow_links(Window* window, guint keyval) {
         viewer->follow_links_mode = false;
         next_state = STATE_NORMAL;
     } else {
+        viewer->input_number = 0;
         viewer->follow_links_mode = false;
         next_state = STATE_NORMAL;
     }

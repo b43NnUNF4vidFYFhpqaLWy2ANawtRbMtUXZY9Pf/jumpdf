@@ -23,7 +23,6 @@ typedef struct Viewer {
 
   GPtrArray *visible_links;
   bool follow_links_mode;
-  unsigned int link_index_input;
 } Viewer;
 
 Viewer* viewer_new(PopplerDocument* doc);

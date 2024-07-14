@@ -44,7 +44,6 @@ Viewer* viewer_new(PopplerDocument *doc) {
 
     viewer->visible_links = g_ptr_array_new();
     viewer->follow_links_mode = false;
-    viewer->link_index_input = 0;
 
     return viewer;
 }
