@@ -221,14 +221,14 @@ void window_focus_toc_search(Window *win) {
 
 void window_execute_toc_row(Window *win, GtkListBoxRow *row) {
   GtkWidget *label;
-  unsigned int page_num;
+  PopplerDest *dest;
 
   if (row != NULL) {
     label = gtk_list_box_row_get_child(row);
-    page_num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(label), "page_num"));
+    dest = g_object_get_data(G_OBJECT(label), "dest");
 
-    if (page_num != -1) {
-      viewer_cursor_goto_page(win->viewer->cursor, page_num);
+    if (dest) {
+      viewer_cursor_goto_poppler_dest(win->viewer->cursor, dest);
       window_redraw(win);
     } else {
       g_printerr("Jumpdf: TOC entry has no destination\n");
@@ -478,7 +478,6 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
   GtkWidget *label;
   PopplerIndexIter *child;
   PopplerDest *dest;
-  unsigned int page_num;
 	GtkListBoxRow *first_row;
 
   while (iter) {
@@ -491,14 +490,8 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
       gtk_label_set_xalign(GTK_LABEL(label), 0.0); // Align to the left to maintain indentation
       gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
 
-      if (action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
-        dest = poppler_document_find_dest(win->viewer->info->doc, action->goto_dest.dest->named_dest);
-        page_num = dest->page_num - 1;
-        poppler_dest_free(dest);
-      } else {
-        page_num = action->goto_dest.dest->page_num - 1;
-      }
-      g_object_set_data(G_OBJECT(label), "page_num", GINT_TO_POINTER(page_num));
+      dest = viewer_info_get_dest(win->viewer->info, action->goto_dest.dest);
+      g_object_set_data(G_OBJECT(label), "dest", dest);
 
       gtk_list_box_insert(GTK_LIST_BOX(win->toc_container), label, -1);
 

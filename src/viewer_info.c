@@ -51,3 +51,15 @@ void viewer_info_destroy(ViewerInfo *info) {
         info->pages = NULL;
     }
 }
+
+PopplerDest *viewer_info_get_dest(ViewerInfo *info, PopplerDest *dest) {
+    PopplerDest *actual_dest = NULL;
+
+    if (dest->type == POPPLER_DEST_NAMED) {
+        actual_dest = poppler_document_find_dest(info->doc, dest->named_dest);
+    } else {
+        actual_dest = dest;
+    }
+
+    return actual_dest;
+}

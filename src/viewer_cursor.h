@@ -24,3 +24,5 @@ void viewer_cursor_set_scale(ViewerCursor *cursor, double new_scale);
 void viewer_cursor_handle_offset_update(ViewerCursor *cursor);
 
 void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page);
+void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest);
+void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action);

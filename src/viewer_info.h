@@ -15,3 +15,5 @@ typedef struct ViewerInfo {
 ViewerInfo *viewer_info_new(PopplerDocument *doc);
 void viewer_info_init(ViewerInfo *info, PopplerDocument *doc);
 void viewer_info_destroy(ViewerInfo *info);
+
+PopplerDest *viewer_info_get_dest(ViewerInfo *info, PopplerDest *dest);

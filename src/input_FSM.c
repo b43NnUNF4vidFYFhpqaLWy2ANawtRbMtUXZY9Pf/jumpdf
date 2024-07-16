@@ -86,9 +86,7 @@ InputState on_state_number(Window* window, guint keyval) {
         viewer->info->input_number = viewer->info->input_number * 10 + (keyval - GDK_KEY_0);
         next_state = STATE_NUMBER;
     } else if (keyval == GDK_KEY_G) {
-        viewer->cursor->current_page = viewer->info->input_number - 1;
-        viewer->cursor->y_offset = 0;
-        viewer_cursor_fit_vertical(viewer->cursor);
+        viewer_cursor_goto_page(viewer->cursor, viewer->info->input_number - 1);
         viewer->info->input_number = 0;
         next_state = STATE_NORMAL;
     } else if (keyval == GDK_KEY_Shift_L || keyval == GDK_KEY_Shift_R) {
@@ -106,43 +104,13 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     InputState next_state;
     Viewer* viewer = window_get_viewer(window);
     PopplerLinkMapping *link_mapping;
-    PopplerActionUri *action_uri;
-    GError *error = NULL;
-    unsigned int page_num;
-    PopplerDest *dest;
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
         viewer->info->input_number = viewer->info->input_number * 10 + (keyval - GDK_KEY_0);
         next_state = STATE_FOLLOW_LINKS;
     } else if (keyval == GDK_KEY_Return && viewer->info->input_number - 1 < viewer->links->visible_links->len) {
         link_mapping = g_ptr_array_index(viewer->links->visible_links, viewer->info->input_number - 1);
-
-        switch (link_mapping->action->type) {
-            case POPPLER_ACTION_URI:
-                action_uri = (PopplerActionUri *)link_mapping->action;
-                g_app_info_launch_default_for_uri(action_uri->uri, NULL, &error);
-                if (error != NULL) {
-                    g_printerr("Poppler: Error launching URI: %s\n", error->message);
-                    g_error_free(error);
-                }
-                break;
-            case POPPLER_ACTION_GOTO_DEST:
-                if (link_mapping->action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
-                    dest = poppler_document_find_dest(viewer->info->doc, link_mapping->action->goto_dest.dest->named_dest);
-                    page_num = dest->page_num - 1;
-                    poppler_dest_free(dest);
-                } else {
-                    page_num = link_mapping->action->goto_dest.dest->page_num - 1;
-                }
-
-                viewer_cursor_goto_page(viewer->cursor, page_num);
-
-                break;
-            default:
-                g_printerr("Poppler: Unsupported link type\n");
-                break;
-        }
-
+        viewer_cursor_execute_action(viewer->cursor, link_mapping->action);
         viewer->links->follow_links_mode = false;
         next_state = STATE_NORMAL;
     } else {

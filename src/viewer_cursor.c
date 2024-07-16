@@ -79,3 +79,34 @@ void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page) {
     cursor->y_offset = 0;
     viewer_cursor_fit_vertical(cursor);
 }
+
+void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest) {
+    // TODO: Zoom into dest, instead of just going to the page
+    viewer_cursor_goto_page(cursor, dest->page_num - 1);
+}
+
+void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action) {
+    PopplerActionUri *action_uri;
+    GError *error = NULL;
+    PopplerDest *dest;
+
+    switch (action->type) {
+        case POPPLER_ACTION_URI:
+            action_uri = (PopplerActionUri *)action;
+            g_app_info_launch_default_for_uri(action_uri->uri, NULL, &error);
+            if (error != NULL) {
+                g_printerr("Poppler: Error launching URI: %s\n", error->message);
+                g_error_free(error);
+            }
+            break;
+        case POPPLER_ACTION_GOTO_DEST:
+            dest = viewer_info_get_dest(cursor->info, action->goto_dest.dest);
+            viewer_cursor_goto_poppler_dest(cursor, dest);
+            poppler_dest_free(dest);
+
+            break;
+        default:
+            g_printerr("Poppler: Unsupported link type\n");
+            break;
+    }
+}
