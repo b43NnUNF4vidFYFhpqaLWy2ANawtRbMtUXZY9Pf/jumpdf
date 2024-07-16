@@ -1,5 +1,9 @@
 #include "input_FSM.h"
 #include "config.h"
+#include "viewer_info.h"
+#include "viewer_cursor.h"
+#include "viewer_search.h"
+#include "viewer_links.h"
 
 static InputState execute_command(Window* window, guint keyval, unsigned int repeat_count);
 
@@ -16,32 +20,32 @@ InputState on_state_normal(Window* window, guint keyval) {
     Viewer* viewer = window_get_viewer(window);
     
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        viewer->input_number = keyval - GDK_KEY_0;
+        viewer->info->input_number = keyval - GDK_KEY_0;
         next_state = STATE_NUMBER;
     } else {
         switch (keyval) {
             case GDK_KEY_0:
-                viewer_set_scale(viewer, 1.0);
+                viewer_cursor_set_scale(viewer->cursor, 1.0);
                 break;
             case GDK_KEY_c:
-                viewer_toggle_center_mode(viewer);
+                viewer_cursor_toggle_center_mode(viewer->cursor);
                 break;
             case GDK_KEY_s:
-                viewer_fit_horizontal(viewer);
+                viewer_cursor_fit_horizontal(viewer->cursor);
                 break;
             case GDK_KEY_a:
-                viewer_fit_vertical(viewer);
+                viewer_cursor_fit_vertical(viewer->cursor);
                 break;
             case GDK_KEY_g:
                 next_state = STATE_g;
                 break;
             case GDK_KEY_G:
-                viewer->current_page = viewer->n_pages - 1;
-                viewer->y_offset = STEPS - 1;
+                viewer->cursor->current_page = viewer->info->n_pages - 1;
+                viewer->cursor->y_offset = STEPS - 1;
                 break;
             case GDK_KEY_f:
-                viewer->follow_links_mode = true;
-                viewer->input_number = 0;
+                viewer->links->follow_links_mode = true;
+                viewer->info->input_number = 0;
                 next_state = STATE_FOLLOW_LINKS;
                 break;
             case GDK_KEY_Tab:
@@ -66,8 +70,8 @@ InputState on_state_g(Window* window, guint keyval) {
 
     switch (keyval) {
         case GDK_KEY_g:
-            viewer->current_page = 0;
-            viewer->y_offset = 0;
+            viewer->cursor->current_page = 0;
+            viewer->cursor->y_offset = 0;
             break;
     }
 
@@ -79,17 +83,17 @@ InputState on_state_number(Window* window, guint keyval) {
     Viewer* viewer = window_get_viewer(window);
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
-        viewer->input_number = viewer->input_number * 10 + (keyval - GDK_KEY_0);
+        viewer->info->input_number = viewer->info->input_number * 10 + (keyval - GDK_KEY_0);
         next_state = STATE_NUMBER;
     } else if (keyval == GDK_KEY_G) {
-        viewer->current_page = viewer->input_number - 1;
-        viewer->y_offset = 0;
-        viewer_fit_vertical(viewer);
-        viewer->input_number = 0;
+        viewer->cursor->current_page = viewer->info->input_number - 1;
+        viewer->cursor->y_offset = 0;
+        viewer_cursor_fit_vertical(viewer->cursor);
+        viewer->info->input_number = 0;
         next_state = STATE_NORMAL;
     } else {
-        next_state = execute_command(window, keyval, viewer->input_number);
-        viewer->input_number = 0;
+        next_state = execute_command(window, keyval, viewer->info->input_number);
+        viewer->info->input_number = 0;
     }
 
     return next_state;
@@ -105,10 +109,10 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     PopplerDest *dest;
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
-        viewer->input_number = viewer->input_number * 10 + (keyval - GDK_KEY_0);
+        viewer->info->input_number = viewer->info->input_number * 10 + (keyval - GDK_KEY_0);
         next_state = STATE_FOLLOW_LINKS;
-    } else if (keyval == GDK_KEY_Return && viewer->input_number - 1 < viewer->visible_links->len) {
-        link_mapping = g_ptr_array_index(viewer->visible_links, viewer->input_number - 1);
+    } else if (keyval == GDK_KEY_Return && viewer->info->input_number - 1 < viewer->links->visible_links->len) {
+        link_mapping = g_ptr_array_index(viewer->links->visible_links, viewer->info->input_number - 1);
 
         switch (link_mapping->action->type) {
             case POPPLER_ACTION_URI:
@@ -121,27 +125,26 @@ InputState on_state_follow_links(Window* window, guint keyval) {
                 break;
             case POPPLER_ACTION_GOTO_DEST:
                 if (link_mapping->action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
-                    dest = poppler_document_find_dest(viewer->doc, link_mapping->action->goto_dest.dest->named_dest);
+                    dest = poppler_document_find_dest(viewer->info->doc, link_mapping->action->goto_dest.dest->named_dest);
                     page_num = dest->page_num - 1;
                     poppler_dest_free(dest);
                 } else {
                     page_num = link_mapping->action->goto_dest.dest->page_num - 1;
                 }
 
-                viewer->current_page = page_num;
-                viewer->y_offset = 0;
-                viewer_fit_vertical(viewer);
+                viewer_cursor_goto_page(viewer->cursor, page_num);
+
                 break;
             default:
                 g_printerr("Poppler: Unsupported link type\n");
                 break;
         }
 
-        viewer->follow_links_mode = false;
+        viewer->links->follow_links_mode = false;
         next_state = STATE_NORMAL;
     } else {
-        viewer->input_number = 0;
-        viewer->follow_links_mode = false;
+        viewer->info->input_number = 0;
+        viewer->links->follow_links_mode = false;
         next_state = STATE_NORMAL;
     }
 
@@ -209,40 +212,47 @@ InputState execute_state(InputState current_state, Window* window, guint keyval)
 static InputState execute_command(Window* window, guint keyval, unsigned int repeat_count) {
     InputState next_state = STATE_NORMAL;
     Viewer* viewer = window_get_viewer(window);
+    ViewerCursor *search_new_cursor = NULL;
 
     for (unsigned int i = 0; i < repeat_count; i++) {
         switch (keyval) {
             case GDK_KEY_plus:
-                viewer_set_scale(viewer, viewer->scale + SCALE_STEP);
+                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale + SCALE_STEP);
                 break;
             case GDK_KEY_minus:
-                viewer_set_scale(viewer, viewer->scale - SCALE_STEP);
+                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale - SCALE_STEP);
                 break;
             case GDK_KEY_u:
-                viewer->y_offset -= STEPS / 2.0;
+                viewer->cursor->y_offset -= STEPS / 2.0;
                 break;
             case GDK_KEY_d:
-                viewer->y_offset += STEPS / 2.0;
+                viewer->cursor->y_offset += STEPS / 2.0;
                 break;
             case GDK_KEY_h:
-                viewer->x_offset++;
+                viewer->cursor->x_offset++;
                 break;
             case GDK_KEY_j:
-                viewer->y_offset++;
+                viewer->cursor->y_offset++;
                 break;
             case GDK_KEY_k:
-                viewer->y_offset--;
+                viewer->cursor->y_offset--;
                 break;
             case GDK_KEY_l:
-                viewer->x_offset--;
+                viewer->cursor->x_offset--;
                 break;
             case GDK_KEY_n:
-                viewer_goto_next_search(viewer);
+                search_new_cursor = viewer_search_get_next_search(viewer->search, viewer->cursor);
                 break;
             case GDK_KEY_N:
-                viewer_goto_prev_search(viewer);
+                search_new_cursor = viewer_search_get_prev_search(viewer->search, viewer->cursor);
                 break;
         }
+    }
+
+    if (search_new_cursor != NULL) {
+        viewer_cursor_destroy(viewer->cursor);
+        free(viewer->cursor);
+        viewer->cursor = search_new_cursor;
     }
 
     return next_state;

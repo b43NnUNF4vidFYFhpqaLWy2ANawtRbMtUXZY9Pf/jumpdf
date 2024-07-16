@@ -8,6 +8,10 @@ src_files = [
         'src/win.c',
         'src/viewer.c',
         'src/input_FSM.c',
+        'src/viewer_info.c',
+        'src/viewer_cursor.c',
+        'src/viewer_search.c',
+        'src/viewer_links.c',
         ]
 
 cc = meson.get_compiler('c')

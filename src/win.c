@@ -9,6 +9,10 @@
 #include "config.h"
 #include "win.h"
 #include "viewer.h"
+#include "viewer_info.h"
+#include "viewer_cursor.h"
+#include "viewer_search.h"
+#include "viewer_links.h"
 #include "input_FSM.h"
 
 static void window_redraw(Window *win);
@@ -145,6 +149,7 @@ static void window_finalize(GObject *object) {
 
   if (win->viewer) {
     viewer_destroy(win->viewer);
+    free(win->viewer);
   }
 
   g_object_unref(win->toc_scroll_window);
@@ -163,6 +168,10 @@ Window *window_new(App *app) {
 void window_open(Window *win, GFile *file) {
   GError *err;
   PopplerDocument* doc;
+  ViewerInfo *info;
+  ViewerCursor *cursor;
+  ViewerSearch *search;
+  ViewerLinks *links;
   double default_width, default_height;
 
   err = NULL;
@@ -173,12 +182,16 @@ void window_open(Window *win, GFile *file) {
     g_printerr("Poppler: %s\n", err->message);
     g_error_free(err);
   } else {
-    win->viewer = viewer_new(doc);
+    info = viewer_info_new(doc);
+    cursor = viewer_cursor_new(info);
+    search = viewer_search_new();
+    links = viewer_links_new();
+    win->viewer = viewer_new(info, cursor, search, links);
 
     window_populate_toc(win);
     window_update_page_label(win);
     gtk_window_set_title(GTK_WINDOW(win), g_file_get_basename(file));
-    poppler_page_get_size(win->viewer->pages[0], &default_width, &default_height);
+    poppler_page_get_size(win->viewer->info->pages[0], &default_width, &default_height);
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
                                 (int)default_width);
   }
@@ -215,9 +228,7 @@ void window_execute_toc_row(Window *win, GtkListBoxRow *row) {
     page_num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(label), "page_num"));
 
     if (page_num != -1) {
-      win->viewer->current_page = page_num;
-      win->viewer->y_offset = 0;
-      viewer_fit_vertical(win->viewer);
+      viewer_cursor_goto_page(win->viewer->cursor, page_num);
       window_redraw(win);
     } else {
       g_printerr("Jumpdf: TOC entry has no destination\n");
@@ -239,7 +250,7 @@ static void window_redraw(Window *win) {
 }
 
 static void window_update_page_label(Window *win) {
-  gchar *page_str = g_strdup_printf("%d/%d", win->viewer->current_page + 1, win->viewer->n_pages);
+  gchar *page_str = g_strdup_printf("%d/%d", win->viewer->cursor->current_page + 1, win->viewer->info->n_pages);
   gtk_label_set_text(GTK_LABEL(win->page_label), page_str);
   g_free(page_str);
 }
@@ -250,8 +261,8 @@ static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsi
   poppler_page_render(page, cr);
   window_highlight_search(win, cr, page);
 
-  if (win->viewer->follow_links_mode) {
-    links_to_draw = viewer_get_links(win->viewer, page);
+  if (win->viewer->links->follow_links_mode) {
+    links_to_draw = viewer_links_get_links(win->viewer->links, page);
     window_draw_links(win, cr, *links_drawn_sofar, *links_drawn_sofar + links_to_draw);
     *links_drawn_sofar += links_to_draw;
     }
@@ -263,15 +274,15 @@ static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page)
       highlight_rect_height;
   GList *matches;
 
-  if (!win->viewer->search_text) {
+  if (!win->viewer->search->search_text) {
     return;
   }
 
-  matches = poppler_page_find_text(page, win->viewer->search_text);
+  matches = poppler_page_find_text(page, win->viewer->search->search_text);
   for (GList *elem = matches; elem; elem = elem->next) {
     highlight_rect = elem->data;
     highlight_rect_x = highlight_rect->x1;
-    highlight_rect_y = win->viewer->pdf_height - highlight_rect->y1;
+    highlight_rect_y = win->viewer->info->pdf_height - highlight_rect->y1;
     highlight_rect_width = highlight_rect->x2 - highlight_rect->x1;
     highlight_rect_height = highlight_rect->y1 - highlight_rect->y2;
 
@@ -288,10 +299,10 @@ static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsig
   PopplerLinkMapping *link_mapping;
 
   for (int i = from; i < to; i++) {
-      link_mapping = g_ptr_array_index(win->viewer->visible_links, i);
+      link_mapping = g_ptr_array_index(win->viewer->links->visible_links, i);
 
       cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-      cairo_move_to(cr, link_mapping->area.x1, win->viewer->pdf_height - link_mapping->area.y1);
+      cairo_move_to(cr, link_mapping->area.x1, win->viewer->info->pdf_height - link_mapping->area.y1);
       cairo_show_text(cr, g_strdup_printf("%d", i + 1));
   }
 }
@@ -299,18 +310,12 @@ static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsig
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
                                GtkEventControllerKey *event_controller) {
-  g_print("keyval = %d, keycode = %d, state = %d\n", keyval, keycode, state);
-
   Window *win;
   win = (Window *)user_data;
 
-  // Ignore shift key. Necessary for working with capital letter inputs
-  if (state != GDK_SHIFT_MASK) {
-    win->current_input_state = execute_state(win->current_input_state, win, keyval);
-    g_print("%d\n", win->current_input_state);
-    viewer_handle_offset_update(win->viewer);
-    window_redraw(win);
-  }
+  win->current_input_state = execute_state(win->current_input_state, win, keyval);
+  viewer_cursor_handle_offset_update(win->viewer->cursor);
+  window_redraw(win);
 
   return TRUE;
 }
@@ -329,13 +334,13 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
     GdkModifierType state = gdk_event_get_modifier_state(event);
     switch (state) {
     case GDK_CONTROL_MASK:
-      viewer_set_scale(win->viewer, MAX(MIN_SCALE, win->viewer->scale - dy * SCALE_STEP));
+      viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * SCALE_STEP);
       break;
     default:
-      win->viewer->x_offset -= dx;
-      win->viewer->y_offset += dy;
+      win->viewer->cursor->x_offset -= dx;
+      win->viewer->cursor->y_offset += dy;
 
-      viewer_handle_offset_update(win->viewer);
+      viewer_cursor_handle_offset_update(win->viewer->cursor);
     }
   }
 
@@ -348,8 +353,8 @@ static void on_resize(GtkDrawingArea *area, int width, int height,
 
   win = (Window *)user_data;
 
-  win->viewer->view_width = width;
-  win->viewer->view_height = height;
+  win->viewer->info->view_width = width;
+  win->viewer->info->view_height = height;
 }
 
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
@@ -365,66 +370,67 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   unsigned int links_drawn_sofar = 0;
 
   win = (Window *)user_data;
-  if (!win->viewer->doc || !win->viewer->pages) {
+  if (!win->viewer->info->doc || !win->viewer->info->pages) {
     return;
   }
 
-  page = win->viewer->pages[win->viewer->current_page];
-  poppler_page_get_size(page, &win->viewer->pdf_width, &win->viewer->pdf_height);
+  page = win->viewer->info->pages[win->viewer->cursor->current_page];
+  poppler_page_get_size(page, &win->viewer->info->pdf_width, &win->viewer->info->pdf_height);
 
-  if (win->viewer->center_mode) {
-    viewer_center(win->viewer);
+  if (win->viewer->cursor->center_mode) {
+    viewer_cursor_center(win->viewer->cursor);
   }
 
-  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->viewer->view_width,
-                                       win->viewer->view_height);
+  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->viewer->info->view_width,
+                                       win->viewer->info->view_height);
   cr_pdf = cairo_create(surface);
 
   // Clear to white background (for PDFs with missing background)
-  center_x_offset = ((win->viewer->view_width / 2.0) - (win->viewer->pdf_width / 2.0)) /
-             (win->viewer->pdf_width / STEPS);
+  center_x_offset = ((win->viewer->info->view_width / 2.0) - (win->viewer->info->pdf_width / 2.0)) /
+             (win->viewer->info->pdf_width / STEPS);
   // First term gets you x-coordinate of left side of PDF as if it was centered
   // (2*margin + real_pdf_width = view_width, where margin = center_x_offset),
   // then second term moves it by the offset from center,
   // i.e. x_offset - center_x_offset
   background_x =
-      (win->viewer->view_width - win->viewer->scale * win->viewer->pdf_width) / 2 +
-      ((win->viewer->x_offset - center_x_offset) / STEPS) * win->viewer->scale * win->viewer->pdf_width;
+      (win->viewer->info->view_width - win->viewer->cursor->scale * win->viewer->info->pdf_width) / 2 +
+      ((win->viewer->cursor->x_offset - center_x_offset) / STEPS) * win->viewer->cursor->scale * win->viewer->info->pdf_width;
   background_y = 0;
-  background_width = win->viewer->scale * win->viewer->pdf_width;
-  background_height = win->viewer->view_height;
+  background_width = win->viewer->cursor->scale * win->viewer->info->pdf_width;
+  background_height = win->viewer->info->view_height;
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_rectangle(cr, background_x, background_y, background_width,
                   background_height);
   cairo_fill(cr);
 
-  cairo_translate(cr_pdf, win->viewer->view_width / 2.0, win->viewer->view_height / 2.0);
-  cairo_scale(cr_pdf, win->viewer->scale, win->viewer->scale);
-  cairo_translate(cr_pdf, -win->viewer->view_width / 2.0, -win->viewer->view_height / 2.0);
+  cairo_translate(cr_pdf, win->viewer->info->view_width / 2.0, win->viewer->info->view_height / 2.0);
+  cairo_scale(cr_pdf, win->viewer->cursor->scale, win->viewer->cursor->scale);
+  cairo_translate(cr_pdf, -win->viewer->info->view_width / 2.0, -win->viewer->info->view_height / 2.0);
 
-  cairo_translate(cr_pdf, win->viewer->x_offset * win->viewer->pdf_width / STEPS,
-                          -win->viewer->y_offset * win->viewer->pdf_height / STEPS);
+  cairo_translate(cr_pdf, win->viewer->cursor->x_offset * win->viewer->info->pdf_width / STEPS,
+                          -win->viewer->cursor->y_offset * win->viewer->info->pdf_height / STEPS);
 
-  viewer_clear_links(win->viewer);
+  viewer_links_clear_links(win->viewer->links);
   window_render_page(win, cr_pdf, page, &links_drawn_sofar);
 
-  visible_pages = win->viewer->view_height / (win->viewer->scale * win->viewer->pdf_height) - 1;
+  visible_pages = win->viewer->info->view_height / (win->viewer->cursor->scale * win->viewer->info->pdf_height) - 1;
   visible_pages_before = ceil(visible_pages / 2);
   visible_pages_after = ceil(visible_pages / 2) + 1;
 
+  // FIXME: Tries to render pages outside of the document
   cairo_save(cr_pdf);
   for (int i = 1; i <= visible_pages_before; i++) {
-    if (win->viewer->current_page - i >= 0) {
-      cairo_translate(cr_pdf, 0, -win->viewer->pdf_height);
-      window_render_page(win, cr_pdf, win->viewer->pages[win->viewer->current_page - i], &links_drawn_sofar);
+    if (win->viewer->cursor->current_page - i >= 0) {
+      cairo_translate(cr_pdf, 0, -win->viewer->info->pdf_height);
+      window_render_page(win, cr_pdf, win->viewer->info->pages[win->viewer->cursor->current_page - i], &links_drawn_sofar);
     }
   }
   cairo_restore(cr_pdf);
   cairo_save(cr_pdf);
   for (int i = 1; i <= visible_pages_after; i++) {
-    if (win->viewer->current_page + i < win->viewer->n_pages) {
-      cairo_translate(cr_pdf, 0, win->viewer->pdf_height);
-      window_render_page(win, cr_pdf, win->viewer->pages[win->viewer->current_page + i], &links_drawn_sofar);
+    if (win->viewer->cursor->current_page + i < win->viewer->info->n_pages) {
+      cairo_translate(cr_pdf, 0, win->viewer->info->pdf_height);
+      window_render_page(win, cr_pdf, win->viewer->info->pages[win->viewer->cursor->current_page + i], &links_drawn_sofar);
     }
   }
   cairo_restore(cr_pdf);
@@ -448,7 +454,7 @@ static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window
     buffer = gtk_entry_get_buffer(GTK_ENTRY(entry));
     search_text = gtk_entry_buffer_get_text(buffer);
 
-    win->viewer->search_text = strdup(search_text);
+    win->viewer->search->search_text = strdup(search_text);
     window_redraw(win);
   }
 
@@ -460,7 +466,7 @@ static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog) {
 }
 
 static void window_populate_toc(Window *win) {
-  PopplerIndexIter *iter = poppler_index_iter_new(win->viewer->doc);
+  PopplerIndexIter *iter = poppler_index_iter_new(win->viewer->info->doc);
   if (iter) {
       window_add_toc_entries(win, iter, 0);
       poppler_index_iter_free(iter);
@@ -487,7 +493,7 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
       gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
 
       if (action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
-        dest = poppler_document_find_dest(win->viewer->doc, action->goto_dest.dest->named_dest);
+        dest = poppler_document_find_dest(win->viewer->info->doc, action->goto_dest.dest->named_dest);
         page_num = dest->page_num - 1;
         poppler_dest_free(dest);
       } else {
