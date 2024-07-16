@@ -144,8 +144,19 @@ static void window_init(Window *win) {
 }
 
 static void window_finalize(GObject *object) {
-  Window *win;
-  win = (Window *)object;
+  Window *win = (Window *)object;
+  GtkWidget *toc_row = gtk_widget_get_first_child(win->toc_container);
+  GtkWidget *toc_label;
+  PopplerDest *dest;
+
+  while (toc_row) {
+    toc_label = gtk_widget_get_first_child(toc_row);
+    dest = g_object_get_data(G_OBJECT(toc_label), "dest");
+    if (dest) {
+      poppler_dest_free(dest);
+    }
+    toc_row = gtk_widget_get_next_sibling(toc_row);
+  }
 
   if (win->viewer) {
     viewer_destroy(win->viewer);
