@@ -91,6 +91,9 @@ InputState on_state_number(Window* window, guint keyval) {
         viewer_cursor_fit_vertical(viewer->cursor);
         viewer->info->input_number = 0;
         next_state = STATE_NORMAL;
+    } else if (keyval == GDK_KEY_Shift_L || keyval == GDK_KEY_Shift_R) {
+        // Ignore shift key. Necessary for GDK_KEY_G
+        next_state = STATE_NUMBER;
     } else {
         next_state = execute_command(window, keyval, viewer->info->input_number);
         viewer->info->input_number = 0;
