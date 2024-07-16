@@ -35,7 +35,6 @@ ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *
     }
 
     for (int i = current_cursor->current_page; i < current_cursor->info->n_pages; i++) {
-        // TODO: Free PopplerRect elements after each iteration
         matches = poppler_page_find_text(current_cursor->info->pages[i], search->search_text);
         if (matches && i != search->last_goto_page) {
             next_page = i;
@@ -43,6 +42,7 @@ ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *
 
             break;
         }
+        g_list_foreach(matches, (GFunc)poppler_rectangle_free, NULL);
     }
     g_list_free(matches);
 
@@ -73,6 +73,7 @@ ViewerCursor *viewer_search_get_prev_search(ViewerSearch *search, ViewerCursor *
 
             break;
         }
+        g_list_foreach(matches, (GFunc)poppler_rectangle_free, NULL);
     }
     g_list_free(matches);
 
