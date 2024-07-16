@@ -7,7 +7,7 @@
 typedef struct ViewerCursor {
   ViewerInfo *info;
 
-  unsigned int current_page;
+  int current_page;
   double x_offset, y_offset, scale;
   bool center_mode;
 } ViewerCursor;

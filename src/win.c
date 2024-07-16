@@ -417,7 +417,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   visible_pages_before = ceil(visible_pages / 2);
   visible_pages_after = ceil(visible_pages / 2) + 1;
 
-  // FIXME: Tries to render pages outside of the document
   cairo_save(cr_pdf);
   for (int i = 1; i <= visible_pages_before; i++) {
     if (win->viewer->cursor->current_page - i >= 0) {
