@@ -14,6 +14,22 @@ ViewerCursor *viewer_cursor_new(ViewerInfo *info) {
     return cursor;
 }
 
+ViewerCursor *viewer_cursor_copy(ViewerCursor *cursor) {
+    ViewerCursor *new_cursor = malloc(sizeof(ViewerCursor));
+    if (new_cursor == NULL) {
+        return NULL;
+    }
+
+    new_cursor->info = cursor->info;
+    new_cursor->current_page = cursor->current_page;
+    new_cursor->x_offset = cursor->x_offset;
+    new_cursor->y_offset = cursor->y_offset;
+    new_cursor->scale = cursor->scale;
+    new_cursor->center_mode = cursor->center_mode;
+
+    return new_cursor;
+}
+
 void viewer_cursor_init(ViewerCursor *cursor, ViewerInfo *info) {
     cursor->info = info;
     

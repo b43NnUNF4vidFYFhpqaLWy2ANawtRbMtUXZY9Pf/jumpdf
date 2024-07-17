@@ -13,6 +13,7 @@ input_state_func input_state_funcs[] = {
     on_state_number,
     on_state_follow_links,
     on_state_toc_focus,
+    on_state_mark,
 };
 
 InputState on_state_normal(Window* window, guint keyval) {
@@ -48,6 +49,9 @@ InputState on_state_normal(Window* window, guint keyval) {
                 viewer->info->input_number = 0;
                 next_state = STATE_FOLLOW_LINKS;
                 break;
+            case GDK_KEY_m:
+                next_state = STATE_MARK;
+                break;
             case GDK_KEY_Tab:
                 window_toggle_toc(window);
                 next_state = STATE_TOC_FOCUS;
@@ -66,13 +70,22 @@ InputState on_state_normal(Window* window, guint keyval) {
 
 InputState on_state_g(Window* window, guint keyval) {
     InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     Viewer* viewer = window_get_viewer(window);
+    unsigned int group_i = keyval - GDK_KEY_0 - 1;
 
-    switch (keyval) {
-        case GDK_KEY_g:
-            viewer->cursor->current_page = 0;
-            viewer->cursor->y_offset = 0;
-            break;
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        viewer_mark_manager_set_current_group(mark_manager, group_i);
+        if (viewer_mark_manager_get_current_cursor(mark_manager) == NULL) {
+            viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(viewer->cursor),
+                viewer_mark_manager_get_current_group_index(mark_manager),
+                viewer_mark_manager_get_current_mark_index(mark_manager));
+        }
+
+        viewer->cursor = viewer_mark_manager_get_current_cursor(mark_manager);
+    } else if (keyval == GDK_KEY_g) {
+        viewer->cursor->current_page = 0;
+        viewer->cursor->y_offset = 0;
     }
 
     return next_state;
@@ -171,6 +184,28 @@ InputState on_state_toc_focus(Window* window, guint keyval) {
 
     if (new_row != NULL) {
         gtk_list_box_select_row(toc_list_box, new_row);
+    }
+
+    return next_state;
+}
+
+InputState on_state_mark(Window* window, guint keyval) {
+    InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
+    Viewer *viewer = window_get_viewer(window);
+    unsigned int mark_i = keyval - GDK_KEY_0 - 1;
+
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        if (viewer_mark_manager_get_mark(mark_manager,
+                viewer_mark_manager_get_current_group_index(mark_manager),
+                mark_i) == NULL) {
+            viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(viewer->cursor),
+                viewer_mark_manager_get_current_group_index(mark_manager),
+                mark_i);
+        }
+
+        viewer_mark_manager_set_current_mark(mark_manager, mark_i);
+        viewer->cursor = viewer_mark_manager_get_current_cursor(mark_manager);
     }
 
     return next_state;

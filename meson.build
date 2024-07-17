@@ -12,6 +12,8 @@ src_files = [
         'src/viewer_cursor.c',
         'src/viewer_search.c',
         'src/viewer_links.c',
+        'src/viewer_mark_group.c',
+        'src/viewer_mark_manager.c',
         ]
 
 cc = meson.get_compiler('c')

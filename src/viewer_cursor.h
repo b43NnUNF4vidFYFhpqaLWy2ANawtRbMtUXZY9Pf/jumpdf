@@ -13,6 +13,7 @@ typedef struct ViewerCursor {
 } ViewerCursor;
 
 ViewerCursor *viewer_cursor_new(ViewerInfo *info);
+ViewerCursor *viewer_cursor_copy(ViewerCursor *cursor);
 void viewer_cursor_init(ViewerCursor *cursor, ViewerInfo *info);
 void viewer_cursor_destroy(ViewerCursor *cursor);
 

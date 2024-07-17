@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.h"
+#include "viewer_mark_manager.h"
 #include "viewer.h"
 #include <gtk/gtk.h>
 
@@ -15,5 +16,6 @@ void window_toggle_toc(Window *win);
 void window_focus_toc_search(Window *win);
 void window_execute_toc_row(Window *win, GtkListBoxRow *row);
 
+ViewerMarkManager *window_get_mark_manager(Window *win);
 Viewer *window_get_viewer(Window *win);
 GtkListBox *window_get_toc_listbox(Window *win);

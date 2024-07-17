@@ -9,6 +9,7 @@
 #include "config.h"
 #include "win.h"
 #include "viewer.h"
+#include "viewer_mark_manager.h"
 #include "viewer_info.h"
 #include "viewer_cursor.h"
 #include "viewer_search.h"
@@ -17,6 +18,7 @@
 
 static void window_redraw(Window *win);
 static void window_update_page_label(Window *win);
+static void window_update_mark_label(Window *win);
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
 static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page);
 static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to);
@@ -48,8 +50,13 @@ struct _Window {
 
   GtkWidget *view_box;
   GtkWidget *view;
+
   GtkWidget *bottom_bar;
+  GtkWidget *bottom_bar_left;
+  GtkWidget *bottom_bar_middle;
+  GtkWidget *bottom_bar_right;
   GtkWidget *page_label;
+  GtkWidget *mark_label;
 
   GtkWidget *search_dialog;
   GtkWidget *search_content_area;
@@ -60,7 +67,9 @@ struct _Window {
   GtkWidget *toc_search_entry;
   GtkWidget *toc_container;
 
-  Viewer* viewer;
+  // TODO: Move to App and pass it to window_open to make this shared across windows
+  ViewerMarkManager *mark_manager;
+  Viewer *viewer;
   InputState current_input_state;
 };
 
@@ -97,8 +106,20 @@ static void window_init(Window *win) {
   gtk_style_context_add_provider(gtk_widget_get_style_context(win->bottom_bar),
                                  GTK_STYLE_PROVIDER(provider),
                                  GTK_STYLE_PROVIDER_PRIORITY_USER);
+  win->bottom_bar_left = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  win->bottom_bar_middle = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  win->bottom_bar_right = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_widget_set_hexpand(win->bottom_bar_middle, TRUE);
+
+  gtk_box_append(GTK_BOX(win->bottom_bar), win->bottom_bar_left);
+  gtk_box_append(GTK_BOX(win->bottom_bar), win->bottom_bar_middle);
+  gtk_box_append(GTK_BOX(win->bottom_bar), win->bottom_bar_right);
+
   win->page_label = gtk_label_new(NULL);
-  gtk_box_append(GTK_BOX(win->bottom_bar), win->page_label);
+  gtk_box_append(GTK_BOX(win->bottom_bar_left), win->page_label);
+
+  win->mark_label = gtk_label_new(NULL);
+  gtk_box_append(GTK_BOX(win->bottom_bar_right), win->mark_label);
 
   win->view_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_widget_set_hexpand(win->view_box, TRUE);
@@ -158,12 +179,26 @@ static void window_finalize(GObject *object) {
     toc_row = gtk_widget_get_next_sibling(toc_row);
   }
 
-  if (win->viewer) {
-    viewer_destroy(win->viewer);
-    free(win->viewer);
+  g_object_unref(win->toc_scroll_window);
+
+  if (win->mark_manager) {
+    viewer_mark_manager_destroy(win->mark_manager);
+    free(win->mark_manager);
   }
 
-  g_object_unref(win->toc_scroll_window);
+  if (win->viewer) {
+    // Cursor already destroyed by mark_manager destruction
+    viewer_info_destroy(win->viewer->info);
+    free(win->viewer->info);
+
+    viewer_search_destroy(win->viewer->search);
+    free(win->viewer->search);
+
+    viewer_links_destroy(win->viewer->links);
+    free(win->viewer->links);
+
+    free(win->viewer);
+  }
   
   G_OBJECT_CLASS(window_parent_class)->finalize(object);
 }
@@ -179,6 +214,8 @@ Window *window_new(App *app) {
 void window_open(Window *win, GFile *file) {
   GError *err;
   PopplerDocument* doc;
+  ViewerMarkGroup *groups[9];
+  ViewerCursor **default_cursors;
   ViewerInfo *info;
   ViewerCursor *cursor;
   ViewerSearch *search;
@@ -197,10 +234,24 @@ void window_open(Window *win, GFile *file) {
     cursor = viewer_cursor_new(info);
     search = viewer_search_new();
     links = viewer_links_new();
-    win->viewer = viewer_new(info, cursor, search, links);
+
+    // TODO: Fetch marks from DB
+    for (unsigned int i = 0; i < 9; i++) {
+      // FIXME: Missing free
+      default_cursors = malloc(9 * sizeof(ViewerCursor *));
+      for (unsigned int j = 0; j < 9; j++) {
+        default_cursors[j] = NULL;
+      }
+      groups[i] = viewer_mark_group_new(default_cursors, 0);
+    }
+    win->mark_manager = viewer_mark_manager_new(groups, 0);
+    viewer_mark_manager_set_mark(win->mark_manager, cursor, 0, 0);
+
+    win->viewer = viewer_new(info, viewer_mark_manager_get_current_cursor(win->mark_manager), search, links);
 
     window_populate_toc(win);
     window_update_page_label(win);
+    window_update_mark_label(win);
     gtk_window_set_title(GTK_WINDOW(win), g_file_get_basename(file));
     poppler_page_get_size(win->viewer->info->pages[0], &default_width, &default_height);
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
@@ -247,6 +298,10 @@ void window_execute_toc_row(Window *win, GtkListBoxRow *row) {
   }
 }
 
+ViewerMarkManager *window_get_mark_manager(Window *win) {
+  return win->mark_manager;
+}
+
 Viewer *window_get_viewer(Window *win) {
   return win->viewer;
 }
@@ -257,6 +312,7 @@ GtkListBox *window_get_toc_listbox(Window *win) {
 
 static void window_redraw(Window *win) {
   window_update_page_label(win);
+  window_update_mark_label(win);
   gtk_widget_queue_draw(win->view);
 }
 
@@ -264,6 +320,14 @@ static void window_update_page_label(Window *win) {
   gchar *page_str = g_strdup_printf("%d/%d", win->viewer->cursor->current_page + 1, win->viewer->info->n_pages);
   gtk_label_set_text(GTK_LABEL(win->page_label), page_str);
   g_free(page_str);
+}
+
+static void window_update_mark_label(Window *win) {
+  gchar *mark_str = g_strdup_printf("%d, %d",
+    viewer_mark_manager_get_current_group_index(win->mark_manager) + 1,
+    viewer_mark_manager_get_current_mark_index(win->mark_manager) + 1);
+  gtk_label_set_text(GTK_LABEL(win->mark_label), mark_str);
+  g_free(mark_str);
 }
 
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar) {
