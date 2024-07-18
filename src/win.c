@@ -220,6 +220,7 @@ void window_open(Window *win, GFile *file) {
   ViewerCursor *cursor;
   ViewerSearch *search;
   ViewerLinks *links;
+  GFileInfo *file_info;
   double default_width, default_height;
 
   err = NULL;
@@ -252,7 +253,16 @@ void window_open(Window *win, GFile *file) {
     window_populate_toc(win);
     window_update_page_label(win);
     window_update_mark_label(win);
-    gtk_window_set_title(GTK_WINDOW(win), g_file_get_basename(file));
+
+    file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &err);
+    if (file_info == NULL) {
+      g_printerr("GFile: %s\n", err->message);
+      g_error_free(err);
+    } else {
+      gtk_window_set_title(GTK_WINDOW(win), g_file_info_get_display_name(file_info));
+      g_object_unref(file_info);
+    }
+
     poppler_page_get_size(win->viewer->info->pages[0], &default_width, &default_height);
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
                                 (int)default_width);
