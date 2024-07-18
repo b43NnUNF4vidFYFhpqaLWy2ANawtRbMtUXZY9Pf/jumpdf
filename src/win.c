@@ -67,7 +67,6 @@ struct _Window {
   GtkWidget *toc_search_entry;
   GtkWidget *toc_container;
 
-  // TODO: Move to App and pass it to window_open to make this shared across windows
   ViewerMarkManager *mark_manager;
   Viewer *viewer;
   InputState current_input_state;
@@ -181,11 +180,6 @@ static void window_finalize(GObject *object) {
 
   g_object_unref(win->toc_scroll_window);
 
-  if (win->mark_manager) {
-    viewer_mark_manager_destroy(win->mark_manager);
-    free(win->mark_manager);
-  }
-
   if (win->viewer) {
     // Cursor already destroyed by mark_manager destruction
     viewer_info_destroy(win->viewer->info);
@@ -211,11 +205,9 @@ Window *window_new(App *app) {
   return g_object_new(WINDOW_TYPE, "application", app, NULL);
 }
 
-void window_open(Window *win, GFile *file) {
+void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
   GError *err;
   PopplerDocument* doc;
-  ViewerMarkGroup *groups[9];
-  ViewerCursor **default_cursors;
   ViewerInfo *info;
   ViewerCursor *cursor;
   ViewerSearch *search;
@@ -232,21 +224,18 @@ void window_open(Window *win, GFile *file) {
     g_error_free(err);
   } else {
     info = viewer_info_new(doc);
-    cursor = viewer_cursor_new(info);
     search = viewer_search_new();
     links = viewer_links_new();
 
-    // TODO: Fetch marks from DB
-    for (unsigned int i = 0; i < 9; i++) {
-      // FIXME: Missing free
-      default_cursors = malloc(9 * sizeof(ViewerCursor *));
-      for (unsigned int j = 0; j < 9; j++) {
-        default_cursors[j] = NULL;
-      }
-      groups[i] = viewer_mark_group_new(default_cursors, 0);
+    win->mark_manager = mark_manager;
+    if (viewer_mark_manager_get_current_cursor(win->mark_manager) == NULL) {
+      cursor = viewer_cursor_new(info);
+      viewer_mark_manager_set_mark(win->mark_manager, viewer_cursor_copy(cursor),
+        viewer_mark_manager_get_current_group_index(win->mark_manager),
+        viewer_mark_manager_get_current_mark_index(win->mark_manager));
+      viewer_cursor_destroy(cursor);
+      free(cursor);
     }
-    win->mark_manager = viewer_mark_manager_new(groups, 0);
-    viewer_mark_manager_set_mark(win->mark_manager, cursor, 0, 0);
 
     win->viewer = viewer_new(info, viewer_mark_manager_get_current_cursor(win->mark_manager), search, links);
 
@@ -333,7 +322,7 @@ static void window_update_page_label(Window *win) {
 }
 
 static void window_update_mark_label(Window *win) {
-  gchar *mark_str = g_strdup_printf("%d, %d",
+  gchar *mark_str = g_strdup_printf("%d:%d",
     viewer_mark_manager_get_current_group_index(win->mark_manager) + 1,
     viewer_mark_manager_get_current_mark_index(win->mark_manager) + 1);
   gtk_label_set_text(GTK_LABEL(win->mark_label), mark_str);
@@ -399,6 +388,7 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   win = (Window *)user_data;
 
   win->current_input_state = execute_state(win->current_input_state, win, keyval);
+  win->viewer->cursor = viewer_mark_manager_get_current_cursor(win->mark_manager);
   viewer_cursor_handle_offset_update(win->viewer->cursor);
   window_redraw(win);
 

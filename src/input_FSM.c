@@ -81,8 +81,6 @@ InputState on_state_g(Window* window, guint keyval) {
                 viewer_mark_manager_get_current_group_index(mark_manager),
                 viewer_mark_manager_get_current_mark_index(mark_manager));
         }
-
-        viewer->cursor = viewer_mark_manager_get_current_cursor(mark_manager);
     } else if (keyval == GDK_KEY_g) {
         viewer->cursor->current_page = 0;
         viewer->cursor->y_offset = 0;
@@ -205,7 +203,6 @@ InputState on_state_mark(Window* window, guint keyval) {
         }
 
         viewer_mark_manager_set_current_mark(mark_manager, mark_i);
-        viewer->cursor = viewer_mark_manager_get_current_cursor(mark_manager);
     }
 
     return next_state;
