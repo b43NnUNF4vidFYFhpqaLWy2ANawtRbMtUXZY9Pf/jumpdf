@@ -9,7 +9,6 @@ typedef struct ViewerInfo {
     // View dimensions not known until drawn, so use draw_function to update
     int view_width, view_height;
     double pdf_width, pdf_height;
-    unsigned int input_number;
 } ViewerInfo;
 
 ViewerInfo *viewer_info_new(PopplerDocument *doc);

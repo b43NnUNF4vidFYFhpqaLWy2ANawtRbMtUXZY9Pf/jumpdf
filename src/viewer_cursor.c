@@ -26,6 +26,7 @@ ViewerCursor *viewer_cursor_copy(ViewerCursor *cursor) {
     new_cursor->y_offset = cursor->y_offset;
     new_cursor->scale = cursor->scale;
     new_cursor->center_mode = cursor->center_mode;
+    new_cursor->input_number = cursor->input_number;
 
     return new_cursor;
 }
@@ -38,6 +39,7 @@ void viewer_cursor_init(ViewerCursor *cursor, ViewerInfo *info) {
     cursor->y_offset = 0.0;
     cursor->scale = 1.0;
     cursor->center_mode = true;
+    cursor->input_number = 0;
 }
 
 void viewer_cursor_destroy(ViewerCursor *cursor) {}

@@ -32,7 +32,6 @@ void viewer_info_init(ViewerInfo *info, PopplerDocument *doc) {
     info->view_height = 0;
     info->pdf_width = 0;
     info->pdf_height = 0;
-    info->input_number = 0;
 }
 
 void viewer_info_destroy(ViewerInfo *info) {

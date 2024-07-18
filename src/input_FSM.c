@@ -21,7 +21,7 @@ InputState on_state_normal(Window* window, guint keyval) {
     Viewer* viewer = window_get_viewer(window);
     
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        viewer->info->input_number = keyval - GDK_KEY_0;
+        viewer->cursor->input_number = keyval - GDK_KEY_0;
         next_state = STATE_NUMBER;
     } else {
         switch (keyval) {
@@ -46,7 +46,7 @@ InputState on_state_normal(Window* window, guint keyval) {
                 break;
             case GDK_KEY_f:
                 viewer->links->follow_links_mode = true;
-                viewer->info->input_number = 0;
+                viewer->cursor->input_number = 0;
                 next_state = STATE_FOLLOW_LINKS;
                 break;
             case GDK_KEY_m:
@@ -94,18 +94,18 @@ InputState on_state_number(Window* window, guint keyval) {
     Viewer* viewer = window_get_viewer(window);
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
-        viewer->info->input_number = viewer->info->input_number * 10 + (keyval - GDK_KEY_0);
+        viewer->cursor->input_number = viewer->cursor->input_number * 10 + (keyval - GDK_KEY_0);
         next_state = STATE_NUMBER;
     } else if (keyval == GDK_KEY_G) {
-        viewer_cursor_goto_page(viewer->cursor, viewer->info->input_number - 1);
-        viewer->info->input_number = 0;
+        viewer_cursor_goto_page(viewer->cursor, viewer->cursor->input_number - 1);
+        viewer->cursor->input_number = 0;
         next_state = STATE_NORMAL;
     } else if (keyval == GDK_KEY_Shift_L || keyval == GDK_KEY_Shift_R) {
         // Ignore shift key. Necessary for GDK_KEY_G
         next_state = STATE_NUMBER;
     } else {
-        next_state = execute_command(window, keyval, viewer->info->input_number);
-        viewer->info->input_number = 0;
+        next_state = execute_command(window, keyval, viewer->cursor->input_number);
+        viewer->cursor->input_number = 0;
     }
 
     return next_state;
@@ -117,15 +117,15 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     PopplerLinkMapping *link_mapping;
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
-        viewer->info->input_number = viewer->info->input_number * 10 + (keyval - GDK_KEY_0);
+        viewer->cursor->input_number = viewer->cursor->input_number * 10 + (keyval - GDK_KEY_0);
         next_state = STATE_FOLLOW_LINKS;
-    } else if (keyval == GDK_KEY_Return && viewer->info->input_number - 1 < viewer->links->visible_links->len) {
-        link_mapping = g_ptr_array_index(viewer->links->visible_links, viewer->info->input_number - 1);
+    } else if (keyval == GDK_KEY_Return && viewer->cursor->input_number - 1 < viewer->links->visible_links->len) {
+        link_mapping = g_ptr_array_index(viewer->links->visible_links, viewer->cursor->input_number - 1);
         viewer_cursor_execute_action(viewer->cursor, link_mapping->action);
         viewer->links->follow_links_mode = false;
         next_state = STATE_NORMAL;
     } else {
-        viewer->info->input_number = 0;
+        viewer->cursor->input_number = 0;
         viewer->links->follow_links_mode = false;
         next_state = STATE_NORMAL;
     }
