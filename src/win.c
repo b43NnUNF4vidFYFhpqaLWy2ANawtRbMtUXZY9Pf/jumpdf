@@ -16,6 +16,7 @@
 #include "viewer_links.h"
 #include "input_FSM.h"
 
+static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
 static void window_update_page_label(Window *win);
 static void window_update_mark_label(Window *win);
@@ -67,6 +68,12 @@ struct _Window {
   GtkWidget *toc_search_entry;
   GtkWidget *toc_container;
 
+  /*
+  This reference to App is necessary, as the Window is not associated
+  with a GtkApplication in the destruction phase, making
+  gtk_window_get_application not viable.
+  */
+  App *app;
   ViewerMarkManager *mark_manager;
   Viewer *viewer;
   InputState current_input_state;
@@ -193,7 +200,9 @@ static void window_finalize(GObject *object) {
 
     free(win->viewer);
   }
-  
+
+  app_remove_window(win->app, win);
+
   G_OBJECT_CLASS(window_parent_class)->finalize(object);
 }
 
@@ -202,7 +211,10 @@ static void window_class_init(WindowClass *class) {
 }
 
 Window *window_new(App *app) {
-  return g_object_new(WINDOW_TYPE, "application", app, NULL);
+  Window *win = g_object_new(WINDOW_TYPE, "application", app, NULL);
+  win->app = app;
+
+  return win;
 }
 
 void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
@@ -256,6 +268,11 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
                                 (int)default_width);
   }
+}
+
+void window_update_cursor(Window *win) {
+  win->viewer->cursor = viewer_mark_manager_get_current_cursor(win->mark_manager);
+  viewer_cursor_handle_offset_update(win->viewer->cursor);
 }
 
 void window_redraw(Window *win) {
@@ -315,13 +332,12 @@ GtkListBox *window_get_toc_listbox(Window *win) {
 	return GTK_LIST_BOX(win->toc_container);
 }
 
+static void window_update_cursors(Window *win) {
+  app_update_cursors(win->app);
+}
+
 static void window_redraw_all_windows(Window *win) {
-  GtkApplication *gtk_app = gtk_window_get_application(GTK_WINDOW(win));
-  App *app;
-  if (gtk_app != NULL) {
-    app = JUMPDF_APP(gtk_app);
-    app_redraw_windows(app);
-  }
+  app_redraw_windows(win->app);
 }
 
 static void window_update_page_label(Window *win) {
@@ -397,8 +413,7 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   win = (Window *)user_data;
 
   win->current_input_state = execute_state(win->current_input_state, win, keyval);
-  win->viewer->cursor = viewer_mark_manager_get_current_cursor(win->mark_manager);
-  viewer_cursor_handle_offset_update(win->viewer->cursor);
+  window_update_cursors(win);
   window_redraw_all_windows(win);
 
   return TRUE;

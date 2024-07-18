@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include "app.h"
-#include "win.h"
 
 struct _App {
   GtkApplication parent;
@@ -80,6 +79,14 @@ static void app_class_init(AppClass *class) {
 App *app_new(void) {
   return g_object_new(APP_TYPE, "application-id", "org.gtk.jumpdf", "flags",
                       G_APPLICATION_HANDLES_OPEN, NULL);
+}
+
+void app_remove_window(App *app, Window *win) {
+  g_ptr_array_remove_fast(app->windows, win);
+}
+
+void app_update_cursors(App *app) {
+  g_ptr_array_foreach(app->windows, (GFunc)window_update_cursor, NULL);
 }
 
 void app_redraw_windows(App *app) {

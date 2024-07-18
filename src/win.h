@@ -1,9 +1,11 @@
 #pragma once
 
-#include "app.h"
+#include <gtk/gtk.h>
+
 #include "viewer_mark_manager.h"
 #include "viewer.h"
-#include <gtk/gtk.h>
+
+typedef struct _App App;
 
 #define WINDOW_TYPE (window_get_type())
 G_DECLARE_FINAL_TYPE(Window, window, JUMPDF, WINDOW, GtkApplicationWindow)
@@ -11,6 +13,7 @@ G_DECLARE_FINAL_TYPE(Window, window, JUMPDF, WINDOW, GtkApplicationWindow)
 Window *window_new(App *app);
 void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager);
 
+void window_update_cursor(Window *win);
 void window_redraw(Window *win);
 void window_show_search_dialog(Window *win);
 void window_toggle_toc(Window *win);
