@@ -81,3 +81,7 @@ App *app_new(void) {
   return g_object_new(APP_TYPE, "application-id", "org.gtk.jumpdf", "flags",
                       G_APPLICATION_HANDLES_OPEN, NULL);
 }
+
+void app_redraw_windows(App *app) {
+  g_ptr_array_foreach(app->windows, (GFunc)window_redraw, NULL);
+}

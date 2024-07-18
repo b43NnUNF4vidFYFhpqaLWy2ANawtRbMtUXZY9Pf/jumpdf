@@ -16,7 +16,7 @@
 #include "viewer_links.h"
 #include "input_FSM.h"
 
-static void window_redraw(Window *win);
+static void window_redraw_all_windows(Window *win);
 static void window_update_page_label(Window *win);
 static void window_update_mark_label(Window *win);
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
@@ -258,6 +258,12 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
   }
 }
 
+void window_redraw(Window *win) {
+  window_update_page_label(win);
+  window_update_mark_label(win);
+  gtk_widget_queue_draw(win->view);
+}
+
 void window_show_search_dialog(Window *win) {
   gtk_widget_show(win->search_dialog);
 }
@@ -290,7 +296,7 @@ void window_execute_toc_row(Window *win, GtkListBoxRow *row) {
 
     if (dest) {
       viewer_cursor_goto_poppler_dest(win->viewer->cursor, dest);
-      window_redraw(win);
+      window_redraw_all_windows(win);
     } else {
       g_printerr("Jumpdf: TOC entry has no destination\n");
     }
@@ -309,10 +315,13 @@ GtkListBox *window_get_toc_listbox(Window *win) {
 	return GTK_LIST_BOX(win->toc_container);
 }
 
-static void window_redraw(Window *win) {
-  window_update_page_label(win);
-  window_update_mark_label(win);
-  gtk_widget_queue_draw(win->view);
+static void window_redraw_all_windows(Window *win) {
+  GtkApplication *gtk_app = gtk_window_get_application(GTK_WINDOW(win));
+  App *app;
+  if (gtk_app != NULL) {
+    app = JUMPDF_APP(gtk_app);
+    app_redraw_windows(app);
+  }
 }
 
 static void window_update_page_label(Window *win) {
@@ -390,7 +399,7 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
   win->current_input_state = execute_state(win->current_input_state, win, keyval);
   win->viewer->cursor = viewer_mark_manager_get_current_cursor(win->mark_manager);
   viewer_cursor_handle_offset_update(win->viewer->cursor);
-  window_redraw(win);
+  window_redraw_all_windows(win);
 
   return TRUE;
 }
@@ -419,7 +428,7 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
     }
   }
 
-  window_redraw(win);
+  window_redraw_all_windows(win);
 }
 
 static void on_resize(GtkDrawingArea *area, int width, int height,
@@ -529,7 +538,7 @@ static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window
     search_text = gtk_entry_buffer_get_text(buffer);
 
     win->viewer->search->search_text = strdup(search_text);
-    window_redraw(win);
+    window_redraw_all_windows(win);
   }
 
   gtk_widget_hide(GTK_WIDGET(dialog));

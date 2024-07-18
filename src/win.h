@@ -11,6 +11,7 @@ G_DECLARE_FINAL_TYPE(Window, window, JUMPDF, WINDOW, GtkApplicationWindow)
 Window *window_new(App *app);
 void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager);
 
+void window_redraw(Window *win);
 void window_show_search_dialog(Window *win);
 void window_toggle_toc(Window *win);
 void window_focus_toc_search(Window *win);

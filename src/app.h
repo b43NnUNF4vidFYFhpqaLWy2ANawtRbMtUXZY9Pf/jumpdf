@@ -6,3 +6,5 @@
 G_DECLARE_FINAL_TYPE(App, app, JUMPDF, APP, GtkApplication)
 
 App *app_new(void);
+
+void app_redraw_windows(App *app);
