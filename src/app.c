@@ -6,21 +6,21 @@
 struct _App {
   GtkApplication parent;
 
-  GHashTable *file_viewer_mark_manager_map;
+  GHashTable *uri_mark_groups_map;
   GPtrArray *windows;
 };
 
 G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION);
 
 static void app_init(App *app) {
-  app->file_viewer_mark_manager_map = g_hash_table_new(g_str_hash, g_str_equal);
+  app->uri_mark_groups_map = g_hash_table_new(g_str_hash, g_str_equal);
   app->windows = g_ptr_array_new();
 }
 
 static void app_finalize(GObject *object) {
   App *app = JUMPDF_APP(object);
 
-  g_hash_table_destroy(app->file_viewer_mark_manager_map);
+  g_hash_table_destroy(app->uri_mark_groups_map);
   g_ptr_array_free(app->windows, TRUE);
 
   G_OBJECT_CLASS(app_parent_class)->finalize(object);
@@ -41,7 +41,7 @@ static void app_open(GApplication *app, GFile **files, int n_files,
 
   for (int i = 0; i < n_files; i++) {
     uri = g_file_get_uri(files[i]);
-    if (!g_hash_table_contains(JUMPDF_APP(app)->file_viewer_mark_manager_map, uri)) {
+    if (!g_hash_table_contains(JUMPDF_APP(app)->uri_mark_groups_map, uri)) {
       // TODO: Fetch ViewerMarkManager of URI from DB (temporary)
       groups = malloc(9 * sizeof(ViewerMarkGroup *));
 
@@ -53,10 +53,10 @@ static void app_open(GApplication *app, GFile **files, int n_files,
         groups[i] = viewer_mark_group_new(default_cursors, 0);
       }
 
-      g_hash_table_insert(JUMPDF_APP(app)->file_viewer_mark_manager_map,
+      g_hash_table_insert(JUMPDF_APP(app)->uri_mark_groups_map,
                           uri, groups);
     } else {
-      groups = g_hash_table_lookup(JUMPDF_APP(app)->file_viewer_mark_manager_map, uri);
+      groups = g_hash_table_lookup(JUMPDF_APP(app)->uri_mark_groups_map, uri);
     }
     mark_manager = viewer_mark_manager_new(groups, 0);
 
