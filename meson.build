@@ -6,6 +6,7 @@ src_files = [
         'src/main.c',
         'src/app.c',
         'src/win.c',
+        'src/database.c',
         'src/viewer.c',
         'src/input_FSM.c',
         'src/viewer_info.c',
@@ -18,11 +19,14 @@ src_files = [
 
 cc = meson.get_compiler('c')
 
-gtk_dep = dependency('gtk4')
-poppler_glib_dep = dependency('poppler-glib')
-math_dep = cc.find_library('m', required : true)
+deps = [
+        dependency('gtk4'),
+        dependency('poppler-glib'),
+        dependency('sqlite3'),
+        cc.find_library('m', required : true),
+]
 
 executable('jumpdf',
            sources : src_files,
-           dependencies : [gtk_dep, poppler_glib_dep, math_dep],
+           dependencies : deps,
            install : true)
