@@ -220,7 +220,6 @@ Window *window_new(App *app) {
 void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
   GError *err;
   PopplerDocument* doc;
-  ViewerInfo *info;
   ViewerCursor *cursor;
   ViewerSearch *search;
   ViewerLinks *links;
@@ -235,21 +234,12 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
     g_printerr("Poppler: %s\n", err->message);
     g_error_free(err);
   } else {
-    info = viewer_info_new(doc);
+    cursor = viewer_mark_manager_get_current_cursor(mark_manager);
     search = viewer_search_new();
     links = viewer_links_new();
 
     win->mark_manager = mark_manager;
-    if (viewer_mark_manager_get_current_cursor(win->mark_manager) == NULL) {
-      cursor = viewer_cursor_new(info);
-      viewer_mark_manager_set_mark(win->mark_manager, viewer_cursor_copy(cursor),
-        viewer_mark_manager_get_current_group_index(win->mark_manager),
-        viewer_mark_manager_get_current_mark_index(win->mark_manager));
-      viewer_cursor_destroy(cursor);
-      free(cursor);
-    }
-
-    win->viewer = viewer_new(info, viewer_mark_manager_get_current_cursor(win->mark_manager), search, links);
+    win->viewer = viewer_new(cursor->info, cursor, search, links);
 
     window_populate_toc(win);
     window_update_page_label(win);

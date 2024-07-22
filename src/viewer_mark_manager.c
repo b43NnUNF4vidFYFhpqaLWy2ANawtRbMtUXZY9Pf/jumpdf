@@ -11,6 +11,10 @@ ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[9], unsigned 
     return manager;
 }
 
+ViewerMarkManager *viewer_mark_manager_copy(ViewerMarkManager *manager) {
+    return viewer_mark_manager_new(manager->groups, manager->current_group);
+}
+
 void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[9], unsigned int current_group) {
     if (manager == NULL) {
         return;

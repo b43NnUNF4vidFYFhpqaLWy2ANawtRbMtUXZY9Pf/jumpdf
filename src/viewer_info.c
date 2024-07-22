@@ -11,6 +11,26 @@ ViewerInfo *viewer_info_new(PopplerDocument *doc) {
     return info;
 }
 
+ViewerInfo *viewer_info_new_from_gfile(GFile *file) {
+    ViewerInfo *info;
+    GError *error = NULL;
+    PopplerDocument *doc = poppler_document_new_from_gfile(file, NULL, NULL, &error);
+
+    if (error) {
+        g_printerr("Error opening document: %s\n", error->message);
+        g_error_free(error);
+        return NULL;
+    }
+
+    info = viewer_info_new(doc);
+    if (info == NULL) {
+        g_object_unref(doc);
+        return NULL;
+    }
+
+    return info;
+}
+
 void viewer_info_init(ViewerInfo *info, PopplerDocument *doc) {
     info->doc = doc;
     info->n_pages = poppler_document_get_n_pages(doc);

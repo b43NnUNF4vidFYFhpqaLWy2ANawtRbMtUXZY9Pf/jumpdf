@@ -12,6 +12,7 @@ typedef struct ViewerInfo {
 } ViewerInfo;
 
 ViewerInfo *viewer_info_new(PopplerDocument *doc);
+ViewerInfo *viewer_info_new_from_gfile(GFile *file);
 void viewer_info_init(ViewerInfo *info, PopplerDocument *doc);
 void viewer_info_destroy(ViewerInfo *info);
 

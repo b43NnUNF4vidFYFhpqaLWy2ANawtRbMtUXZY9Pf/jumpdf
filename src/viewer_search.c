@@ -49,7 +49,7 @@ ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *
     if (next_page == -1) {
         return NULL;
     } else {
-        new_cursor = viewer_cursor_new(current_cursor->info);
+        new_cursor = viewer_cursor_copy(current_cursor);
         viewer_cursor_goto_page(new_cursor, next_page);
 
         return new_cursor;
@@ -80,7 +80,7 @@ ViewerCursor *viewer_search_get_prev_search(ViewerSearch *search, ViewerCursor *
     if (prev_page == -1) {
         return NULL;
     } else {
-        new_cursor = viewer_cursor_new(current_cursor->info);
+        new_cursor = viewer_cursor_copy(current_cursor);
         viewer_cursor_goto_page(new_cursor, prev_page);
 
         return new_cursor;

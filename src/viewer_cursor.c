@@ -3,43 +3,48 @@
 #include "viewer_cursor.h"
 #include "config.h"
 
-ViewerCursor *viewer_cursor_new(ViewerInfo *info) {
+ViewerCursor *viewer_cursor_new(ViewerInfo *info, 
+                                int current_page, 
+                                double x_offset, 
+                                double y_offset, 
+                                double scale, 
+                                bool center_mode, 
+                                unsigned int input_number) {
     ViewerCursor *cursor = malloc(sizeof(ViewerCursor));
     if (cursor == NULL) {
         return NULL;
     }
 
-    viewer_cursor_init(cursor, info);
+    viewer_cursor_init(cursor, info, current_page, x_offset, y_offset, scale, center_mode, input_number);
     
     return cursor;
 }
 
 ViewerCursor *viewer_cursor_copy(ViewerCursor *cursor) {
-    ViewerCursor *new_cursor = malloc(sizeof(ViewerCursor));
-    if (new_cursor == NULL) {
-        return NULL;
-    }
-
-    new_cursor->info = cursor->info;
-    new_cursor->current_page = cursor->current_page;
-    new_cursor->x_offset = cursor->x_offset;
-    new_cursor->y_offset = cursor->y_offset;
-    new_cursor->scale = cursor->scale;
-    new_cursor->center_mode = cursor->center_mode;
-    new_cursor->input_number = cursor->input_number;
-
-    return new_cursor;
+    return viewer_cursor_new(cursor->info,
+                                cursor->current_page,
+                                cursor->x_offset,
+                                cursor->y_offset,
+                                cursor->scale,
+                                cursor->center_mode,
+                                cursor->input_number);
 }
 
-void viewer_cursor_init(ViewerCursor *cursor, ViewerInfo *info) {
+void viewer_cursor_init(ViewerCursor *cursor,
+                        ViewerInfo *info,
+                        int current_page, 
+                        double x_offset, 
+                        double y_offset, 
+                        double scale, 
+                        bool center_mode, 
+                        unsigned int input_number) {
     cursor->info = info;
-    
-    cursor->current_page = 0;
-    cursor->x_offset = 0.0;
-    cursor->y_offset = 0.0;
-    cursor->scale = 1.0;
-    cursor->center_mode = true;
-    cursor->input_number = 0;
+    cursor->current_page = current_page;
+    cursor->x_offset = x_offset;
+    cursor->y_offset = y_offset;
+    cursor->scale = scale;
+    cursor->center_mode = center_mode;
+    cursor->input_number = input_number;
 }
 
 void viewer_cursor_destroy(ViewerCursor *cursor) {}

@@ -8,6 +8,7 @@ typedef struct ViewerMarkManager {
 } ViewerMarkManager;
 
 ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[9], unsigned int current_group);
+ViewerMarkManager *viewer_mark_manager_copy(ViewerMarkManager *manager);
 void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[9], unsigned int current_group);
 void viewer_mark_manager_destroy(ViewerMarkManager *manager);
 

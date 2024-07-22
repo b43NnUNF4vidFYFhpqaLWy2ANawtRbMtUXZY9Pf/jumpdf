@@ -5,8 +5,11 @@
 #include "database.h"
 #include "config.h"
 
+// TODO: A lot of repetition in these functions
+
 static Database *database_new();
 static void database_init(Database *db);
+
 static void ensure_path_exists(const char *path);
 static gchar *get_db_file();
 
@@ -24,8 +27,7 @@ Database *database_get_instance() {
     return instance;
 }
 
-void database_close() {
-    Database *db = database_get_instance();
+void database_close(Database *db) {
     int rc;
 
     if (db == NULL) {
@@ -36,6 +38,507 @@ void database_close() {
     if (rc != SQLITE_OK) {
         g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
     }
+}
+
+void database_create_tables(Database *db) {
+    const char *sql =
+        "CREATE TABLE IF NOT EXISTS cursor ("
+        "   id INTEGER PRIMARY KEY AUTOINCREMENT," 
+        "   current_page INTEGER NOT NULL,"
+        "   x_offset REAL NOT NULL,"
+        "   y_offset REAL NOT NULL,"
+        "   scale REAL NOT NULL,"
+        "   center_mode BOOLEAN NOT NULL,"
+        "   input_number INTEGER NOT NULL"
+        ");"
+        "CREATE TABLE IF NOT EXISTS cursor_group ("
+        "   id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "   current_mark INTEGER NOT NULL"
+        ");"
+        "CREATE TABLE IF NOT EXISTS mark_manager ("
+        "   uri TEXT PRIMARY KEY,"
+        "   current_group INTEGER NOT NULL"
+        ");"
+        "CREATE TABLE IF NOT EXISTS group_cursor ("
+        "   group_id INTEGER NOT NULL,"
+        "   cursor_id INTEGER NOT NULL,"
+        "   cursor_index INTEGER NOT NULL,"
+        "   PRIMARY KEY(group_id, cursor_index),"
+        "   FOREIGN KEY(group_id) REFERENCES cursor_group(id),"
+        "   FOREIGN KEY(cursor_id) REFERENCES cursor(id)"
+        ");"
+        "CREATE TABLE IF NOT EXISTS mark_manager_group ("
+        "   id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "   mark_manager_uri INTEGER NOT NULL,"
+        "   group_id INTEGER NOT NULL,"
+        "   FOREIGN KEY(mark_manager_uri) REFERENCES mark_manager(uri),"
+        "   FOREIGN KEY(group_id) REFERENCES cursor_group(id)"
+        ");"
+        ;
+    char *errmsg = NULL;
+    int rc = sqlite3_exec(db->db, sql, NULL, NULL, &errmsg);
+
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", errmsg);
+        sqlite3_free(errmsg);
+    }
+}
+
+sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor) {
+    const char *sql = "INSERT INTO cursor (current_page, x_offset, y_offset, scale, center_mode, input_number) VALUES (?, ?, ?, ?, ?, ?);";
+    sqlite3_stmt *stmt;
+    int rc;
+    int cursor_id = -1;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return -1;
+    } 
+
+    sqlite3_bind_int(stmt, 1, cursor->current_page);
+    sqlite3_bind_double(stmt, 2, cursor->x_offset);
+    sqlite3_bind_double(stmt, 3, cursor->y_offset);
+    sqlite3_bind_double(stmt, 4, cursor->scale);
+    sqlite3_bind_int(stmt, 5, cursor->center_mode);
+    sqlite3_bind_int(stmt, 6, cursor->input_number);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    } else {
+        cursor_id = sqlite3_last_insert_rowid(db->db);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return cursor_id;
+}
+
+void database_update_cursor(Database *db, int id, ViewerCursor *cursor) {
+    const char *sql =
+        "UPDATE cursor"
+        "SET current_page = ?, x_offset = ?, y_offset = ?, scale = ?, center_mode = ?, input_number = ?"
+        "WHERE id = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, cursor->current_page);
+    sqlite3_bind_double(stmt, 2, cursor->x_offset);
+    sqlite3_bind_double(stmt, 3, cursor->y_offset);
+    sqlite3_bind_double(stmt, 4, cursor->scale);
+    sqlite3_bind_int(stmt, 5, cursor->center_mode);
+    sqlite3_bind_int(stmt, 6, cursor->input_number);
+    sqlite3_bind_int(stmt, 7, id);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+ViewerCursor *database_get_cursor(Database *db, int id) {
+    const char *sql = "SELECT current_page, x_offset, y_offset, scale, center_mode, input_number FROM cursor WHERE id = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+    int current_page;
+    double x_offset, y_offset, scale;
+    int center_mode;
+    int input_number;
+    ViewerCursor *cursor = NULL;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return NULL;
+    }
+
+    sqlite3_bind_int(stmt, 1, id);
+
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW) {
+        current_page = sqlite3_column_int(stmt, 0);
+        x_offset = sqlite3_column_double(stmt, 1);
+        y_offset = sqlite3_column_double(stmt, 2);
+        scale = sqlite3_column_double(stmt, 3);
+        center_mode = sqlite3_column_int(stmt, 4);
+        input_number = sqlite3_column_int(stmt, 5);
+
+        cursor = viewer_cursor_new(NULL, current_page, x_offset, y_offset, scale, center_mode, input_number);
+    } else {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    return cursor;
+}
+
+sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group) {
+    const char *sql = "INSERT INTO cursor_group (current_mark) VALUES (?);";
+    sqlite3_stmt *stmt;
+    int rc;
+    sqlite3_int64 group_id = -1;
+    sqlite3_int64 cursor_id = -1;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return -1;
+    }
+
+    sqlite3_bind_int(stmt, 1, group->current_mark);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    } else {
+        group_id = sqlite3_last_insert_rowid(db->db);
+    }
+
+    sqlite3_finalize(stmt);
+
+    for (unsigned int i = 0; i < 9; i++) {
+        if (group->marks[i] != NULL) {
+            cursor_id = database_insert_cursor(db, group->marks[i]);
+            database_insert_group_cursor(db, group_id, cursor_id, i);
+        }
+    }
+
+    return group_id;
+}
+
+sqlite3_int64 database_insert_group_cursor(Database *db, int group_id, int cursor_id, int cursor_index) {
+    const char *sql = 
+        "INSERT INTO "
+        "group_cursor (group_id, cursor_id, cursor_index) "
+        "VALUES (?, ?, ?);";
+    sqlite3_stmt *stmt;
+    int rc;
+    sqlite3_int64 group_cursor_id = -1;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return -1;
+    }
+
+    sqlite3_bind_int(stmt, 1, group_id);
+    sqlite3_bind_int(stmt, 2, cursor_id);
+    sqlite3_bind_int(stmt, 3, cursor_index);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    } else {
+        group_cursor_id = sqlite3_last_insert_rowid(db->db);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return group_cursor_id;
+}
+
+void database_update_group(Database *db, int id, ViewerMarkGroup *group) {
+    const char *sql =
+        "UPDATE cursor_group"
+        "SET current_mark = ?"
+        "WHERE id = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, group->current_mark);
+    sqlite3_bind_int(stmt, 2, id);
+
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    for (unsigned int i = 0; i < 9; i++) {
+        if (group->marks[i] != NULL) {
+            database_update_cursor_in_group(db, id, i, group->marks[i]);
+        }
+    }
+}
+
+void database_update_cursor_in_group(Database *db, int group_id, int cursor_index, ViewerCursor *cursor) {
+    const char *sql =
+        "SELECT cursor_id "
+        "FROM group_cursor "
+        "WHERE group_id = ? AND cursor_index = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+    int cursor_id;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, group_id);
+    sqlite3_bind_int(stmt, 2, cursor_index);
+
+    while (TRUE) {
+        rc = sqlite3_step(stmt);
+       switch (rc) {
+            case SQLITE_ROW:
+                cursor_id = sqlite3_column_int(stmt, 0);
+                database_update_cursor(db, cursor_id, cursor);
+                break;
+            case SQLITE_DONE:
+                break;
+            default:
+                g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+                break;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+ViewerMarkGroup *database_get_group(Database *db, int id) {
+    const char *sql = "SELECT current_mark FROM cursor_group WHERE id = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+    ViewerCursor **cursors;
+    int current_mark;
+    ViewerMarkGroup *group = NULL;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return NULL;
+    }
+
+    sqlite3_bind_int(stmt, 1, id);
+
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW) {
+        cursors = database_get_group_cursors(db, id);
+        current_mark = sqlite3_column_int(stmt, 0);
+        group = viewer_mark_group_new(cursors, current_mark);
+    } else {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    return group;
+}
+
+ViewerCursor **database_get_group_cursors(Database *db, int id) {
+    const char *sql = 
+        "SELECT cursor_id, cursor_index "
+        "FROM group_cursor "
+        "WHERE group_id = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+    int cursor_id;
+    int cursor_index;
+    ViewerCursor **cursors = malloc(9 * sizeof(ViewerCursor *));
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return NULL;
+    }
+
+    sqlite3_bind_int(stmt, 1, id);
+
+    while (TRUE) {
+        rc = sqlite3_step(stmt);
+        switch (rc) {
+            case SQLITE_ROW:
+                cursor_id = sqlite3_column_int(stmt, 0);
+                cursor_index = sqlite3_column_int(stmt, 1);
+                cursors[cursor_index] = database_get_cursor(db, cursor_id);
+                break;
+            case SQLITE_DONE:
+                break;
+            default:
+                g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+                break;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+
+    return cursors;
+}
+
+void database_insert_mark_manager(Database *db, ViewerMarkManager *manager, const char *uri) {
+    const char *sql = "INSERT INTO mark_manager (uri, current_group) VALUES (?, ?);";
+    sqlite3_stmt *stmt;
+    int rc;
+    sqlite3_int64 group_id = -1;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, uri, -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 2, manager->current_group);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    for (unsigned int i = 0; i < 9; i++) {
+        if (manager->groups[i] != NULL) {
+            group_id = database_insert_group(db, manager->groups[i]);
+            database_insert_mark_manager_group(db, uri, group_id);
+        }
+    }
+}
+
+sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, int group_id) {
+    const char *sql = "INSERT INTO mark_manager_group (mark_manager_uri, group_id) VALUES (?, ?);";
+    sqlite3_stmt *stmt;
+    int rc;
+    sqlite3_int64 mark_manager_group_id = -1;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return -1;
+    }
+
+    sqlite3_bind_text(stmt, 1, uri, -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 2, group_id);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    } else {
+        mark_manager_group_id = sqlite3_last_insert_rowid(db->db);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return mark_manager_group_id;
+}
+
+void database_update_mark_manager(Database *db, ViewerMarkManager *manager, const char *uri) {
+    const char *sql =
+        "UPDATE mark_manager"
+        "SET current_group = ?"
+        "WHERE uri = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, manager->current_group);
+    sqlite3_bind_text(stmt, 2, uri, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    for (unsigned int i = 0; i < 9; i++) {
+        if (manager->groups[i] != NULL) {
+            database_update_group(db, i, manager->groups[i]);
+        }
+    }
+}
+
+ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri) {
+    const char *sql = "SELECT current_group FROM mark_manager WHERE uri = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+    int current_group;
+    ViewerMarkGroup **groups = malloc(9 * sizeof(ViewerMarkGroup *));
+    ViewerMarkManager *manager = NULL;
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return NULL;
+    }
+
+    sqlite3_bind_text(stmt, 1, uri, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW) {
+        current_group = sqlite3_column_int(stmt, 0);
+        groups = database_get_mark_manager_groups(db, uri);
+        manager = viewer_mark_manager_new(groups, current_group);
+    } else {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    return manager;
+}
+
+ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri) {
+    const char *sql = 
+        "SELECT group_id "
+        "FROM mark_manager_group "
+        "WHERE mark_manager_uri = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+    int group_id;
+    ViewerMarkGroup **groups = malloc(9 * sizeof(ViewerMarkGroup *));
+
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+        return NULL;
+    }
+
+    sqlite3_bind_text(stmt, 1, uri, -1, SQLITE_STATIC);
+
+    while (TRUE) {
+        rc = sqlite3_step(stmt);
+        switch (rc) {
+            case SQLITE_ROW:
+                group_id = sqlite3_column_int(stmt, 0);
+                groups[group_id] = database_get_group(db, group_id);
+                break;
+            case SQLITE_DONE:
+                break;
+            default:
+                g_printerr("sqlite3: %s\n", sqlite3_errmsg(db->db));
+                break;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+
+    return groups;
 }
 
 static Database *database_new() {
