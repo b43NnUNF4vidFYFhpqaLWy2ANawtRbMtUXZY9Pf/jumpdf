@@ -30,7 +30,8 @@ ViewerCursor **database_get_group_cursors(Database *db, int id);
 
 // Mark manager
 void database_insert_mark_manager(Database *db, ViewerMarkManager *manager, const char *uri);
-sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, int group_id);
+sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, int group_id, int group_index);
 void database_update_mark_manager(Database *db, ViewerMarkManager *manager, const char *uri);
+void database_update_groups_in_mark_manager(Database *db, ViewerMarkGroup **groups, const char *uri);
 ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri);
 ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri);
