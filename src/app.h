@@ -9,6 +9,7 @@ G_DECLARE_FINAL_TYPE(App, app, JUMPDF, APP, GtkApplication)
 
 App *app_new(void);
 
+ViewerMarkManager *app_get_mark_manager(App *app, GFile *file);
 void app_remove_window(App *app, Window *win);
 void app_update_cursors(App *app);
 void app_redraw_windows(App *app);

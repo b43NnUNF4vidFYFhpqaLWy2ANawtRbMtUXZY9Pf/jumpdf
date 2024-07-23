@@ -46,69 +46,15 @@ static void app_activate(GApplication *app) {
 
 static void app_open(GApplication *app, GFile **files, int n_files,
                      const char *hint) {
-  Database *db = database_get_instance();
-  char *uri;
-  ViewerInfo *info;
-  ViewerMarkGroup **groups;
-  ViewerCursor **default_cursors;
-  ViewerCursor *default_cursor;
-  ViewerCursor *cursor;
   ViewerMarkManager *mark_manager;
-  ViewerMarkManager *mark_manager_db;
   Window *win;
   GPtrArray *new_windows = g_ptr_array_sized_new(n_files);
 
   for (int i = 0; i < n_files; i++) {
-    uri = g_file_get_uri(files[i]);
-    info = viewer_info_new_from_gfile(files[i]);
-
-    // TODO: ViewerMarkManager *app_get_mark_manager(App *app, const char *uri);
-    if (!g_hash_table_contains(JUMPDF_APP(app)->uri_mark_manager_map, uri)) {
-      app_update_database_mark_managers(JUMPDF_APP(app));
-      mark_manager = database_get_mark_manager(db, uri);
-      if (mark_manager == NULL) {
-        groups = malloc(9 * sizeof(ViewerMarkGroup *));
-
-        for (unsigned int i = 0; i < 9; i++) {
-          default_cursors = malloc(9 * sizeof(ViewerCursor *));
-          for (unsigned int j = 0; j < 9; j++) {
-            default_cursors[j] = NULL;
-          }
-          groups[i] = viewer_mark_group_new(default_cursors, 0);
-        }
-
-        mark_manager = viewer_mark_manager_new(groups, 0);
-        database_insert_mark_manager(db, uri, mark_manager);
-      }
-
-      g_hash_table_insert(JUMPDF_APP(app)->uri_mark_manager_map,
-                          uri, mark_manager);
-    } else {
-      mark_manager_db = g_hash_table_lookup(JUMPDF_APP(app)->uri_mark_manager_map, uri);
-      mark_manager = viewer_mark_manager_copy(mark_manager_db);
-    }
-
-    for (unsigned int j = 0; j < 9; j++)  {
-      for (unsigned int k = 0; k < 9; k++) {
-        cursor = viewer_mark_manager_get_mark(mark_manager, j, k);
-        if (cursor != NULL) {
-          cursor->info = info;
-        }
-      }
-    }
-    if (viewer_mark_manager_get_current_cursor(mark_manager) == NULL) {
-      default_cursor = viewer_cursor_new(info, 0, 0.0, 0.0, 1.0, TRUE, 0);
-      viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(default_cursor),
-        viewer_mark_manager_get_current_group_index(mark_manager),
-        viewer_mark_manager_get_current_mark_index(mark_manager));
-
-      viewer_cursor_destroy(default_cursor);
-      free(default_cursor);
-    }
-
     win = window_new(JUMPDF_APP(app));
     g_ptr_array_add(new_windows, win);
 
+    mark_manager = app_get_mark_manager(JUMPDF_APP(app), files[i]);
     window_open(win, files[i], mark_manager);
     gtk_window_present(GTK_WINDOW(win));
   }
@@ -125,6 +71,64 @@ static void app_class_init(AppClass *class) {
 App *app_new(void) {
   return g_object_new(APP_TYPE, "application-id", "org.gtk.jumpdf", "flags",
                       G_APPLICATION_HANDLES_OPEN, NULL);
+}
+
+ViewerMarkManager *app_get_mark_manager(App *app, GFile *file) {
+  Database *db = database_get_instance();
+  char *uri = g_file_get_uri(file);
+  ViewerInfo *info = viewer_info_new_from_gfile(file);
+  ViewerMarkGroup **groups;
+  ViewerCursor **default_cursors;
+  ViewerCursor *default_cursor;
+  ViewerCursor *cursor;
+  ViewerMarkManager *mark_manager;
+  ViewerMarkManager *mark_manager_db;
+
+  if (!g_hash_table_contains(JUMPDF_APP(app)->uri_mark_manager_map, uri)) {
+    app_update_database_mark_managers(JUMPDF_APP(app));
+    mark_manager = database_get_mark_manager(db, uri);
+    if (mark_manager == NULL) {
+      groups = malloc(9 * sizeof(ViewerMarkGroup *));
+
+      for (unsigned int i = 0; i < 9; i++) {
+        default_cursors = malloc(9 * sizeof(ViewerCursor *));
+        for (unsigned int j = 0; j < 9; j++) {
+          default_cursors[j] = NULL;
+        }
+        groups[i] = viewer_mark_group_new(default_cursors, 0);
+      }
+
+      mark_manager = viewer_mark_manager_new(groups, 0);
+      database_insert_mark_manager(db, uri, mark_manager);
+    }
+
+    g_hash_table_insert(JUMPDF_APP(app)->uri_mark_manager_map,
+                        uri, mark_manager);
+  } else {
+    mark_manager_db = g_hash_table_lookup(JUMPDF_APP(app)->uri_mark_manager_map, uri);
+    mark_manager = viewer_mark_manager_copy(mark_manager_db);
+  }
+
+  for (unsigned int j = 0; j < 9; j++)  {
+    for (unsigned int k = 0; k < 9; k++) {
+      cursor = viewer_mark_manager_get_mark(mark_manager, j, k);
+      if (cursor != NULL) {
+        cursor->info = info;
+      }
+    }
+  }
+
+  if (viewer_mark_manager_get_current_cursor(mark_manager) == NULL) {
+    default_cursor = viewer_cursor_new(info, 0, 0.0, 0.0, 1.0, TRUE, 0);
+    viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(default_cursor),
+      viewer_mark_manager_get_current_group_index(mark_manager),
+      viewer_mark_manager_get_current_mark_index(mark_manager));
+
+    viewer_cursor_destroy(default_cursor);
+    free(default_cursor);
+  }
+
+  return mark_manager;
 }
 
 void app_remove_window(App *app, Window *win) {
