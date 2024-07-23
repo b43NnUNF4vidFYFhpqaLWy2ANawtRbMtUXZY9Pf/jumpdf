@@ -398,7 +398,7 @@ ViewerCursor **database_get_group_cursors(Database *db, int id) {
     return cursors;
 }
 
-void database_insert_mark_manager(Database *db, ViewerMarkManager *manager, const char *uri) {
+void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManager *manager) {
     const char *sql = "INSERT INTO mark_manager (uri, current_group) VALUES (?, ?);";
     sqlite3_stmt *stmt;
     int rc;
@@ -459,7 +459,7 @@ sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, 
     return mark_manager_group_id;
 }
 
-void database_update_mark_manager(Database *db, ViewerMarkManager *manager, const char *uri) {
+void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManager *manager) {
     const char *sql =
         "UPDATE mark_manager "
         "SET current_group = ? "
@@ -484,7 +484,7 @@ void database_update_mark_manager(Database *db, ViewerMarkManager *manager, cons
 
     sqlite3_finalize(stmt);
 
-    database_update_groups_in_mark_manager(db, manager->groups, uri);
+    database_update_groups_in_mark_manager(db, uri, manager->groups);
     groups_db = database_get_mark_manager_groups(db, uri);
     for (unsigned int i = 0; i < 9; i++) {
         if (groups_db[i] == NULL && manager->groups[i] != NULL) {
@@ -500,7 +500,7 @@ void database_update_mark_manager(Database *db, ViewerMarkManager *manager, cons
     }
 }
 
-void database_update_groups_in_mark_manager(Database *db, ViewerMarkGroup **groups, const char *uri) {
+void database_update_groups_in_mark_manager(Database *db, const char *uri, ViewerMarkGroup **groups) {
     const char *sql =
         "SELECT group_id, group_index "
         "FROM mark_manager_group "

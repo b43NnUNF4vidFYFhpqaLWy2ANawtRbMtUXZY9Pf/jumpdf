@@ -78,7 +78,7 @@ static void app_open(GApplication *app, GFile **files, int n_files,
         }
 
         mark_manager = viewer_mark_manager_new(groups, 0);
-        database_insert_mark_manager(db, mark_manager, uri);
+        database_insert_mark_manager(db, uri, mark_manager);
       }
 
       g_hash_table_insert(JUMPDF_APP(app)->uri_mark_manager_map,
@@ -150,5 +150,5 @@ static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_p
   ViewerMarkManager *manager = manager_ptr;
   Database *db = database_get_instance();
 
-  database_update_mark_manager(db, manager, uri);
+  database_update_mark_manager(db, uri, manager);
 }
