@@ -386,13 +386,24 @@ static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page)
 
 static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to) {
   PopplerLinkMapping *link_mapping;
+  char *link_text;
 
   for (int i = from; i < to; i++) {
       link_mapping = g_ptr_array_index(win->viewer->links->visible_links, i);
+      link_text = g_strdup_printf("%d", i + 1);
 
-      cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+      // Outline
       cairo_move_to(cr, link_mapping->area.x1, win->viewer->info->pdf_height - link_mapping->area.y1);
-      cairo_show_text(cr, g_strdup_printf("%d", i + 1));
+      cairo_text_path(cr, link_text);
+      cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+      cairo_set_line_width(cr, 2.0);
+      cairo_stroke_preserve(cr);
+      
+      // Actual text
+      cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+      cairo_fill(cr);
+
+      g_free(link_text);
   }
 }
 
