@@ -42,7 +42,7 @@ InputState on_state_normal(Window* window, guint keyval) {
                 break;
             case GDK_KEY_G:
                 viewer->cursor->current_page = viewer->info->n_pages - 1;
-                viewer->cursor->y_offset = STEPS - 1;
+                viewer->cursor->y_offset = global_config.steps - 1;
                 break;
             case GDK_KEY_f:
                 viewer->links->follow_links_mode = true;
@@ -220,16 +220,16 @@ static InputState execute_command(Window* window, guint keyval, unsigned int rep
     for (unsigned int i = 0; i < repeat_count; i++) {
         switch (keyval) {
             case GDK_KEY_plus:
-                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale + SCALE_STEP);
+                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale + global_config.scale_step);
                 break;
             case GDK_KEY_minus:
-                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale - SCALE_STEP);
+                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale - global_config.scale_step);
                 break;
             case GDK_KEY_u:
-                viewer->cursor->y_offset -= STEPS / 2.0;
+                viewer->cursor->y_offset -= global_config.steps / 2.0;
                 break;
             case GDK_KEY_d:
-                viewer->cursor->y_offset += STEPS / 2.0;
+                viewer->cursor->y_offset += global_config.steps / 2.0;
                 break;
             case GDK_KEY_h:
                 viewer->cursor->x_offset++;

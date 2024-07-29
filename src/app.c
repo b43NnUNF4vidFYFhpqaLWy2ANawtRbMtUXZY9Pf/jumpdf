@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "app.h"
+#include "config.h"
 #include "database.h"
 
 static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_ptr, gpointer user_data);
@@ -22,6 +23,7 @@ struct _App {
 G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION);
 
 static void app_init(App *app) {
+  config_load(&global_config);
   database_create_tables(database_get_instance());
   app->uri_mark_manager_map = g_hash_table_new(g_str_hash, g_str_equal);
   app->windows = g_ptr_array_new();

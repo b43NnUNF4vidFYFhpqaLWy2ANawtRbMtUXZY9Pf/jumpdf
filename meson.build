@@ -4,6 +4,7 @@ project('jumpdf', 'c',
 
 src_files = [
         'src/main.c',
+        'src/config.c',
         'src/app.c',
         'src/win.c',
         'src/database.c',
@@ -20,9 +21,10 @@ src_files = [
 cc = meson.get_compiler('c')
 
 deps = [
-        dependency('gtk4'),
-        dependency('poppler-glib'),
-        dependency('sqlite3'),
+        dependency('gtk4', required : true),
+        dependency('poppler-glib', required : true),
+        dependency('sqlite3', required : true),
+        cc.find_library('toml', required : true),
         cc.find_library('m', required : true),
 ]
 

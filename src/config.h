@@ -1,6 +1,19 @@
 #pragma once
 
-#define DB_FILENAME_REL_HOME "/.local/share/jumpdf/jumpdf.db"
-#define STEPS 15 // Number of steps in a page.
-#define MIN_SCALE 0.1 // To prevent divide by zero
-#define SCALE_STEP 0.1 // How much to scale the PDF on each event
+#include <gtk/gtk.h>
+
+typedef struct Config {
+    gchar *db_filename;
+    int steps;
+    double min_scale;
+    double scale_step;
+} Config;
+
+extern Config global_config;
+
+void config_set_db_filename(Config *config, gchar *db_filename);
+void config_set_steps(Config *config, int steps);
+void config_set_min_scale(Config *config, double min_scale);
+void config_set_scale_step(Config *config, double scale_step);
+void config_load(Config *config);
+void config_load_default(Config *config);

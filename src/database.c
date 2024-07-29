@@ -668,5 +668,5 @@ static void ensure_path_exists(const char *path) {
 }
 
 static gchar *get_db_file() {
-    return g_build_filename(g_get_home_dir(), DB_FILENAME_REL_HOME, NULL);
+    return g_build_filename(g_get_home_dir(), global_config.db_filename, NULL);
 }

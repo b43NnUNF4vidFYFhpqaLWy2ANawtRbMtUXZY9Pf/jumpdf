@@ -434,7 +434,7 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
     GdkModifierType state = gdk_event_get_modifier_state(event);
     switch (state) {
     case GDK_CONTROL_MASK:
-      viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * SCALE_STEP);
+      viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * global_config.scale_step);
       break;
     default:
       win->viewer->cursor->x_offset -= dx;
@@ -487,14 +487,14 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
 
   // Clear to white background (for PDFs with missing background)
   center_x_offset = ((win->viewer->info->view_width / 2.0) - (win->viewer->info->pdf_width / 2.0)) /
-             (win->viewer->info->pdf_width / STEPS);
+             (win->viewer->info->pdf_width / global_config.steps);
   // First term gets you x-coordinate of left side of PDF as if it was centered
   // (2*margin + real_pdf_width = view_width, where margin = center_x_offset),
   // then second term moves it by the offset from center,
   // i.e. x_offset - center_x_offset
   background_x =
       (win->viewer->info->view_width - win->viewer->cursor->scale * win->viewer->info->pdf_width) / 2 +
-      ((win->viewer->cursor->x_offset - center_x_offset) / STEPS) * win->viewer->cursor->scale * win->viewer->info->pdf_width;
+      ((win->viewer->cursor->x_offset - center_x_offset) / global_config.steps) * win->viewer->cursor->scale * win->viewer->info->pdf_width;
   background_y = 0;
   background_width = win->viewer->cursor->scale * win->viewer->info->pdf_width;
   background_height = win->viewer->info->view_height;
@@ -507,8 +507,8 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_scale(cr_pdf, win->viewer->cursor->scale, win->viewer->cursor->scale);
   cairo_translate(cr_pdf, -win->viewer->info->view_width / 2.0, -win->viewer->info->view_height / 2.0);
 
-  cairo_translate(cr_pdf, win->viewer->cursor->x_offset * win->viewer->info->pdf_width / STEPS,
-                          -win->viewer->cursor->y_offset * win->viewer->info->pdf_height / STEPS);
+  cairo_translate(cr_pdf, win->viewer->cursor->x_offset * win->viewer->info->pdf_width / global_config.steps,
+                          -win->viewer->cursor->y_offset * win->viewer->info->pdf_height / global_config.steps);
 
   viewer_links_clear_links(win->viewer->links);
   window_render_page(win, cr_pdf, page, &links_drawn_sofar);

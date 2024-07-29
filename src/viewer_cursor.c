@@ -65,11 +65,11 @@ void viewer_cursor_toggle_center_mode(ViewerCursor *cursor) {
 
 void viewer_cursor_center(ViewerCursor *cursor) {
     cursor->x_offset = ((cursor->info->view_width / 2.0) - (cursor->info->pdf_width / 2.0)) /
-                                    (cursor->info->pdf_width / STEPS);
+                                    (cursor->info->pdf_width / global_config.steps);
 }
 
 void viewer_cursor_set_scale(ViewerCursor *cursor, double new) {
-    cursor->scale = MAX(MIN_SCALE, new);
+    cursor->scale = MAX(global_config.min_scale, new);
 }
 
 void viewer_cursor_handle_offset_update(ViewerCursor *cursor) {
@@ -78,21 +78,21 @@ void viewer_cursor_handle_offset_update(ViewerCursor *cursor) {
     old_page = cursor->current_page;
     cursor->current_page =
             MIN(cursor->info->n_pages - 1,
-                    MAX(0, cursor->current_page + cursor->y_offset / STEPS)
+                    MAX(0, cursor->current_page + cursor->y_offset / global_config.steps)
                     );
 
     if (cursor->y_offset < 0) {
         // If cursor->current_page just updated to 0, we still want to scroll up
         if (cursor->current_page > 0 || old_page > 0) {
-            cursor->y_offset = STEPS - 1;
+            cursor->y_offset = global_config.steps - 1;
         } else if (cursor->current_page == 0) {
             cursor->y_offset = 0;
         }
-    } else if (cursor->y_offset >= STEPS) {
+    } else if (cursor->y_offset >= global_config.steps) {
         if (cursor->current_page < cursor->info->n_pages - 1 || old_page < cursor->info->n_pages - 1) {
             cursor->y_offset = 0;
         } else if (cursor->current_page == cursor->info->n_pages - 1) {
-            cursor->y_offset = STEPS - 1;
+            cursor->y_offset = global_config.steps - 1;
         }
     }
 }
