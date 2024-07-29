@@ -79,7 +79,8 @@ static void config_parse(Config *config, FILE *fp) {
 
     conf = toml_parse_file(fp, errbuf, sizeof(errbuf));
     if (conf == 0) {
-        g_printerr("Error parsing config file: %s\n", errbuf);
+        g_printerr("Error parsing config file: %s\n\tUsing default values.\n", errbuf);
+        config_load_default(config);
         return;
     }
 
@@ -116,6 +117,9 @@ static void config_parse(Config *config, FILE *fp) {
             g_printerr("Error parsing \"scale_step\". Using default value.\n");
             config_set_scale_step(config, DEFAULT_SCALE_STEP);
         }
+    } else {
+        g_printerr("Error parsing config file: No \"Settings\" table found. Using default values.\n");
+        config_load_default(config);
     }
 
     toml_free(conf);
