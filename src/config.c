@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-#define DEFAULT_DB_FILENAME "/.local/share/jumpdf/jumpdf.db"
+#define DEFAULT_DB_FILENAME "~/.local/share/jumpdf/jumpdf.db"
 #define DEFAULT_STEPS 15 // Number of steps in a page.
 #define DEFAULT_MIN_SCALE 0.3 // To prevent divide by zero
 #define DEFAULT_SCALE_STEP 0.1 // How much to scale the PDF on each event
@@ -65,7 +65,7 @@ void config_load(Config *config) {
 }
 
 void config_load_default(Config *config) {
-    config_set_db_filename(config, DEFAULT_DB_FILENAME);
+    config_set_db_filename(config, g_strdup(DEFAULT_DB_FILENAME));
     config_set_steps(config, DEFAULT_STEPS);
     config_set_min_scale(config, DEFAULT_MIN_SCALE);
     config_set_scale_step(config, DEFAULT_SCALE_STEP);

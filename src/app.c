@@ -38,6 +38,7 @@ static void app_finalize(GObject *object) {
   g_ptr_array_free(app->windows, TRUE);
 
   database_close(database_get_instance());
+  g_free(global_config.db_filename);
 
   G_OBJECT_CLASS(app_parent_class)->finalize(object);
 }

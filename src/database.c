@@ -13,7 +13,7 @@ static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt);
 static void database_printerr_sql(Database *db, char *sql);
 
 static void ensure_path_exists(const char *path);
-static gchar *get_db_file();
+static gchar *expand_path(char *path);
 
 struct Database {
     sqlite3 *db;
@@ -623,7 +623,7 @@ static Database *database_new() {
 }
 
 static void database_init(Database *db) {
-    gchar *db_file = get_db_file();
+    gchar *db_file = expand_path(global_config.db_filename);
     int rc;
 
     if (db == NULL) {
@@ -667,6 +667,11 @@ static void ensure_path_exists(const char *path) {
     g_free(dir);
 }
 
-static gchar *get_db_file() {
-    return g_build_filename(g_get_home_dir(), global_config.db_filename, NULL);
+static gchar *expand_path(char *path) {
+    if (path[0] == '~') {
+        // path + 1 to skip the tilde
+        return g_build_filename(g_get_home_dir(), path + 1, NULL);
+    } else {
+        return path;
+    }
 }
