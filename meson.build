@@ -21,9 +21,9 @@ src_files = [
 cc = meson.get_compiler('c')
 
 deps = [
-        dependency('gtk4', required : true),
-        dependency('poppler-glib', required : true),
-        dependency('sqlite3', required : true),
+        dependency('gtk4', required : true, version : '>=4.14'),
+        dependency('poppler-glib', required : true, version : '>=24.02'),
+        dependency('sqlite3', required : true, version : '>=3.45'),
         cc.find_library('toml', required : true),
         cc.find_library('m', required : true),
 ]
