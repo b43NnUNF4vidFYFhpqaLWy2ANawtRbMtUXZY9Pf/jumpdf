@@ -1,6 +1,6 @@
 #include "viewer_mark_manager.h"
 
-ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[9], unsigned int current_group) {
+ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group) {
     ViewerMarkManager *manager = malloc(sizeof(ViewerMarkManager));
     if (manager == NULL) {
         return NULL;
@@ -15,12 +15,12 @@ ViewerMarkManager *viewer_mark_manager_copy(ViewerMarkManager *manager) {
     return viewer_mark_manager_new(manager->groups, manager->current_group);
 }
 
-void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[9], unsigned int current_group) {
+void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group) {
     if (manager == NULL) {
         return;
     }
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
         manager->groups[i] = groups[i];
     }
 
@@ -29,7 +29,7 @@ void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *group
 }
 
 void viewer_mark_manager_destroy(ViewerMarkManager *manager) {
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
         viewer_mark_group_destroy(manager->groups[i]);
         free(manager->groups[i]);
     }

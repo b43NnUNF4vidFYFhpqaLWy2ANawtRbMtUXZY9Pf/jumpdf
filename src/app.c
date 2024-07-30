@@ -91,11 +91,11 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file) {
     app_update_database_mark_managers(JUMPDF_APP(app));
     mark_manager = database_get_mark_manager(db, uri);
     if (mark_manager == NULL) {
-      groups = malloc(9 * sizeof(ViewerMarkGroup *));
+      groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
 
-      for (unsigned int i = 0; i < 9; i++) {
-        default_cursors = malloc(9 * sizeof(ViewerCursor *));
-        for (unsigned int j = 0; j < 9; j++) {
+      for (unsigned int i = 0; i < NUM_GROUPS; i++) {
+        default_cursors = malloc(NUM_MARKS * sizeof(ViewerCursor *));
+        for (unsigned int j = 0; j < NUM_MARKS; j++) {
           default_cursors[j] = NULL;
         }
         groups[i] = viewer_mark_group_new(default_cursors, 0);
@@ -112,8 +112,8 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file) {
     mark_manager = viewer_mark_manager_copy(mark_manager_db);
   }
 
-  for (unsigned int j = 0; j < 9; j++)  {
-    for (unsigned int k = 0; k < 9; k++) {
+  for (unsigned int j = 0; j < NUM_GROUPS; j++)  {
+    for (unsigned int k = 0; k < NUM_MARKS; k++) {
       cursor = viewer_mark_manager_get_mark(mark_manager, j, k);
       if (cursor != NULL) {
         cursor->info = info;

@@ -2,14 +2,16 @@
 
 #include "viewer_mark_group.h"
 
+#define NUM_GROUPS 9
+
 typedef struct ViewerMarkManager {
-    ViewerMarkGroup *groups[9];
+    ViewerMarkGroup *groups[NUM_GROUPS];
     unsigned int current_group;
 } ViewerMarkManager;
 
-ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[9], unsigned int current_group);
+ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group);
 ViewerMarkManager *viewer_mark_manager_copy(ViewerMarkManager *manager);
-void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[9], unsigned int current_group);
+void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group);
 void viewer_mark_manager_destroy(ViewerMarkManager *manager);
 
 void viewer_mark_manager_set_mark(ViewerMarkManager *manager, ViewerCursor *cursor, unsigned int group_i, unsigned int mark_i);

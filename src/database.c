@@ -209,7 +209,7 @@ sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group) {
 
     sqlite3_finalize(stmt);
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_MARKS; i++) {
         if (group->marks[i] != NULL) {
             cursor_id = database_insert_cursor(db, group->marks[i]);
             database_insert_group_cursor(db, group_id, cursor_id, i);
@@ -277,7 +277,7 @@ void database_update_group(Database *db, int id, ViewerMarkGroup *group) {
     sqlite3_finalize(stmt);
 
     cursors_db = database_get_group_cursors(db, id);
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_MARKS; i++) {
         if (cursors_db[i] == NULL && group->marks[i] != NULL) {
             new_cursor_id = database_insert_cursor(db, group->marks[i]);
             database_insert_group_cursor(db, id, new_cursor_id, i);
@@ -286,7 +286,7 @@ void database_update_group(Database *db, int id, ViewerMarkGroup *group) {
         }
     }
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_MARKS; i++) {
         if (cursors_db[i] != NULL) {
             viewer_cursor_destroy(cursors_db[i]);
             free(cursors_db[i]);
@@ -366,9 +366,9 @@ ViewerCursor **database_get_group_cursors(Database *db, int id) {
     int rc;
     int cursor_id;
     int cursor_index;
-    ViewerCursor **cursors = malloc(9 * sizeof(ViewerCursor *));
+    ViewerCursor **cursors = malloc(NUM_MARKS * sizeof(ViewerCursor *));
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_MARKS; i++) {
         cursors[i] = NULL;
     }
 
@@ -420,7 +420,7 @@ void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManag
 
     sqlite3_finalize(stmt);
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
         if (manager->groups[i] != NULL) {
             group_id = database_insert_group(db, manager->groups[i]);
             database_insert_mark_manager_group(db, uri, group_id, i);
@@ -486,13 +486,13 @@ void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManag
 
     database_update_groups_in_mark_manager(db, uri, manager->groups);
     groups_db = database_get_mark_manager_groups(db, uri);
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
         if (groups_db[i] == NULL && manager->groups[i] != NULL) {
             database_insert_group(db, manager->groups[i]);
         }
     }
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
         if (groups_db[i] != NULL) {
             viewer_mark_group_destroy(groups_db[i]);
             free(groups_db[i]);
@@ -539,10 +539,10 @@ ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri) {
     sqlite3_stmt *stmt;
     int rc;
     int current_group;
-    ViewerMarkGroup **groups = malloc(9 * sizeof(ViewerMarkGroup *));
+    ViewerMarkGroup **groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
     ViewerMarkManager *manager = NULL;
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
         groups[i] = NULL;
     }
 
@@ -579,9 +579,9 @@ ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri
     int rc;
     int group_id;
     int group_index;
-    ViewerMarkGroup **groups = malloc(9 * sizeof(ViewerMarkGroup *));
+    ViewerMarkGroup **groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
 
-    for (unsigned int i = 0; i < 9; i++) {
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
         groups[i] = NULL;
     }
 
