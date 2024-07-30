@@ -22,6 +22,14 @@ struct _App {
 
 G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION);
 
+int app_run(int argc, char *argv[]) {
+  App *app = app_new();
+  int status = g_application_run(G_APPLICATION(app), argc, argv);
+  g_object_unref(app);
+
+  return status;
+}
+
 static void app_init(App *app) {
   config_load(&global_config);
   database_create_tables(database_get_instance());

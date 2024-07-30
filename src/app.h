@@ -7,6 +7,8 @@
 #define APP_TYPE (app_get_type())
 G_DECLARE_FINAL_TYPE(App, app, JUMPDF, APP, GtkApplication)
 
+int app_run(int argc, char *argv[]);
+
 App *app_new(void);
 
 ViewerMarkManager *app_get_mark_manager(App *app, GFile *file);
