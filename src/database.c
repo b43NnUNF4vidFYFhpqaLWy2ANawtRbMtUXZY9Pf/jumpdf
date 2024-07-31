@@ -7,7 +7,7 @@
 
 // TODO: A lot of repetition in these functions
 
-static Database *database_new();
+static Database *database_new(void);
 static void database_init(Database *db);
 static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt);
 static void database_printerr_sql(Database *db, char *sql);
@@ -19,7 +19,7 @@ struct Database {
     sqlite3 *db;
 };
 
-Database *database_get_instance() {
+Database *database_get_instance(void) {
     static Database *instance = NULL;
 
     if (instance == NULL) {
@@ -611,7 +611,7 @@ ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri
     return groups;
 }
 
-static Database *database_new() {
+static Database *database_new(void) {
     Database *db = malloc(sizeof(Database));
     if (db == NULL) {
         return NULL;

@@ -8,7 +8,7 @@
 // Singleton unnecessary?
 typedef struct Database Database;
 
-Database *database_get_instance();
+Database *database_get_instance(void);
 void database_close(Database *db);
 
 // Table creation

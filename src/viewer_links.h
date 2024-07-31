@@ -8,7 +8,7 @@ typedef struct ViewerLinks {
     bool follow_links_mode;
 } ViewerLinks;
 
-ViewerLinks *viewer_links_new();
+ViewerLinks *viewer_links_new(void);
 void viewer_links_init(ViewerLinks *links);
 void viewer_links_destroy(ViewerLinks *links);
 

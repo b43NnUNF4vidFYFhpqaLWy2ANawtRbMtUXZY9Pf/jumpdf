@@ -1,6 +1,6 @@
 #include "viewer_links.h"
 
-ViewerLinks *viewer_links_new() {
+ViewerLinks *viewer_links_new(void) {
     ViewerLinks *links = malloc(sizeof(ViewerLinks));
     if (links == NULL) {
         return NULL;

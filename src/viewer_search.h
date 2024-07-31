@@ -7,7 +7,7 @@ typedef struct ViewerSearch {
     int last_goto_page;
 } ViewerSearch;
 
-ViewerSearch *viewer_search_new();
+ViewerSearch *viewer_search_new(void);
 void viewer_search_init(ViewerSearch *search);
 void viewer_search_destroy(ViewerSearch *search);
 

@@ -2,7 +2,7 @@
 
 #include "viewer_search.h"
 
-ViewerSearch *viewer_search_new() {
+ViewerSearch *viewer_search_new(void) {
     ViewerSearch *search = malloc(sizeof(ViewerSearch));
     if (search == NULL) {
         return NULL;
