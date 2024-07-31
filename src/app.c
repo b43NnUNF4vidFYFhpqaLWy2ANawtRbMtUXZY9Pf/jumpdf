@@ -7,8 +7,13 @@
 
 static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_ptr, gpointer user_data);
 
+static void on_file_dialog_response(GObject *source_object, GAsyncResult *res, gpointer user_data);
+
 struct _App {
   GtkApplication parent;
+
+  // Without a parent window for file dialog, app will prematurely exit
+  GtkWidget* file_chooser_window;
 
   /*
   * Key: URI
@@ -33,6 +38,7 @@ int app_run(int argc, char *argv[]) {
 static void app_init(App *app) {
   config_load(&global_config);
   database_create_tables(database_get_instance());
+  app->file_chooser_window = NULL;
   app->uri_mark_manager_map = g_hash_table_new(g_str_hash, g_str_equal);
   app->windows = g_ptr_array_new();
 }
@@ -52,7 +58,13 @@ static void app_finalize(GObject *object) {
 }
 
 static void app_activate(GApplication *app) {
-  g_printerr("Jumpdf: Files not specified\n");
+  GtkFileDialog *file_dialog = gtk_file_dialog_new();
+
+  JUMPDF_APP(app)->file_chooser_window = gtk_application_window_new(GTK_APPLICATION(app));
+  gtk_window_present(GTK_WINDOW(JUMPDF_APP(app)->file_chooser_window));
+  gtk_widget_set_visible(GTK_WIDGET(JUMPDF_APP(app)->file_chooser_window), FALSE);
+
+  gtk_file_dialog_open_multiple(file_dialog, GTK_WINDOW(JUMPDF_APP(app)->file_chooser_window), NULL, (GAsyncReadyCallback)on_file_dialog_response, app);
 }
 
 static void app_open(GApplication *app, GFile **files, int n_files,
@@ -166,4 +178,36 @@ static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_p
   Database *db = database_get_instance();
 
   database_update_mark_manager(db, uri, manager);
+}
+
+static void on_file_dialog_response(GObject *source_object, GAsyncResult *res, gpointer user_data) {
+  GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
+  GError *error = NULL;
+  GListModel *files_model = gtk_file_dialog_open_multiple_finish(dialog, res, &error);
+  GApplication *app = G_APPLICATION(user_data);
+  int n_files = 0;
+  GFile **file_array = NULL;
+
+  if (error != NULL) {
+    g_printerr("Error opening files: %s\n", error->message);
+    g_error_free(error);
+  } else if (files_model != NULL) {
+    n_files = g_list_model_get_n_items(files_model);
+    file_array = g_new(GFile *, n_files);
+    for (int i = 0; i < n_files; i++) {
+      file_array[i] = G_FILE(g_list_model_get_item(files_model, i));
+    }
+
+    app_open(app, file_array, n_files, NULL);
+
+    for (int i = 0; i < n_files; i++) {
+      g_object_unref(file_array[i]);
+    }
+    g_free(file_array);
+
+    g_object_unref(files_model);
+  }
+
+  g_object_unref(dialog);
+  gtk_window_close(GTK_WINDOW(JUMPDF_APP(app)->file_chooser_window));
 }
