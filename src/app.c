@@ -12,9 +12,6 @@ static void on_file_dialog_response(GObject *source_object, GAsyncResult *res, g
 struct _App {
   GtkApplication parent;
 
-  // Without a parent window for file dialog, app will prematurely exit
-  GtkWidget* file_chooser_window;
-
   /*
   * Key: URI
   * Value: ViewerMarkManager *
@@ -38,7 +35,6 @@ int app_run(int argc, char *argv[]) {
 static void app_init(App *app) {
   config_load(&global_config);
   database_create_tables(database_get_instance());
-  app->file_chooser_window = NULL;
   app->uri_mark_manager_map = g_hash_table_new(g_str_hash, g_str_equal);
   app->windows = g_ptr_array_new();
 }
@@ -59,12 +55,8 @@ static void app_finalize(GObject *object) {
 
 static void app_activate(GApplication *app) {
   GtkFileDialog *file_dialog = gtk_file_dialog_new();
-
-  JUMPDF_APP(app)->file_chooser_window = gtk_application_window_new(GTK_APPLICATION(app));
-  gtk_window_present(GTK_WINDOW(JUMPDF_APP(app)->file_chooser_window));
-  gtk_widget_set_visible(GTK_WIDGET(JUMPDF_APP(app)->file_chooser_window), FALSE);
-
-  gtk_file_dialog_open_multiple(file_dialog, GTK_WINDOW(JUMPDF_APP(app)->file_chooser_window), NULL, (GAsyncReadyCallback)on_file_dialog_response, app);
+  g_application_hold(app);
+  gtk_file_dialog_open_multiple(file_dialog, NULL, NULL, (GAsyncReadyCallback)on_file_dialog_response, app);
 }
 
 static void app_open(GApplication *app, GFile **files, int n_files,
@@ -209,5 +201,5 @@ static void on_file_dialog_response(GObject *source_object, GAsyncResult *res, g
   }
 
   g_object_unref(dialog);
-  gtk_window_close(GTK_WINDOW(JUMPDF_APP(app)->file_chooser_window));
+  g_application_release(app);
 }
