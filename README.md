@@ -51,7 +51,12 @@ ninja uninstall -C release
 
 ## Usage
 
+On the desktop, open PDF files with jumpdf or by starting jumpdf and using the file chooser. On the terminal, use the following commands:
+
 ```sh
+# Open file chooser
+jumpdf
+
 # Open PDF file
 jumpdf <pdf_file>
 
@@ -59,7 +64,7 @@ jumpdf <pdf_file>
 jumpdf <pdf_file1> <pdf_file2> ...
 ```
 
-Note that multiple instances can be opened at the same time.
+Note that multiple windows can be opened at the same time.
 
 ### Keybindings
 
@@ -78,6 +83,7 @@ Note that multiple instances can be opened at the same time.
 - <kbd>m\<1-9></kbd> (Set current mark to \<1-9>. If the mark hasn't been set, it will be set to the current cursor)
 - <kbd>g\<1-9></kbd> (Set curren group to \<1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor)
 - <kbd>/</kbd>, <kbd>Esc</kbd> (Show/hide search dialog)
+- <kbd>o</kbd> (Open file chooser)
 - <kbd>Tab</kbd> (Toggle table of contents)
   - <kbd>j</kbd>, <kbd>k</kbd> (Move down, up)
   - <kbd>/</kbd>, <kbd>Esc</kbd> (Focus/unfocus search entry)
@@ -85,19 +91,4 @@ Note that multiple instances can be opened at the same time.
 
 ### Configuration
 
-Create config file:
-
-```sh
-mkdir -p ~/.config/jumpdf
-touch ~/.config/jumpdf/config.toml
-```
-
-Default config:
-
-```toml
-[Settings]
-db_filename = "~/.local/share/jumpdf/jumpdf.db"
-steps = 15 # > 0
-min_scale = 0.3 # > 0.0
-scale_step = 0.1 # > 0.0
-```
+See `~/.config/jumpdf/config.toml`.
