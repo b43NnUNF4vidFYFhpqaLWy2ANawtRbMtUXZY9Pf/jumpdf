@@ -1,0 +1,5 @@
+[Settings]
+db_filename = "~/.local/share/jumpdf/jumpdf.db"
+steps = 15
+min_scale = 0.3
+scale_step = 0.1

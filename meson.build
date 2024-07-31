@@ -32,3 +32,5 @@ executable('jumpdf',
            sources : src_files,
            dependencies : deps,
            install : true)
+
+subdir('data')
