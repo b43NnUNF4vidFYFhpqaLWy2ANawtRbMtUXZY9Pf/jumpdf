@@ -3,6 +3,7 @@
 #include <gtk/gtk.h>
 
 #include "database.h"
+#include "file_utils.h"
 #include "config.h"
 
 // TODO: A lot of repetition in these functions
@@ -11,9 +12,6 @@ static Database *database_new(void);
 static void database_init(Database *db);
 static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt);
 static void database_printerr_sql(Database *db, char *sql);
-
-static void ensure_path_exists(const char *path);
-static gchar *expand_path(char *path);
 
 struct Database {
     sqlite3 *db;
@@ -653,25 +651,4 @@ static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt) {
 }
 static void database_printerr_sql(Database *db, char *sql) {
     g_print("\"%s\": %s\n", sql, sqlite3_errmsg(db->db));
-}
-
-static void ensure_path_exists(const char *path) {
-    gchar *dir = g_path_get_dirname(path);
-    gint rc = g_mkdir_with_parents(dir, 0700);
-    int saved_errno = errno;
-
-    if (rc == -1) {
-        g_printerr("GLib: %s\n", g_strerror(saved_errno));
-    }
-
-    g_free(dir);
-}
-
-static gchar *expand_path(char *path) {
-    if (path[0] == '~') {
-        // path + 1 to skip the tilde
-        return g_build_filename(g_get_home_dir(), path + 1, NULL);
-    } else {
-        return path;
-    }
 }

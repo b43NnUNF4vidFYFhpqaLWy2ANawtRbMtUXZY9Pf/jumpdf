@@ -3,6 +3,7 @@
 
 #include "app.h"
 #include "config.h"
+#include "file_utils.h"
 #include "database.h"
 
 static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_ptr, gpointer user_data);
@@ -49,6 +50,7 @@ static void app_finalize(GObject *object) {
 
   database_close(database_get_instance());
   g_free(global_config.db_filename);
+  g_free(global_config.file_chooser_initial_folder_path);
 
   G_OBJECT_CLASS(app_parent_class)->finalize(object);
 }
@@ -164,6 +166,11 @@ void app_update_database_mark_managers(App *app) {
 
 void app_open_file_chooser(App *app) {
   GtkFileDialog *file_dialog = gtk_file_dialog_new();
+  gchar *initial_folder_path = expand_path(global_config.file_chooser_initial_folder_path);
+  GFile *initial_folder = g_file_new_for_path(initial_folder_path);
+  gtk_file_dialog_set_initial_folder(file_dialog, initial_folder);
+  g_object_unref(initial_folder);
+
   g_application_hold(G_APPLICATION(app));
   gtk_file_dialog_open_multiple(file_dialog, NULL, NULL, (GAsyncReadyCallback)on_file_dialog_response, app);
 }

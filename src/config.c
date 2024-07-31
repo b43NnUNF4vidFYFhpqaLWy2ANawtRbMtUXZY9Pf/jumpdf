@@ -4,6 +4,7 @@
 #include "config.h"
 
 #define DEFAULT_DB_FILENAME "~/.local/share/jumpdf/jumpdf.db"
+#define DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH "~/Documents"
 #define DEFAULT_STEPS 15 // Number of steps in a page.
 #define DEFAULT_MIN_SCALE 0.3 // To prevent divide by zero
 #define DEFAULT_SCALE_STEP 0.1 // How much to scale the PDF on each event
@@ -12,6 +13,7 @@ static void config_parse(Config *config, FILE *fp);
 
 Config global_config = {
     .db_filename = NULL,
+    .file_chooser_initial_folder_path = NULL,
     .steps = -1,
     .min_scale = -1.0,
     .scale_step = -1.0
@@ -19,6 +21,10 @@ Config global_config = {
 
 void config_set_db_filename(Config *config, gchar *db_filename) {
     config->db_filename = db_filename;
+}
+
+void config_set_file_chooser_initial_folder_path(Config *config, gchar *file_chooser_initial_folder_path) {
+    config->file_chooser_initial_folder_path = file_chooser_initial_folder_path;
 }
 
 void config_set_steps(Config *config, int steps) {
@@ -66,6 +72,7 @@ void config_load(Config *config) {
 
 void config_load_default(Config *config) {
     config_set_db_filename(config, g_strdup(DEFAULT_DB_FILENAME));
+    config_set_file_chooser_initial_folder_path(config, g_strdup(DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH));
     config_set_steps(config, DEFAULT_STEPS);
     config_set_min_scale(config, DEFAULT_MIN_SCALE);
     config_set_scale_step(config, DEFAULT_SCALE_STEP);
@@ -91,7 +98,15 @@ static void config_parse(Config *config, FILE *fp) {
             config_set_db_filename(config, datum.u.s);
         } else {
             g_printerr("Error parsing \"db_filename\". Using default value.\n");
-            config_set_db_filename(config, DEFAULT_DB_FILENAME);
+            config_set_db_filename(config, g_strdup(DEFAULT_DB_FILENAME));
+        }
+
+        datum = toml_string_in(settings, "file_chooser_initial_folder_path");
+        if (datum.ok) {
+            config_set_file_chooser_initial_folder_path(config, datum.u.s);
+        } else {
+            g_printerr("Error parsing \"file_chooser_initial_folder_path\". Using default value.\n");
+            config_set_file_chooser_initial_folder_path(config, g_strdup(DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH));
         }
 
         datum = toml_int_in(settings, "steps");

@@ -5,6 +5,7 @@ project('jumpdf', 'c',
 src_files = [
         'src/main.c',
         'src/config.c',
+        'src/file_utils.c',
         'src/app.c',
         'src/win.c',
         'src/database.c',
