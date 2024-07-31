@@ -591,7 +591,7 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
       gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
 
       dest = viewer_info_get_dest(win->viewer->info, action->goto_dest.dest);
-      g_object_set_data(G_OBJECT(label), "dest", dest);
+      g_object_set_data(G_OBJECT(label), "dest", poppler_dest_copy(dest));
 
       gtk_list_box_insert(GTK_LIST_BOX(win->toc_container), label, -1);
 
