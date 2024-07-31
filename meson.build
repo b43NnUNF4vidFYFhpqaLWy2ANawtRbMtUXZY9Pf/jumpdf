@@ -1,5 +1,6 @@
 project('jumpdf', 'c',
         version : '0.1',
+        license : 'MIT',
         meson_version : '>=1.4.0',
         default_options : ['c_std=c99'])
 
