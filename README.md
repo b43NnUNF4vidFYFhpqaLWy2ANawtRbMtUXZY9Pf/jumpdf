@@ -27,6 +27,10 @@ Existing PDF viewers like [sioyek](https://sioyek.info/) and [zathura](https://p
 
 ### Dependencies
 
+Build dependencies:
+
+- `meson` (>= 1.4.0)
+
 Required:
 
 - `gtk4` (>= 4.14)
@@ -36,8 +40,6 @@ Required:
 
 ### Install
 
-Build and install using [meson](https://mesonbuild.com/SimpleStart.html):
-  
 ```sh
 meson setup release --buildtype=release
 meson install -C release
