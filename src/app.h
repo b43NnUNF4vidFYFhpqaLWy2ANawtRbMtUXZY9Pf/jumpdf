@@ -16,3 +16,4 @@ void app_remove_window(App *app, Window *win);
 void app_update_cursors(App *app);
 void app_redraw_windows(App *app);
 void app_update_database_mark_managers(App *app);
+void app_open_file_chooser(App *app);

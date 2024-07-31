@@ -1,3 +1,4 @@
+#include "app.h"
 #include "input_FSM.h"
 #include "config.h"
 #include "viewer_info.h"
@@ -58,6 +59,9 @@ InputState on_state_normal(Window* window, guint keyval) {
                 break;
             case GDK_KEY_slash:
                 window_show_search_dialog(window);
+                break;
+            case GDK_KEY_o:
+                app_open_file_chooser(JUMPDF_APP(gtk_window_get_application(GTK_WINDOW(window))));
                 break;
             default:
                 next_state = execute_command(window, keyval, 1);

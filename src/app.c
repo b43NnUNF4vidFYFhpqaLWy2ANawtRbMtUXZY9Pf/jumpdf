@@ -54,9 +54,7 @@ static void app_finalize(GObject *object) {
 }
 
 static void app_activate(GApplication *app) {
-  GtkFileDialog *file_dialog = gtk_file_dialog_new();
-  g_application_hold(app);
-  gtk_file_dialog_open_multiple(file_dialog, NULL, NULL, (GAsyncReadyCallback)on_file_dialog_response, app);
+  app_open_file_chooser(JUMPDF_APP(app));
 }
 
 static void app_open(GApplication *app, GFile **files, int n_files,
@@ -162,6 +160,12 @@ void app_update_database_mark_managers(App *app) {
   g_hash_table_foreach(app->uri_mark_manager_map,
                        (GHFunc)database_update_mark_manager_cb, 
                        NULL);
+}
+
+void app_open_file_chooser(App *app) {
+  GtkFileDialog *file_dialog = gtk_file_dialog_new();
+  g_application_hold(G_APPLICATION(app));
+  gtk_file_dialog_open_multiple(file_dialog, NULL, NULL, (GAsyncReadyCallback)on_file_dialog_response, app);
 }
 
 static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_ptr, gpointer user_data) {
