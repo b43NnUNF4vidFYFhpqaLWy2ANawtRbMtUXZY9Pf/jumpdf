@@ -36,7 +36,7 @@ int app_run(int argc, char *argv[]) {
 static void app_init(App *app) {
   config_load(&global_config);
   database_create_tables(database_get_instance());
-  app->uri_mark_manager_map = g_hash_table_new(g_str_hash, g_str_equal);
+  app->uri_mark_manager_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)viewer_mark_manager_destroy);
   app->windows = g_ptr_array_new();
 }
 
