@@ -104,8 +104,18 @@ void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page) {
 }
 
 void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest) {
-    // TODO: Zoom into dest, instead of just going to the page
-    viewer_cursor_goto_page(cursor, dest->page_num - 1);
+    cursor->current_page = dest->page_num - 1;
+
+    if (dest->change_top == 1) {
+        /*
+        * dest->top is relative to the bottom of the page
+        * To get the new y_offset, start from the bottom, global_config.steps,
+        * and subtract how much to go up in terms of steps
+        */
+        cursor->y_offset = global_config.steps - global_config.steps * (dest->top / cursor->info->pdf_height);
+        // Only with default zoom will the dest be at the top of the view
+        cursor->scale = 1.0;
+    }
 }
 
 void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action) {
