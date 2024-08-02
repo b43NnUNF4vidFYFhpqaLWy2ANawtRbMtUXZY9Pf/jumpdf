@@ -221,6 +221,7 @@ static InputState execute_command(Window* window, guint keyval, unsigned int rep
     Viewer* viewer = window_get_viewer(window);
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     ViewerCursor *search_new_cursor = NULL;
+    ViewerCursor *current_cursor = viewer_mark_manager_get_current_cursor(mark_manager);
     unsigned int current_group = viewer_mark_manager_get_current_group_index(mark_manager);
     unsigned int current_mark = viewer_mark_manager_get_current_mark_index(mark_manager);
 
@@ -260,6 +261,8 @@ static InputState execute_command(Window* window, guint keyval, unsigned int rep
     }
 
     if (search_new_cursor != NULL) {
+        viewer_cursor_destroy(current_cursor);
+        free(current_cursor);
         viewer_mark_manager_set_mark(mark_manager, search_new_cursor, current_group, current_mark);
     }
 

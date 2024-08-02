@@ -36,15 +36,7 @@ void viewer_mark_manager_destroy(ViewerMarkManager *manager) {
 }
 
 void viewer_mark_manager_set_mark(ViewerMarkManager *manager, ViewerCursor *cursor, unsigned int group_i, unsigned int mark_i) {
-    ViewerMarkGroup *group = manager->groups[group_i];
-    
-    if (group->marks[mark_i] == NULL) {
-        group->marks[mark_i] = cursor;
-    } else if (group->marks[mark_i] != cursor) {
-        viewer_cursor_destroy(group->marks[mark_i]);
-        free(group->marks[mark_i]);
-        group->marks[mark_i] = cursor;
-    }
+    manager->groups[group_i]->marks[mark_i] = cursor;
 }
 
 ViewerCursor *viewer_mark_manager_get_mark(ViewerMarkManager *manager, unsigned int group_i, unsigned int mark_i) {
