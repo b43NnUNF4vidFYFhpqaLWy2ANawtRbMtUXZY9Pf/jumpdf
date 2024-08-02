@@ -28,7 +28,7 @@ void viewer_search_destroy(ViewerSearch *search) {
 ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *current_cursor) {
     GList *matches = NULL;
     ViewerCursor *new_cursor = NULL;
-    unsigned int next_page = -1;
+    int next_page = -1;
 
     if (!search->search_text) {
         return NULL;
@@ -59,7 +59,7 @@ ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *
 ViewerCursor *viewer_search_get_prev_search(ViewerSearch *search, ViewerCursor *current_cursor) {
     GList *matches = NULL;
     ViewerCursor *new_cursor = NULL;
-    unsigned int prev_page = -1;
+    int prev_page = -1;
 
     if (!search->search_text) {
         return NULL;
