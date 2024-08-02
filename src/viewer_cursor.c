@@ -135,7 +135,6 @@ void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action) {
         case POPPLER_ACTION_GOTO_DEST:
             dest = viewer_info_get_dest(cursor->info, action->goto_dest.dest);
             viewer_cursor_goto_poppler_dest(cursor, dest);
-            poppler_dest_free(dest);
 
             break;
         default:
