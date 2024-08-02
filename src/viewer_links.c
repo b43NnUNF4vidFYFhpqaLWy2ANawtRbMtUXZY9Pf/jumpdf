@@ -17,7 +17,8 @@ void viewer_links_init(ViewerLinks *links) {
 }
 
 void viewer_links_destroy(ViewerLinks *links) {
-    g_ptr_array_free(links->visible_links, TRUE);
+    viewer_links_clear_links(links);
+    g_ptr_array_free(links->visible_links, FALSE);
 }
 
 unsigned int viewer_links_get_links(ViewerLinks *links, PopplerPage *page) {
@@ -26,9 +27,11 @@ unsigned int viewer_links_get_links(ViewerLinks *links, PopplerPage *page) {
     PopplerLinkMapping *link_mapping;
 
     for (GList *l = link_mappings; l; l = l->next) {
-        link_mapping = l->data;
+        link_mapping = poppler_link_mapping_copy(l->data);
         g_ptr_array_add(links->visible_links, link_mapping);
     }
+
+    poppler_page_free_link_mapping(link_mappings);
 
     return link_count;
 }
