@@ -219,7 +219,10 @@ InputState execute_state(InputState current_state, Window* window, guint keyval)
 static InputState execute_command(Window* window, guint keyval, unsigned int repeat_count) {
     InputState next_state = STATE_NORMAL;
     Viewer* viewer = window_get_viewer(window);
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     ViewerCursor *search_new_cursor = NULL;
+    unsigned int current_group = viewer_mark_manager_get_current_group_index(mark_manager);
+    unsigned int current_mark = viewer_mark_manager_get_current_mark_index(mark_manager);
 
     for (unsigned int i = 0; i < repeat_count; i++) {
         switch (keyval) {
@@ -257,9 +260,7 @@ static InputState execute_command(Window* window, guint keyval, unsigned int rep
     }
 
     if (search_new_cursor != NULL) {
-        viewer_cursor_destroy(viewer->cursor);
-        free(viewer->cursor);
-        viewer->cursor = search_new_cursor;
+        viewer_mark_manager_set_mark(mark_manager, search_new_cursor, current_group, current_mark);
     }
 
     return next_state;
