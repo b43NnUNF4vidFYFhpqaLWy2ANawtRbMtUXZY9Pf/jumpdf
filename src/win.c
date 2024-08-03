@@ -18,8 +18,9 @@
 
 static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
-static void window_update_page_label(Window *win);
-static void window_update_mark_label(Window *win);
+static void window_update_left_label(Window *win);
+static void window_update_middle_label(Window *win);
+static void window_update_right_label(Window *win);
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
 static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page);
 static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to);
@@ -52,12 +53,13 @@ struct _Window {
   GtkWidget *view_box;
   GtkWidget *view;
 
-  GtkWidget *bottom_bar;
-  GtkWidget *bottom_bar_left;
-  GtkWidget *bottom_bar_middle;
-  GtkWidget *bottom_bar_right;
-  GtkWidget *page_label;
-  GtkWidget *mark_label;
+  GtkWidget *statusline;
+  GtkWidget *statusline_left;
+  GtkWidget *statusline_middle;
+  GtkWidget *statusline_right;
+  GtkWidget *left_label;
+  GtkWidget *middle_label;
+  GtkWidget *right_label;
 
   GtkWidget *search_dialog;
   GtkWidget *search_content_area;
@@ -106,32 +108,40 @@ static void window_init(Window *win) {
                                  win, NULL);
   g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
 
-  win->bottom_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_style_context_add_class(gtk_widget_get_style_context(win->bottom_bar), "bottom-bar");
+  win->statusline = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_style_context_add_class(gtk_widget_get_style_context(win->statusline), "bottom-bar");
   gtk_css_provider_load_from_data(provider, "box.bottom-bar { background-color: black; }", -1);
-  gtk_style_context_add_provider(gtk_widget_get_style_context(win->bottom_bar),
+  gtk_style_context_add_provider(gtk_widget_get_style_context(win->statusline),
                                  GTK_STYLE_PROVIDER(provider),
                                  GTK_STYLE_PROVIDER_PRIORITY_USER);
-  win->bottom_bar_left = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  win->bottom_bar_middle = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  win->bottom_bar_right = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_widget_set_hexpand(win->bottom_bar_middle, TRUE);
+  
+  win->statusline_left = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_widget_set_hexpand(win->statusline_left, FALSE);
+  gtk_widget_set_halign(win->statusline_left, GTK_ALIGN_START);
+  win->left_label = gtk_label_new(NULL);
+  gtk_box_append(GTK_BOX(win->statusline_left), win->left_label);
 
-  gtk_box_append(GTK_BOX(win->bottom_bar), win->bottom_bar_left);
-  gtk_box_append(GTK_BOX(win->bottom_bar), win->bottom_bar_middle);
-  gtk_box_append(GTK_BOX(win->bottom_bar), win->bottom_bar_right);
+  win->statusline_middle = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_widget_set_hexpand(win->statusline_middle, TRUE);
+  gtk_widget_set_halign(win->statusline_middle, GTK_ALIGN_CENTER);
+  win->middle_label = gtk_label_new(NULL);
+  gtk_box_append(GTK_BOX(win->statusline_middle), win->middle_label);
 
-  win->page_label = gtk_label_new(NULL);
-  gtk_box_append(GTK_BOX(win->bottom_bar_left), win->page_label);
+  win->statusline_right = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_widget_set_hexpand(win->statusline_right, FALSE);
+  gtk_widget_set_halign(win->statusline_right, GTK_ALIGN_END);
+  win->right_label = gtk_label_new(NULL);
+  gtk_box_append(GTK_BOX(win->statusline_right), win->right_label);
 
-  win->mark_label = gtk_label_new(NULL);
-  gtk_box_append(GTK_BOX(win->bottom_bar_right), win->mark_label);
+  gtk_box_append(GTK_BOX(win->statusline), win->statusline_left);
+  gtk_box_append(GTK_BOX(win->statusline), win->statusline_middle);
+  gtk_box_append(GTK_BOX(win->statusline), win->statusline_right);
 
   win->view_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_widget_set_hexpand(win->view_box, TRUE);
   gtk_widget_set_vexpand(win->view_box, TRUE);
   gtk_box_append(GTK_BOX(win->view_box), win->view);
-  gtk_box_append(GTK_BOX(win->view_box), win->bottom_bar);
+  gtk_box_append(GTK_BOX(win->view_box), win->statusline);
 
   win->search_dialog = gtk_dialog_new_with_buttons("Search", GTK_WINDOW(win),
                                             GTK_DIALOG_MODAL,
@@ -222,8 +232,9 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
   win->viewer = viewer_new(cursor->info, cursor, search, links);
 
   window_populate_toc(win);
-  window_update_page_label(win);
-  window_update_mark_label(win);
+  window_update_left_label(win);
+  window_update_middle_label(win);
+  window_update_right_label(win);
 
   file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &err);
   if (file_info == NULL) {
@@ -245,8 +256,9 @@ void window_update_cursor(Window *win) {
 }
 
 void window_redraw(Window *win) {
-  window_update_page_label(win);
-  window_update_mark_label(win);
+  window_update_left_label(win);
+  window_update_middle_label(win);
+  window_update_right_label(win);
   gtk_widget_queue_draw(win->view);
 }
 
@@ -311,18 +323,58 @@ static void window_redraw_all_windows(Window *win) {
   app_redraw_windows(win->app);
 }
 
-static void window_update_page_label(Window *win) {
-  gchar *page_str = g_strdup_printf("%d/%d", win->viewer->cursor->current_page + 1, win->viewer->info->n_pages);
-  gtk_label_set_text(GTK_LABEL(win->page_label), page_str);
+static void window_update_left_label(Window *win) {
+  GStrv str_array = NULL;
+  char *final_str = NULL;
+  GStrvBuilder *builder = g_strv_builder_new();
+  gchar *page_str = g_strdup_printf("%d/%d",
+                                    win->viewer->cursor->current_page + 1,
+                                    win->viewer->info->n_pages);
+  
+  g_strv_builder_add(builder, page_str);
   g_free(page_str);
+
+  str_array = g_strv_builder_end(builder);
+  g_strv_builder_unref(builder);
+
+  final_str = g_strjoinv(" | ", str_array);
+  g_strfreev(str_array);
+
+  gtk_label_set_text(GTK_LABEL(win->left_label), final_str);
+  g_free(final_str);
 }
 
-static void window_update_mark_label(Window *win) {
-  gchar *mark_str = g_strdup_printf("%d:%d",
-    viewer_mark_manager_get_current_group_index(win->mark_manager) + 1,
-    viewer_mark_manager_get_current_mark_index(win->mark_manager) + 1);
-  gtk_label_set_text(GTK_LABEL(win->mark_label), mark_str);
-  g_free(mark_str);
+static void window_update_middle_label(Window *win) {
+}
+
+static void window_update_right_label(Window *win) {
+  GStrv str_array = NULL;
+  char *final_str = NULL;
+  GStrvBuilder *builder = g_strv_builder_new();
+  gchar *zoom_str =
+    g_strdup_printf("%d%%",
+    (int)round(win->viewer->cursor->scale * 100));
+  gchar *mark_selection_str =
+    g_strdup_printf("%u:%u",
+                    viewer_mark_manager_get_current_group_index(win->mark_manager) + 1,
+                    viewer_mark_manager_get_current_mark_index(win->mark_manager) + 1);
+
+  if (win->viewer->cursor->center_mode) {
+    g_strv_builder_add(builder, "C");
+  }
+  g_strv_builder_add(builder, zoom_str);
+  g_free(zoom_str);
+  g_strv_builder_add(builder, mark_selection_str);
+  g_free(mark_selection_str);
+
+  str_array = g_strv_builder_end(builder);
+  g_strv_builder_unref(builder);
+
+  final_str = g_strjoinv(" | ", str_array);
+  g_strfreev(str_array);
+
+  gtk_label_set_text(GTK_LABEL(win->right_label), final_str);
+  g_free(final_str);
 }
 
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar) {
