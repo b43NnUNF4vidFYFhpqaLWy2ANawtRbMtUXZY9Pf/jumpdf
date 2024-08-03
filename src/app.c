@@ -92,17 +92,19 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file) {
   Database *db = database_get_instance();
   char *uri = g_file_get_uri(file);
   ViewerInfo *info = viewer_info_new_from_gfile(file);
-  ViewerMarkGroup **groups;
-  ViewerCursor **default_cursors;
-  ViewerCursor *default_cursor;
-  ViewerCursor *cursor;
-  ViewerMarkManager *mark_manager;
-  ViewerMarkManager *mark_manager_db;
+  ViewerMarkGroup **groups = NULL;
+  ViewerCursor **default_cursors = NULL;
+  ViewerCursor *default_cursor = NULL;
+  ViewerCursor *cursor = NULL;
+  ViewerMarkManager *mark_manager = NULL;
+  ViewerMarkManager *mark_manager_memory = g_hash_table_lookup(JUMPDF_APP(app)->uri_mark_manager_map, uri);
+  ViewerMarkManager *mark_manager_db = NULL;
 
-  if (!g_hash_table_contains(JUMPDF_APP(app)->uri_mark_manager_map, uri)) {
+  if (mark_manager_memory == NULL) {
     app_update_database_mark_managers(JUMPDF_APP(app));
-    mark_manager = database_get_mark_manager(db, uri);
-    if (mark_manager == NULL) {
+    mark_manager_db = database_get_mark_manager(db, uri);
+
+    if (mark_manager_db == NULL) {
       groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
 
       for (unsigned int i = 0; i < NUM_GROUPS; i++) {
@@ -110,18 +112,24 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file) {
         for (unsigned int j = 0; j < NUM_MARKS; j++) {
           default_cursors[j] = NULL;
         }
+
         groups[i] = viewer_mark_group_new(default_cursors, 0);
+        free(default_cursors);
       }
 
       mark_manager = viewer_mark_manager_new(groups, 0);
+      free(groups);
+
       database_insert_mark_manager(db, uri, mark_manager);
+    } else {
+      mark_manager = mark_manager_db;
     }
 
     g_hash_table_insert(JUMPDF_APP(app)->uri_mark_manager_map,
                         uri, mark_manager);
   } else {
-    mark_manager_db = g_hash_table_lookup(JUMPDF_APP(app)->uri_mark_manager_map, uri);
-    mark_manager = viewer_mark_manager_copy(mark_manager_db);
+    // Copy to have the same groups and marks, but different selections 
+    mark_manager = viewer_mark_manager_copy(mark_manager_memory);
   }
 
   for (unsigned int j = 0; j < NUM_GROUPS; j++)  {
@@ -168,6 +176,9 @@ void app_open_file_chooser(App *app) {
   GtkFileDialog *file_dialog = gtk_file_dialog_new();
   gchar *initial_folder_path = expand_path(global_config.file_chooser_initial_folder_path);
   GFile *initial_folder = g_file_new_for_path(initial_folder_path);
+
+  g_free(initial_folder_path);
+
   gtk_file_dialog_set_initial_folder(file_dialog, initial_folder);
   g_object_unref(initial_folder);
 

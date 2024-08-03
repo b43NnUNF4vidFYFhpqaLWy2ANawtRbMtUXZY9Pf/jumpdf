@@ -160,7 +160,10 @@ static void window_init(Window *win) {
   win->toc_scroll_window = gtk_scrolled_window_new();
   gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(win->toc_scroll_window), win->toc_box);
   gtk_widget_set_visible(win->toc_scroll_window, FALSE);
-  // Prevents the widget from being destroyed when temporarily removed from container
+  /*
+  * in window_toggle_toc, gtk_box_prepend only increases the ref count
+  * the first time it is called, so we need to manually increase it here
+  */
   g_object_ref(win->toc_scroll_window);
 
   win->main_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -172,20 +175,6 @@ static void window_init(Window *win) {
 
 static void window_finalize(GObject *object) {
   Window *win = (Window *)object;
-  GtkWidget *toc_row = gtk_widget_get_first_child(win->toc_container);
-  GtkWidget *toc_label;
-  PopplerDest *dest;
-
-  while (toc_row) {
-    toc_label = gtk_widget_get_first_child(toc_row);
-    dest = g_object_get_data(G_OBJECT(toc_label), "dest");
-    if (dest) {
-      poppler_dest_free(dest);
-    }
-    toc_row = gtk_widget_get_next_sibling(toc_row);
-  }
-
-  g_object_unref(win->toc_scroll_window);
 
   if (win->viewer) {
     // Cursor already destroyed by mark_manager destruction
@@ -268,14 +257,16 @@ void window_show_search_dialog(Window *win) {
 void window_toggle_toc(Window *win) {
   gboolean is_visible = gtk_widget_get_visible(win->toc_scroll_window);
 
-  // It is necessary to remove from main_container,
+  gtk_widget_set_visible(win->toc_scroll_window, !is_visible);
+
+  // It is necessary to remove from main_container in addition,
   // otherwise it will still occupy space
   if (is_visible) {
-    gtk_widget_set_visible(win->toc_scroll_window, FALSE);
+    g_object_ref(win->toc_scroll_window);
     gtk_box_remove(GTK_BOX(win->main_container), win->toc_scroll_window);
   } else {
-    gtk_widget_set_visible(win->toc_scroll_window, TRUE);
     gtk_box_prepend(GTK_BOX(win->main_container), win->toc_scroll_window);
+    g_object_unref(win->toc_scroll_window);
   }
 }
 
@@ -582,6 +573,10 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
 
       dest = viewer_info_get_dest(win->viewer->info, action->goto_dest.dest);
       g_object_set_data(G_OBJECT(label), "dest", poppler_dest_copy(dest));
+      if (action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
+        // Won't be freed by poppler_action_free
+        poppler_dest_free(dest);
+      }
 
       gtk_list_box_insert(GTK_LIST_BOX(win->toc_container), label, -1);
 

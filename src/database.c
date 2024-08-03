@@ -290,6 +290,7 @@ void database_update_group(Database *db, int id, ViewerMarkGroup *group) {
             free(cursors_db[i]);
         }
     }
+    free(cursors_db);
 }
 
 void database_update_cursor_in_group(Database *db, int group_id, int cursor_index, ViewerCursor *cursor) {
@@ -346,6 +347,8 @@ ViewerMarkGroup *database_get_group(Database *db, int id) {
         cursors = database_get_group_cursors(db, id);
         current_mark = sqlite3_column_int(stmt, 0);
         group = viewer_mark_group_new(cursors, current_mark);
+
+        free(cursors);
     } else {
         database_printerr_stmt(db, stmt);
     }
@@ -364,11 +367,7 @@ ViewerCursor **database_get_group_cursors(Database *db, int id) {
     int rc;
     int cursor_id;
     int cursor_index;
-    ViewerCursor **cursors = malloc(NUM_MARKS * sizeof(ViewerCursor *));
-
-    for (unsigned int i = 0; i < NUM_MARKS; i++) {
-        cursors[i] = NULL;
-    }
+    ViewerCursor **cursors = NULL;
 
     rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
@@ -377,6 +376,11 @@ ViewerCursor **database_get_group_cursors(Database *db, int id) {
     }
 
     sqlite3_bind_int(stmt, 1, id);
+
+    cursors = malloc(NUM_MARKS * sizeof(ViewerCursor *));
+    for (unsigned int i = 0; i < NUM_MARKS; i++) {
+        cursors[i] = NULL;
+    }
 
     while (TRUE) {
         rc = sqlite3_step(stmt);
@@ -496,6 +500,7 @@ void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManag
             free(groups_db[i]);
         }
     }
+    free(groups_db);
 }
 
 void database_update_groups_in_mark_manager(Database *db, const char *uri, ViewerMarkGroup **groups) {
@@ -537,12 +542,8 @@ ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri) {
     sqlite3_stmt *stmt;
     int rc;
     int current_group;
-    ViewerMarkGroup **groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
+    ViewerMarkGroup **groups = NULL;
     ViewerMarkManager *manager = NULL;
-
-    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
-        groups[i] = NULL;
-    }
 
     rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
@@ -557,6 +558,8 @@ ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri) {
         current_group = sqlite3_column_int(stmt, 0);
         groups = database_get_mark_manager_groups(db, uri);
         manager = viewer_mark_manager_new(groups, current_group);
+
+        free(groups);
     } else if (rc == SQLITE_DONE) {
         // No mark manager found
     } else {
@@ -577,11 +580,7 @@ ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri
     int rc;
     int group_id;
     int group_index;
-    ViewerMarkGroup **groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
-
-    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
-        groups[i] = NULL;
-    }
+    ViewerMarkGroup **groups = NULL;
 
     rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
@@ -590,6 +589,11 @@ ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri
     }
 
     sqlite3_bind_text(stmt, 1, uri, -1, SQLITE_STATIC);
+
+    groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
+    for (unsigned int i = 0; i < NUM_GROUPS; i++) {
+        groups[i] = NULL;
+    }
 
     while (TRUE) {
         rc = sqlite3_step(stmt);
