@@ -318,9 +318,17 @@ static void window_redraw_all_windows(Window *win) {
 }
 
 static void window_update_statusline(Window *win) {
-  gtk_label_set_text(GTK_LABEL(win->left_label), statusline_section_to_str(global_config->statusline_left, win));
-  gtk_label_set_text(GTK_LABEL(win->middle_label), statusline_section_to_str(global_config->statusline_middle, win));
-  gtk_label_set_text(GTK_LABEL(win->right_label), statusline_section_to_str(global_config->statusline_right, win));
+  gchar *statusline_left_str = statusline_section_to_str(global_config->statusline_left, win);
+  gchar *statusline_middle_str = statusline_section_to_str(global_config->statusline_middle, win);
+  gchar *statusline_right_str = statusline_section_to_str(global_config->statusline_right, win);
+
+  gtk_label_set_text(GTK_LABEL(win->left_label), statusline_left_str);
+  gtk_label_set_text(GTK_LABEL(win->middle_label), statusline_middle_str);
+  gtk_label_set_text(GTK_LABEL(win->right_label), statusline_right_str);
+
+  g_free(statusline_left_str);
+  g_free(statusline_middle_str);
+  g_free(statusline_right_str);
 }
 
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar) {
