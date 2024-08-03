@@ -38,9 +38,9 @@ void config_init(Config *config) {
     config->scale_step = -1.0;
 
     config->statusline_separator = NULL;
-    config->statusline_left = g_array_new(FALSE, FALSE, sizeof(StatuslineComponent));
-    config->statusline_middle = g_array_new(FALSE, FALSE, sizeof(StatuslineComponent));
-    config->statusline_right = g_array_new(FALSE, FALSE, sizeof(StatuslineComponent));
+    config->statusline_left = g_array_new(FALSE, TRUE, sizeof(StatuslineComponent));
+    config->statusline_middle = g_array_new(FALSE, TRUE, sizeof(StatuslineComponent));
+    config->statusline_right = g_array_new(FALSE, TRUE, sizeof(StatuslineComponent));
 }
 
 void config_destroy(Config *config) {
