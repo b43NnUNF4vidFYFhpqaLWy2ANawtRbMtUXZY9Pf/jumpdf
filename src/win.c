@@ -5,9 +5,9 @@
 #include <poppler.h>
 #include <stdbool.h>
 
+#include "win.h"
 #include "app.h"
 #include "config.h"
-#include "win.h"
 #include "viewer.h"
 #include "viewer_mark_manager.h"
 #include "viewer_info.h"
@@ -18,9 +18,7 @@
 
 static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
-static void window_update_left_label(Window *win);
-static void window_update_middle_label(Window *win);
-static void window_update_right_label(Window *win);
+static void window_update_statusline(Window *win);
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
 static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page);
 static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to);
@@ -232,9 +230,7 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager) {
   win->viewer = viewer_new(cursor->info, cursor, search, links);
 
   window_populate_toc(win);
-  window_update_left_label(win);
-  window_update_middle_label(win);
-  window_update_right_label(win);
+  window_update_statusline(win);
 
   file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &err);
   if (file_info == NULL) {
@@ -256,9 +252,7 @@ void window_update_cursor(Window *win) {
 }
 
 void window_redraw(Window *win) {
-  window_update_left_label(win);
-  window_update_middle_label(win);
-  window_update_right_label(win);
+  window_update_statusline(win);
   gtk_widget_queue_draw(win->view);
 }
 
@@ -323,58 +317,10 @@ static void window_redraw_all_windows(Window *win) {
   app_redraw_windows(win->app);
 }
 
-static void window_update_left_label(Window *win) {
-  GStrv str_array = NULL;
-  char *final_str = NULL;
-  GStrvBuilder *builder = g_strv_builder_new();
-  gchar *page_str = g_strdup_printf("%d/%d",
-                                    win->viewer->cursor->current_page + 1,
-                                    win->viewer->info->n_pages);
-  
-  g_strv_builder_add(builder, page_str);
-  g_free(page_str);
-
-  str_array = g_strv_builder_end(builder);
-  g_strv_builder_unref(builder);
-
-  final_str = g_strjoinv(" | ", str_array);
-  g_strfreev(str_array);
-
-  gtk_label_set_text(GTK_LABEL(win->left_label), final_str);
-  g_free(final_str);
-}
-
-static void window_update_middle_label(Window *win) {
-}
-
-static void window_update_right_label(Window *win) {
-  GStrv str_array = NULL;
-  char *final_str = NULL;
-  GStrvBuilder *builder = g_strv_builder_new();
-  gchar *zoom_str =
-    g_strdup_printf("%d%%",
-    (int)round(win->viewer->cursor->scale * 100));
-  gchar *mark_selection_str =
-    g_strdup_printf("%u:%u",
-                    viewer_mark_manager_get_current_group_index(win->mark_manager) + 1,
-                    viewer_mark_manager_get_current_mark_index(win->mark_manager) + 1);
-
-  if (win->viewer->cursor->center_mode) {
-    g_strv_builder_add(builder, "C");
-  }
-  g_strv_builder_add(builder, zoom_str);
-  g_free(zoom_str);
-  g_strv_builder_add(builder, mark_selection_str);
-  g_free(mark_selection_str);
-
-  str_array = g_strv_builder_end(builder);
-  g_strv_builder_unref(builder);
-
-  final_str = g_strjoinv(" | ", str_array);
-  g_strfreev(str_array);
-
-  gtk_label_set_text(GTK_LABEL(win->right_label), final_str);
-  g_free(final_str);
+static void window_update_statusline(Window *win) {
+  gtk_label_set_text(GTK_LABEL(win->left_label), statusline_section_to_str(global_config->statusline_left, win));
+  gtk_label_set_text(GTK_LABEL(win->middle_label), statusline_section_to_str(global_config->statusline_middle, win));
+  gtk_label_set_text(GTK_LABEL(win->right_label), statusline_section_to_str(global_config->statusline_right, win));
 }
 
 static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar) {
@@ -467,7 +413,7 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
     GdkModifierType state = gdk_event_get_modifier_state(event);
     switch (state) {
     case GDK_CONTROL_MASK:
-      viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * global_config.scale_step);
+      viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * global_config->scale_step);
       break;
     default:
       win->viewer->cursor->x_offset -= dx;
@@ -520,14 +466,14 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
 
   // Clear to white background (for PDFs with missing background)
   center_x_offset = ((win->viewer->info->view_width / 2.0) - (win->viewer->info->pdf_width / 2.0)) /
-             (win->viewer->info->pdf_width / global_config.steps);
+             (win->viewer->info->pdf_width / global_config->steps);
   // First term gets you x-coordinate of left side of PDF as if it was centered
   // (2*margin + real_pdf_width = view_width, where margin = center_x_offset),
   // then second term moves it by the offset from center,
   // i.e. x_offset - center_x_offset
   background_x =
       (win->viewer->info->view_width - win->viewer->cursor->scale * win->viewer->info->pdf_width) / 2 +
-      ((win->viewer->cursor->x_offset - center_x_offset) / global_config.steps) * win->viewer->cursor->scale * win->viewer->info->pdf_width;
+      ((win->viewer->cursor->x_offset - center_x_offset) / global_config->steps) * win->viewer->cursor->scale * win->viewer->info->pdf_width;
   background_y = 0;
   background_width = win->viewer->cursor->scale * win->viewer->info->pdf_width;
   background_height = win->viewer->info->view_height;
@@ -540,8 +486,8 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_scale(cr_pdf, win->viewer->cursor->scale, win->viewer->cursor->scale);
   cairo_translate(cr_pdf, -win->viewer->info->view_width / 2.0, -win->viewer->info->view_height / 2.0);
 
-  cairo_translate(cr_pdf, win->viewer->cursor->x_offset * win->viewer->info->pdf_width / global_config.steps,
-                          -win->viewer->cursor->y_offset * win->viewer->info->pdf_height / global_config.steps);
+  cairo_translate(cr_pdf, win->viewer->cursor->x_offset * win->viewer->info->pdf_width / global_config->steps,
+                          -win->viewer->cursor->y_offset * win->viewer->info->pdf_height / global_config->steps);
 
   viewer_links_clear_links(win->viewer->links);
   window_render_page(win, cr_pdf, page, &links_drawn_sofar);

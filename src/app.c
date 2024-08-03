@@ -34,7 +34,8 @@ int app_run(int argc, char *argv[]) {
 }
 
 static void app_init(App *app) {
-  config_load(&global_config);
+  global_config = config_new();
+  config_load(global_config);
   database_create_tables(database_get_instance());
   app->uri_mark_manager_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)viewer_mark_manager_destroy);
   app->windows = g_ptr_array_new();
@@ -49,8 +50,8 @@ static void app_finalize(GObject *object) {
   g_ptr_array_free(app->windows, TRUE);
 
   database_close(database_get_instance());
-  g_free(global_config.db_filename);
-  g_free(global_config.file_chooser_initial_folder_path);
+  config_destroy(global_config);
+  free(global_config);
 
   G_OBJECT_CLASS(app_parent_class)->finalize(object);
 }
@@ -174,7 +175,7 @@ void app_update_database_mark_managers(App *app) {
 
 void app_open_file_chooser(App *app) {
   GtkFileDialog *file_dialog = gtk_file_dialog_new();
-  gchar *initial_folder_path = expand_path(global_config.file_chooser_initial_folder_path);
+  gchar *initial_folder_path = expand_path(global_config->file_chooser_initial_folder_path);
   GFile *initial_folder = g_file_new_for_path(initial_folder_path);
 
   g_free(initial_folder_path);

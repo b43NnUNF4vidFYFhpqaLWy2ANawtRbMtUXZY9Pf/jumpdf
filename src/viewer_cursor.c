@@ -65,11 +65,11 @@ void viewer_cursor_toggle_center_mode(ViewerCursor *cursor) {
 
 void viewer_cursor_center(ViewerCursor *cursor) {
     cursor->x_offset = ((cursor->info->view_width / 2.0) - (cursor->info->pdf_width / 2.0)) /
-                                    (cursor->info->pdf_width / global_config.steps);
+                                    (cursor->info->pdf_width / global_config->steps);
 }
 
 void viewer_cursor_set_scale(ViewerCursor *cursor, double new) {
-    cursor->scale = MAX(global_config.min_scale, new);
+    cursor->scale = MAX(global_config->min_scale, new);
 }
 
 void viewer_cursor_handle_offset_update(ViewerCursor *cursor) {
@@ -78,21 +78,21 @@ void viewer_cursor_handle_offset_update(ViewerCursor *cursor) {
     old_page = cursor->current_page;
     cursor->current_page =
             MIN(cursor->info->n_pages - 1,
-                    MAX(0, cursor->current_page + cursor->y_offset / global_config.steps)
+                    MAX(0, cursor->current_page + cursor->y_offset / global_config->steps)
                     );
 
     if (cursor->y_offset < 0) {
         // If cursor->current_page just updated to 0, we still want to scroll up
         if (cursor->current_page > 0 || old_page > 0) {
-            cursor->y_offset = global_config.steps - 1;
+            cursor->y_offset = global_config->steps - 1;
         } else if (cursor->current_page == 0) {
             cursor->y_offset = 0;
         }
-    } else if (cursor->y_offset >= global_config.steps) {
+    } else if (cursor->y_offset >= global_config->steps) {
         if (cursor->current_page < cursor->info->n_pages - 1 || old_page < cursor->info->n_pages - 1) {
             cursor->y_offset = 0;
         } else if (cursor->current_page == cursor->info->n_pages - 1) {
-            cursor->y_offset = global_config.steps - 1;
+            cursor->y_offset = global_config->steps - 1;
         }
     }
 }
@@ -109,10 +109,10 @@ void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest) {
     if (dest->change_top == 1) {
         /*
         * dest->top is relative to the bottom of the page
-        * To get the new y_offset, start from the bottom, global_config.steps,
+        * To get the new y_offset, start from the bottom, global_config->steps,
         * and subtract how much to go up in terms of steps
         */
-        cursor->y_offset = global_config.steps - global_config.steps * (dest->top / cursor->info->pdf_height);
+        cursor->y_offset = global_config->steps - global_config->steps * (dest->top / cursor->info->pdf_height);
         // Only with default zoom will the dest be at the top of the view
         cursor->scale = 1.0;
     }

@@ -625,7 +625,7 @@ static Database *database_new(void) {
 }
 
 static void database_init(Database *db) {
-    gchar *db_file = expand_path(global_config.db_filename);
+    gchar *db_file = expand_path(global_config->db_filename);
     int rc;
 
     if (db == NULL) {
