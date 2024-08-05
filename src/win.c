@@ -335,6 +335,12 @@ static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsi
   unsigned int links_to_draw;
 
   poppler_page_render(page, cr);
+
+  cairo_set_line_width(cr, 1.0);
+  cairo_move_to(cr, 0, 0);
+  cairo_rel_line_to(cr, win->viewer->info->pdf_width, 0);
+  cairo_stroke(cr);
+
   window_highlight_search(win, cr, page);
 
   if (win->viewer->links->follow_links_mode) {
