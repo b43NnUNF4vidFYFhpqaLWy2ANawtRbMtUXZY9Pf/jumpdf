@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "app.h"
+#include "project_config.h"
 #include "config.h"
 #include "file_utils.h"
 #include "database.h"
@@ -27,6 +28,8 @@ G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION);
 
 int app_run(int argc, char *argv[])
 {
+    g_print(APP_ID_STR "\n");
+
     App *app = app_new();
     int status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
@@ -92,7 +95,7 @@ static void app_class_init(AppClass *class)
 
 App *app_new(void)
 {
-    return g_object_new(APP_TYPE, "application-id", "org.gtk.jumpdf", "flags",
+    return g_object_new(APP_TYPE, "application-id", APP_ID_STR, "flags",
         G_APPLICATION_HANDLES_OPEN, NULL);
 }
 

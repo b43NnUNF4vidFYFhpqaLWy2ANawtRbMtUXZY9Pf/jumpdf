@@ -1,6 +1,6 @@
 gnome = import('gnome')
 
-install_data('org.gtk.jumpdf.desktop',
+install_data(app_id + '.desktop',
              install_dir : join_paths(get_option('prefix'), 'share', 'applications'))
 
 icon_dir = join_paths(get_option('prefix'), 'share', 'icons', 'hicolor', '512x512', 'apps')

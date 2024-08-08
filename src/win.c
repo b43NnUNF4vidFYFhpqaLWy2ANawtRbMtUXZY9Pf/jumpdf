@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "win.h"
+#include "project_config.h"
 #include "app.h"
 #include "config.h"
 #include "viewer.h"
@@ -181,7 +182,7 @@ static void window_init(Window *win)
     gtk_window_set_child(GTK_WINDOW(win), win->main_container);
     gtk_box_append(GTK_BOX(win->main_container), win->view_box);
 
-    gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
+    gtk_window_set_title(GTK_WINDOW(win), APP_NAME_STR);
 
     css_provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(css_provider, css);
@@ -310,7 +311,7 @@ void window_execute_toc_row(Window *win, GtkListBoxRow *row)
             viewer_cursor_goto_poppler_dest(win->viewer->cursor, dest);
             window_redraw_all_windows(win);
         } else {
-            g_printerr("Jumpdf: TOC entry has no destination\n");
+            g_printerr("Error: TOC entry has no destination\n");
         }
     }
 }

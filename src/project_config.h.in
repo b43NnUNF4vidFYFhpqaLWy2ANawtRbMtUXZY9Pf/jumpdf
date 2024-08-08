@@ -1,0 +1,2 @@
+#define APP_NAME_STR "@app_name@"
+#define APP_ID_STR "@app_id@"

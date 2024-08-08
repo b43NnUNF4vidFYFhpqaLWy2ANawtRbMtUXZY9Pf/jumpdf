@@ -4,6 +4,16 @@ project('jumpdf', 'c',
         meson_version : '>=1.4.0',
         default_options : ['c_std=c99'])
 
+app_name = 'jumpdf'
+app_id = 'com.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf'
+
+conf_data = configuration_data()
+conf_data.set('app_name', app_name)
+conf_data.set('app_id', app_id)
+configure_file(input : 'src/project_config.h.in',
+               output : 'project_config.h',
+               configuration : conf_data)
+
 src_files = [
         'src/main.c',
         'src/config.c',
@@ -20,7 +30,7 @@ src_files = [
         'src/viewer_links.c',
         'src/viewer_mark_group.c',
         'src/viewer_mark_manager.c',
-        ]
+]
 
 cc = meson.get_compiler('c')
 
@@ -32,7 +42,7 @@ deps = [
         cc.find_library('m', required : true),
 ]
 
-executable('jumpdf',
+executable(app_name,
            sources : src_files,
            dependencies : deps,
            install : true)

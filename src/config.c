@@ -2,6 +2,7 @@
 #include <toml.h>
 
 #include "config.h"
+#include "project_config.h"
 
 #define DEFAULT_DB_FILENAME "~/.local/share/jumpdf/jumpdf.db"
 #define DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH "~/Documents"
@@ -113,7 +114,7 @@ void config_load(Config *config)
     FILE *fp;
     gchar *config_file_path;
 
-    config_file_path = g_build_filename(g_get_home_dir(), ".config", "jumpdf", "config.toml", NULL);
+    config_file_path = g_build_filename(g_get_home_dir(), ".config", APP_NAME_STR, "config.toml", NULL);
     fp = fopen(config_file_path, "r");
     g_free(config_file_path);
 
