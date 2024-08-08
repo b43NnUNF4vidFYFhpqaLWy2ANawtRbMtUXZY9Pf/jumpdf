@@ -460,7 +460,7 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
     event =
         gtk_event_controller_get_current_event(GTK_EVENT_CONTROLLER(controller));
     if (event) {
-        GdkModifierType state = gdk_event_get_modifier_state(event);
+        state = gdk_event_get_modifier_state(event);
         switch (state) {
         case GDK_CONTROL_MASK:
             viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * global_config->scale_step);
