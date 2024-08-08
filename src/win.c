@@ -360,9 +360,15 @@ static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsi
 {
     unsigned int links_to_draw;
 
+    // Clear to white background (for PDFs with missing background)
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_rectangle(cr, 0, 0, win->viewer->info->pdf_width, win->viewer->info->pdf_height);
+    cairo_fill(cr);
+
     poppler_page_render(page, cr);
 
     cairo_set_line_width(cr, 1.0);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     cairo_move_to(cr, 0, 0);
     cairo_rel_line_to(cr, win->viewer->info->pdf_width, 0);
     cairo_stroke(cr);
@@ -488,8 +494,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     PopplerPage *page;
     cairo_surface_t *surface;
     cairo_t *cr_pdf;
-    double center_x_offset, background_x, background_width, background_y,
-        background_height;
     double visible_pages;
     unsigned int visible_pages_before, visible_pages_after;
     unsigned int links_drawn_sofar = 0;
@@ -509,24 +513,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->viewer->info->view_width,
         win->viewer->info->view_height);
     cr_pdf = cairo_create(surface);
-
-    // Clear to white background (for PDFs with missing background)
-    center_x_offset = ((win->viewer->info->view_width / 2.0) - (win->viewer->info->pdf_width / 2.0)) /
-        (win->viewer->info->pdf_width / global_config->steps);
-    // First term gets you x-coordinate of left side of PDF as if it was centered
-    // (2*margin + real_pdf_width = view_width, where margin = center_x_offset),
-    // then second term moves it by the offset from center,
-    // i.e. x_offset - center_x_offset
-    background_x =
-        (win->viewer->info->view_width - win->viewer->cursor->scale * win->viewer->info->pdf_width) / 2 +
-        ((win->viewer->cursor->x_offset - center_x_offset) / global_config->steps) * win->viewer->cursor->scale * win->viewer->info->pdf_width;
-    background_y = 0;
-    background_width = win->viewer->cursor->scale * win->viewer->info->pdf_width;
-    background_height = win->viewer->info->view_height;
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, background_x, background_y, background_width,
-        background_height);
-    cairo_fill(cr);
 
     cairo_translate(cr_pdf, win->viewer->info->view_width / 2.0, win->viewer->info->view_height / 2.0);
     cairo_scale(cr_pdf, win->viewer->cursor->scale, win->viewer->cursor->scale);
