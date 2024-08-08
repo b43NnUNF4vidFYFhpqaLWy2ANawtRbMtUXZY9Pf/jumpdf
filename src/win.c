@@ -41,13 +41,14 @@ static void on_resize(GtkDrawingArea *area, int width, int height,
                       gpointer user_data);
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data);
-static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window *win);
-static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog);
+static gboolean on_search_window_close_request(GtkWindow *gtk_window, gpointer user_data);
+static void on_search_entry_activate(GtkEntry *entry, gpointer user_data);
 static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data);
 static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data);
 static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data);
 
 struct _Window {
+    // TODO: Breakdown into separate structs
     GtkApplicationWindow parent;
 
     GtkEventController *event_controller;
@@ -66,14 +67,12 @@ struct _Window {
     GtkWidget *middle_label;
     GtkWidget *right_label;
 
-    GtkWidget *search_dialog;
-    GtkWidget *search_content_area;
-    GtkWidget *search_entry;
-
     GtkWidget *toc_scroll_window;
     GtkWidget *toc_box;
     GtkWidget *toc_search_entry;
     GtkWidget *toc_container;
+
+    GtkWidget *search_window;
 
     /*
     This reference to App is necessary, as the Window is not associated
@@ -145,18 +144,6 @@ static void window_init(Window *win)
     gtk_box_append(GTK_BOX(win->view_box), win->view);
     gtk_box_append(GTK_BOX(win->view_box), win->statusline);
 
-    win->search_dialog = gtk_dialog_new_with_buttons("Search", GTK_WINDOW(win),
-        GTK_DIALOG_MODAL,
-        "_Cancel", GTK_RESPONSE_CANCEL,
-        "_Search", GTK_RESPONSE_ACCEPT,
-        NULL);
-    win->search_content_area = gtk_dialog_get_content_area(GTK_DIALOG(win->search_dialog));
-    win->search_entry = gtk_entry_new();
-    gtk_box_append(GTK_BOX(win->search_content_area), win->search_entry);
-
-    g_signal_connect(win->search_entry, "activate", G_CALLBACK(on_search_entry_activate), win->search_dialog);
-    g_signal_connect(win->search_dialog, "response", G_CALLBACK(on_search_dialog_response), win);
-
     win->toc_search_entry = gtk_search_entry_new();
     g_signal_connect(win->toc_search_entry, "search-changed", G_CALLBACK(on_toc_search_changed), win);
     g_signal_connect(win->toc_search_entry, "stop-search", G_CALLBACK(on_toc_search_stopped), win);
@@ -183,6 +170,8 @@ static void window_init(Window *win)
     gtk_box_append(GTK_BOX(win->main_container), win->view_box);
 
     gtk_window_set_title(GTK_WINDOW(win), APP_NAME_STR);
+
+    win->search_window = NULL;
 
     css_provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(css_provider, css);
@@ -273,7 +262,30 @@ void window_redraw(Window *win)
 
 void window_show_search_dialog(Window *win)
 {
-    gtk_widget_show(win->search_dialog);
+    GtkWidget *search_box;
+    GtkWidget *search_entry;
+
+    if (win->search_window != NULL) {
+        // Shouldn't happen
+        g_printerr("Error: Search dialog already open\n");
+        gtk_window_close(GTK_WINDOW(win->search_window));
+        win->search_window = NULL;
+    }
+
+    win->search_window = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(win->search_window), "Search");
+    gtk_window_set_modal(GTK_WINDOW(win->search_window), TRUE);
+    gtk_window_set_transient_for(GTK_WINDOW(win->search_window), GTK_WINDOW(win));
+    g_signal_connect(win->search_window, "close-request", G_CALLBACK(on_search_window_close_request), win);
+
+    search_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_window_set_child(GTK_WINDOW(win->search_window), search_box);
+
+    search_entry = gtk_entry_new();
+    gtk_box_append(GTK_BOX(search_box), search_entry);
+    g_signal_connect(search_entry, "activate", G_CALLBACK(on_search_entry_activate), win);
+
+    gtk_window_present(GTK_WINDOW(win->search_window));
 }
 
 void window_toggle_toc(Window *win)
@@ -553,31 +565,6 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_surface_destroy(surface);
 }
 
-static void on_search_dialog_response(GtkDialog *dialog, int response_id, Window *win)
-{
-    GtkWidget *content_area;
-    GtkWidget *entry;
-    GtkEntryBuffer *buffer;
-    const char *search_text;
-
-    if (response_id == GTK_RESPONSE_ACCEPT) {
-        content_area = gtk_dialog_get_content_area(dialog);
-        entry = gtk_widget_get_first_child(content_area);
-        buffer = gtk_entry_get_buffer(GTK_ENTRY(entry));
-        search_text = gtk_entry_buffer_get_text(buffer);
-
-        win->viewer->search->search_text = strdup(search_text);
-        window_redraw_all_windows(win);
-    }
-
-    gtk_widget_hide(GTK_WIDGET(dialog));
-}
-
-static void on_search_entry_activate(GtkEntry *entry, GtkDialog *dialog)
-{
-    gtk_dialog_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-}
-
 static void window_populate_toc(Window *win)
 {
     PopplerIndexIter *iter = poppler_index_iter_new(win->viewer->info->doc);
@@ -633,6 +620,27 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
     if (first_row != NULL) {
         gtk_list_box_select_row(GTK_LIST_BOX(win->toc_container), first_row);
     }
+}
+
+static gboolean on_search_window_close_request(GtkWindow *gtk_window, gpointer user_data) {
+    Window *win = (Window *)user_data;
+
+    // gtk_window_close already called
+    win->search_window = NULL;
+
+    return FALSE;
+}
+
+static void on_search_entry_activate(GtkEntry *entry, gpointer user_data) {
+    Window *win = (Window *)user_data;
+    const gchar *text = gtk_editable_get_text(GTK_EDITABLE(entry));
+
+    win->viewer->search->search_text = g_strdup(text);
+
+    gtk_window_close(GTK_WINDOW(win->search_window));
+    win->search_window = NULL;
+
+    window_redraw(win);
 }
 
 static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
