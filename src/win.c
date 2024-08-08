@@ -419,7 +419,7 @@ static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page)
         cairo_fill(cr);
     }
 
-    g_list_free(matches);
+    g_list_free_full(matches, (GDestroyNotify)poppler_rectangle_free);
 }
 
 static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to)

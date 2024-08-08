@@ -43,12 +43,13 @@ ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *
         if (matches && i != search->last_goto_page) {
             next_page = i;
             search->last_goto_page = i;
+            g_list_free_full(matches, (GDestroyNotify)poppler_rectangle_free);
 
             break;
         }
-        g_list_foreach(matches, (GFunc)poppler_rectangle_free, NULL);
+
+        g_list_free_full(matches, (GDestroyNotify)poppler_rectangle_free);
     }
-    g_list_free(matches);
 
     if (next_page == -1) {
         return NULL;
@@ -75,12 +76,13 @@ ViewerCursor *viewer_search_get_prev_search(ViewerSearch *search, ViewerCursor *
         if (matches && i != search->last_goto_page) {
             prev_page = i;
             search->last_goto_page = i;
+            g_list_free_full(matches, (GDestroyNotify)poppler_rectangle_free);
 
             break;
         }
-        g_list_foreach(matches, (GFunc)poppler_rectangle_free, NULL);
+
+        g_list_free_full(matches, (GDestroyNotify)poppler_rectangle_free);
     }
-    g_list_free(matches);
 
     if (prev_page == -1) {
         return NULL;
