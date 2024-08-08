@@ -17,7 +17,8 @@ struct Database {
     sqlite3 *db;
 };
 
-Database *database_get_instance(void) {
+Database *database_get_instance(void)
+{
     static Database *instance = NULL;
 
     if (instance == NULL) {
@@ -27,7 +28,8 @@ Database *database_get_instance(void) {
     return instance;
 }
 
-void database_close(Database *db) {
+void database_close(Database *db)
+{
     int rc;
 
     if (db == NULL) {
@@ -40,10 +42,11 @@ void database_close(Database *db) {
     }
 }
 
-void database_create_tables(Database *db) {
+void database_create_tables(Database *db)
+{
     const char *sql =
         "CREATE TABLE IF NOT EXISTS cursor ("
-        "   id INTEGER PRIMARY KEY AUTOINCREMENT," 
+        "   id INTEGER PRIMARY KEY AUTOINCREMENT,"
         "   current_page INTEGER NOT NULL,"
         "   x_offset REAL NOT NULL,"
         "   y_offset REAL NOT NULL,"
@@ -85,7 +88,8 @@ void database_create_tables(Database *db) {
     }
 }
 
-sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor) {
+sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor)
+{
     const char *sql = "INSERT INTO cursor (current_page, x_offset, y_offset, scale, center_mode, input_number) VALUES (?, ?, ?, ?, ?, ?);";
     sqlite3_stmt *stmt;
     int rc;
@@ -95,7 +99,7 @@ sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor) {
     if (rc != SQLITE_OK) {
         g_printerr("database_insert_cursor: %s\n", sqlite3_errmsg(db->db));
         return -1;
-    } 
+    }
 
     sqlite3_bind_int(stmt, 1, cursor->current_page);
     sqlite3_bind_double(stmt, 2, cursor->x_offset);
@@ -116,7 +120,8 @@ sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor) {
     return cursor_id;
 }
 
-void database_update_cursor(Database *db, int id, ViewerCursor *cursor) {
+void database_update_cursor(Database *db, int id, ViewerCursor *cursor)
+{
     const char *sql =
         "UPDATE cursor "
         "SET current_page = ?, x_offset = ?, y_offset = ?, scale = ?, center_mode = ?, input_number = ? "
@@ -146,7 +151,8 @@ void database_update_cursor(Database *db, int id, ViewerCursor *cursor) {
     sqlite3_finalize(stmt);
 }
 
-ViewerCursor *database_get_cursor(Database *db, int id) {
+ViewerCursor *database_get_cursor(Database *db, int id)
+{
     const char *sql = "SELECT current_page, x_offset, y_offset, scale, center_mode, input_number FROM cursor WHERE id = ?;";
     sqlite3_stmt *stmt;
     int rc;
@@ -183,7 +189,8 @@ ViewerCursor *database_get_cursor(Database *db, int id) {
     return cursor;
 }
 
-sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group) {
+sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group)
+{
     const char *sql = "INSERT INTO cursor_group (current_mark) VALUES (?);";
     sqlite3_stmt *stmt;
     int rc;
@@ -217,8 +224,9 @@ sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group) {
     return group_id;
 }
 
-sqlite3_int64 database_insert_group_cursor(Database *db, int group_id, int cursor_id, int cursor_index) {
-    const char *sql = 
+sqlite3_int64 database_insert_group_cursor(Database *db, int group_id, int cursor_id, int cursor_index)
+{
+    const char *sql =
         "INSERT INTO "
         "group_cursor (group_id, cursor_id, cursor_index) "
         "VALUES (?, ?, ?);";
@@ -248,7 +256,8 @@ sqlite3_int64 database_insert_group_cursor(Database *db, int group_id, int curso
     return group_cursor_id;
 }
 
-void database_update_group(Database *db, int id, ViewerMarkGroup *group) {
+void database_update_group(Database *db, int id, ViewerMarkGroup *group)
+{
     const char *sql =
         "UPDATE cursor_group "
         "SET current_mark = ? "
@@ -293,7 +302,8 @@ void database_update_group(Database *db, int id, ViewerMarkGroup *group) {
     free(cursors_db);
 }
 
-void database_update_cursor_in_group(Database *db, int group_id, int cursor_index, ViewerCursor *cursor) {
+void database_update_cursor_in_group(Database *db, int group_id, int cursor_index, ViewerCursor *cursor)
+{
     const char *sql =
         "SELECT cursor_id "
         "FROM group_cursor "
@@ -326,7 +336,8 @@ void database_update_cursor_in_group(Database *db, int group_id, int cursor_inde
     sqlite3_finalize(stmt);
 }
 
-ViewerMarkGroup *database_get_group(Database *db, int id) {
+ViewerMarkGroup *database_get_group(Database *db, int id)
+{
     const char *sql = "SELECT current_mark FROM cursor_group WHERE id = ?;";
     sqlite3_stmt *stmt;
     int rc;
@@ -358,8 +369,9 @@ ViewerMarkGroup *database_get_group(Database *db, int id) {
     return group;
 }
 
-ViewerCursor **database_get_group_cursors(Database *db, int id) {
-    const char *sql = 
+ViewerCursor **database_get_group_cursors(Database *db, int id)
+{
+    const char *sql =
         "SELECT cursor_id, cursor_index "
         "FROM group_cursor "
         "WHERE group_id = ?;";
@@ -400,7 +412,8 @@ ViewerCursor **database_get_group_cursors(Database *db, int id) {
     return cursors;
 }
 
-void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManager *manager) {
+void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManager *manager)
+{
     const char *sql = "INSERT INTO mark_manager (uri, current_group) VALUES (?, ?);";
     sqlite3_stmt *stmt;
     int rc;
@@ -430,7 +443,8 @@ void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManag
     }
 }
 
-sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, int group_id, int group_index) {
+sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, int group_id, int group_index)
+{
     const char *sql =
         "INSERT INTO "
         "mark_manager_group (mark_manager_uri, group_id, group_index) "
@@ -461,7 +475,8 @@ sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, 
     return mark_manager_group_id;
 }
 
-void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManager *manager) {
+void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManager *manager)
+{
     const char *sql =
         "UPDATE mark_manager "
         "SET current_group = ? "
@@ -503,7 +518,8 @@ void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManag
     free(groups_db);
 }
 
-void database_update_groups_in_mark_manager(Database *db, const char *uri, ViewerMarkGroup **groups) {
+void database_update_groups_in_mark_manager(Database *db, const char *uri, ViewerMarkGroup **groups)
+{
     const char *sql =
         "SELECT group_id, group_index "
         "FROM mark_manager_group "
@@ -537,7 +553,8 @@ void database_update_groups_in_mark_manager(Database *db, const char *uri, Viewe
     sqlite3_finalize(stmt);
 }
 
-ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri) {
+ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri)
+{
     const char *sql = "SELECT current_group FROM mark_manager WHERE uri = ?;";
     sqlite3_stmt *stmt;
     int rc;
@@ -571,8 +588,9 @@ ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri) {
     return manager;
 }
 
-ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri) {
-    const char *sql = 
+ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri)
+{
+    const char *sql =
         "SELECT group_id, group_index "
         "FROM mark_manager_group "
         "WHERE mark_manager_uri = ?;";
@@ -613,7 +631,8 @@ ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri
     return groups;
 }
 
-static Database *database_new(void) {
+static Database *database_new(void)
+{
     Database *db = malloc(sizeof(Database));
     if (db == NULL) {
         return NULL;
@@ -624,7 +643,8 @@ static Database *database_new(void) {
     return db;
 }
 
-static void database_init(Database *db) {
+static void database_init(Database *db)
+{
     gchar *db_file = expand_path(global_config->db_filename);
     int rc;
 
@@ -644,7 +664,8 @@ static void database_init(Database *db) {
     g_free(db_file);
 }
 
-static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt) {
+static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt)
+{
     char *query = sqlite3_expanded_sql(stmt);
     if (query == NULL) {
         g_printerr("database_printerr: sqlite3_expanded_sql failed\n");
@@ -653,6 +674,7 @@ static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt) {
     }
 
 }
-static void database_printerr_sql(Database *db, char *sql) {
+static void database_printerr_sql(Database *db, char *sql)
+{
     g_print("\"%s\": %s\n", sql, sqlite3_errmsg(db->db));
 }

@@ -6,10 +6,10 @@
 #include "viewer_links.h"
 
 typedef struct Viewer {
-	ViewerInfo *info;
-	ViewerCursor *cursor;
-	ViewerSearch *search;
-	ViewerLinks *links;
+    ViewerInfo *info;
+    ViewerCursor *cursor;
+    ViewerSearch *search;
+    ViewerLinks *links;
 } Viewer;
 
 Viewer *viewer_new(ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links);

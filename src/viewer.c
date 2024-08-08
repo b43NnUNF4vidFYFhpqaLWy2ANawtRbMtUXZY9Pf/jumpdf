@@ -4,18 +4,20 @@
 #include "viewer.h"
 #include "config.h"
 
-Viewer* viewer_new(ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links) {
-    Viewer* viewer = malloc(sizeof(Viewer));
+Viewer *viewer_new(ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links)
+{
+    Viewer *viewer = malloc(sizeof(Viewer));
     if (viewer == NULL) {
         return NULL;
     }
 
     viewer_init(viewer, info, cursor, search, links);
-    
+
     return viewer;
 }
 
-void viewer_init(Viewer *viewer, ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links) {
+void viewer_init(Viewer *viewer, ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links)
+{
     if (viewer == NULL) {
         return;
     }
@@ -26,7 +28,8 @@ void viewer_init(Viewer *viewer, ViewerInfo *info, ViewerCursor *cursor, ViewerS
     viewer->links = links;
 }
 
-void viewer_destroy(Viewer* viewer) {
+void viewer_destroy(Viewer *viewer)
+{
     // FIXME: UB if member wasn't malloc'ed?
     viewer_cursor_destroy(viewer->cursor);
     free(viewer->cursor);

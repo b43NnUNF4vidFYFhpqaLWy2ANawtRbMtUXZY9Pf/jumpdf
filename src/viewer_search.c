@@ -2,7 +2,8 @@
 
 #include "viewer_search.h"
 
-ViewerSearch *viewer_search_new(void) {
+ViewerSearch *viewer_search_new(void)
+{
     ViewerSearch *search = malloc(sizeof(ViewerSearch));
     if (search == NULL) {
         return NULL;
@@ -13,19 +14,22 @@ ViewerSearch *viewer_search_new(void) {
     return search;
 }
 
-void viewer_search_init(ViewerSearch *search) {
+void viewer_search_init(ViewerSearch *search)
+{
     search->search_text = NULL;
     search->last_goto_page = -1;
 }
 
-void viewer_search_destroy(ViewerSearch *search) {
+void viewer_search_destroy(ViewerSearch *search)
+{
     if (search->search_text) {
         free((void *)search->search_text);
         search->search_text = NULL;
     }
 }
 
-ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *current_cursor) {
+ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *current_cursor)
+{
     GList *matches = NULL;
     ViewerCursor *new_cursor = NULL;
     int next_page = -1;
@@ -56,7 +60,8 @@ ViewerCursor *viewer_search_get_next_search(ViewerSearch *search, ViewerCursor *
     }
 }
 
-ViewerCursor *viewer_search_get_prev_search(ViewerSearch *search, ViewerCursor *current_cursor) {
+ViewerCursor *viewer_search_get_prev_search(ViewerSearch *search, ViewerCursor *current_cursor)
+{
     GList *matches = NULL;
     ViewerCursor *new_cursor = NULL;
     int prev_page = -1;

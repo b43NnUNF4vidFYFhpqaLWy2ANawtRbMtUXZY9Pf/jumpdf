@@ -1,6 +1,7 @@
 #include "viewer_info.h"
 
-ViewerInfo *viewer_info_new(PopplerDocument *doc) {
+ViewerInfo *viewer_info_new(PopplerDocument *doc)
+{
     ViewerInfo *info = malloc(sizeof(ViewerInfo));
     if (info == NULL) {
         return NULL;
@@ -11,7 +12,8 @@ ViewerInfo *viewer_info_new(PopplerDocument *doc) {
     return info;
 }
 
-ViewerInfo *viewer_info_new_from_gfile(GFile *file) {
+ViewerInfo *viewer_info_new_from_gfile(GFile *file)
+{
     ViewerInfo *info;
     GError *error = NULL;
     PopplerDocument *doc = poppler_document_new_from_gfile(file, NULL, NULL, &error);
@@ -31,16 +33,17 @@ ViewerInfo *viewer_info_new_from_gfile(GFile *file) {
     return info;
 }
 
-void viewer_info_init(ViewerInfo *info, PopplerDocument *doc) {
+void viewer_info_init(ViewerInfo *info, PopplerDocument *doc)
+{
     info->doc = doc;
     info->n_pages = poppler_document_get_n_pages(doc);
-    info->pages = malloc(sizeof(PopplerPage*) * info->n_pages);
+    info->pages = malloc(sizeof(PopplerPage *) * info->n_pages);
     if (info->pages == NULL) {
         return;
     }
 
     for (int i = 0; i < info->n_pages; i++) {
-      info->pages[i] = poppler_document_get_page(info->doc, i);
+        info->pages[i] = poppler_document_get_page(info->doc, i);
 
       if (!info->pages[i]) {
         g_printerr("Could not open %i'th page of document\n", i);
@@ -54,7 +57,8 @@ void viewer_info_init(ViewerInfo *info, PopplerDocument *doc) {
     info->pdf_height = 0;
 }
 
-void viewer_info_destroy(ViewerInfo *info) {
+void viewer_info_destroy(ViewerInfo *info)
+{
     if (info->doc) {
         g_object_unref(info->doc);
         info->doc = NULL;
@@ -71,7 +75,8 @@ void viewer_info_destroy(ViewerInfo *info) {
     }
 }
 
-PopplerDest *viewer_info_get_dest(ViewerInfo *info, PopplerDest *dest) {
+PopplerDest *viewer_info_get_dest(ViewerInfo *info, PopplerDest *dest)
+{
     PopplerDest *actual_dest = NULL;
 
     if (dest->type == POPPLER_DEST_NAMED) {

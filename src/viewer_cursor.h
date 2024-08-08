@@ -5,29 +5,29 @@
 #include "viewer_info.h"
 
 typedef struct ViewerCursor {
-  ViewerInfo *info;
+    ViewerInfo *info;
 
-  int current_page;
-  double x_offset, y_offset, scale;
-  bool center_mode;
-  unsigned int input_number;
+    int current_page;
+    double x_offset, y_offset, scale;
+    bool center_mode;
+    unsigned int input_number;
 } ViewerCursor;
 
-ViewerCursor *viewer_cursor_new(ViewerInfo *info, 
-                                int current_page, 
-                                double x_offset, 
-                                double y_offset, 
-                                double scale, 
-                                bool center_mode, 
+ViewerCursor *viewer_cursor_new(ViewerInfo *info,
+                                int current_page,
+                                double x_offset,
+                                double y_offset,
+                                double scale,
+                                bool center_mode,
                                 unsigned int input_number);
 ViewerCursor *viewer_cursor_copy(ViewerCursor *cursor);
 void viewer_cursor_init(ViewerCursor *cursor,
                         ViewerInfo *info,
-                        int current_page, 
-                        double x_offset, 
-                        double y_offset, 
-                        double scale, 
-                        bool center_mode, 
+                        int current_page,
+                        double x_offset,
+                        double y_offset,
+                        double scale,
+                        bool center_mode,
                         unsigned int input_number);
 void viewer_cursor_destroy(ViewerCursor *cursor);
 

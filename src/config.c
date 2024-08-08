@@ -19,7 +19,8 @@ static void config_load_default_statusline_right(Config *config);
 /* Necessary because g_array_append_val requires a reference, not a literal */
 static void statusline_section_add_component(GArray *section, StatuslineComponent component);
 
-Config *config_new(void) {
+Config *config_new(void)
+{
     Config *config = malloc(sizeof(Config));
     if (config == NULL) {
         return NULL;
@@ -30,7 +31,8 @@ Config *config_new(void) {
     return config;
 }
 
-void config_init(Config *config) {
+void config_init(Config *config)
+{
     config->db_filename = NULL;
     config->file_chooser_initial_folder_path = NULL;
     config->steps = -1;
@@ -43,7 +45,8 @@ void config_init(Config *config) {
     config->statusline_right = g_array_new(FALSE, TRUE, sizeof(StatuslineComponent));
 }
 
-void config_destroy(Config *config) {
+void config_destroy(Config *config)
+{
     if (config->db_filename) {
         g_free(config->db_filename);
         config->db_filename = NULL;
@@ -60,15 +63,18 @@ void config_destroy(Config *config) {
     g_array_free(config->statusline_right, TRUE);
 }
 
-void config_set_db_filename(Config *config, gchar *db_filename) {
+void config_set_db_filename(Config *config, gchar *db_filename)
+{
     config->db_filename = db_filename;
 }
 
-void config_set_file_chooser_initial_folder_path(Config *config, gchar *file_chooser_initial_folder_path) {
+void config_set_file_chooser_initial_folder_path(Config *config, gchar *file_chooser_initial_folder_path)
+{
     config->file_chooser_initial_folder_path = file_chooser_initial_folder_path;
 }
 
-void config_set_steps(Config *config, int steps) {
+void config_set_steps(Config *config, int steps)
+{
     if (steps <= 0) {
         g_printerr("\"steps\" must be greater than 0. Using default value.\n");
         config->steps = DEFAULT_STEPS;
@@ -77,7 +83,8 @@ void config_set_steps(Config *config, int steps) {
     }
 }
 
-void config_set_min_scale(Config *config, double min_scale) {
+void config_set_min_scale(Config *config, double min_scale)
+{
     if (min_scale <= 0.0) {
         g_printerr("\"min_scale\" must be greater than 0.0. Using default value.\n");
         config->min_scale = DEFAULT_MIN_SCALE;
@@ -86,7 +93,8 @@ void config_set_min_scale(Config *config, double min_scale) {
     }
 }
 
-void config_set_scale_step(Config *config, double scale_step) {
+void config_set_scale_step(Config *config, double scale_step)
+{
     if (scale_step <= 0.0) {
         g_printerr("\"scale_step\" must be greater than 0.0. Using default value.\n");
         config->scale_step = DEFAULT_SCALE_STEP;
@@ -95,11 +103,13 @@ void config_set_scale_step(Config *config, double scale_step) {
     }
 }
 
-void config_set_statusline_separator(Config *config, gchar *statusline_separator) {
+void config_set_statusline_separator(Config *config, gchar *statusline_separator)
+{
     config->statusline_separator = statusline_separator;
 }
 
-void config_load(Config *config) {
+void config_load(Config *config)
+{
     FILE *fp;
     gchar *config_file_path;
 
@@ -115,7 +125,8 @@ void config_load(Config *config) {
     }
 }
 
-void config_load_default(Config *config) {
+void config_load_default(Config *config)
+{
     config_set_db_filename(config, g_strdup(DEFAULT_DB_FILENAME));
     config_set_file_chooser_initial_folder_path(config, g_strdup(DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH));
     config_set_steps(config, DEFAULT_STEPS);
@@ -128,7 +139,8 @@ void config_load_default(Config *config) {
     config_load_default_statusline_right(config);
 }
 
-static void config_parse(Config *config, FILE *fp) {
+static void config_parse(Config *config, FILE *fp)
+{
     // TODO: Very long function
     toml_table_t *conf;
     char errbuf[256];
@@ -270,30 +282,34 @@ static void config_parse(Config *config, FILE *fp) {
     toml_free(conf);
 }
 
-static void config_load_default_statusline_left(Config *config) {
+static void config_load_default_statusline_left(Config *config)
+{
     StatuslineComponent components[] = {
         STATUSLINE_COMPONENT_PAGE,
-        };
+    };
 
     g_array_set_size(config->statusline_left, 0);
     g_array_append_vals(config->statusline_left, components, sizeof(components) / sizeof(components[0]));
 }
 
-static void config_load_default_statusline_middle(Config *config) {
+static void config_load_default_statusline_middle(Config *config)
+{
     g_array_set_size(config->statusline_middle, 0);
 }
 
-static void config_load_default_statusline_right(Config *config) {
+static void config_load_default_statusline_right(Config *config)
+{
     StatuslineComponent components[] = {
         STATUSLINE_COMPONENT_CENTER_MODE,
         STATUSLINE_COMPONENT_SCALE,
         STATUSLINE_COMPONENT_MARK_SELECTION,
-        };
+    };
 
     g_array_set_size(config->statusline_right, 0);
     g_array_append_vals(config->statusline_right, components, sizeof(components) / sizeof(components[0]));
 }
 
-static void statusline_section_add_component(GArray *section, StatuslineComponent component) {
+static void statusline_section_add_component(GArray *section, StatuslineComponent component)
+{
     g_array_append_val(section, component);
 }

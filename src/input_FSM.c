@@ -6,7 +6,7 @@
 #include "viewer_search.h"
 #include "viewer_links.h"
 
-static InputState execute_command(Window* window, guint keyval, unsigned int repeat_count);
+static InputState execute_command(Window *window, guint keyval, unsigned int repeat_count);
 
 input_state_func input_state_funcs[] = {
     on_state_normal,
@@ -17,65 +17,67 @@ input_state_func input_state_funcs[] = {
     on_state_mark,
 };
 
-InputState on_state_normal(Window* window, guint keyval) {
+InputState on_state_normal(Window *window, guint keyval)
+{
     InputState next_state = STATE_NORMAL;
-    Viewer* viewer = window_get_viewer(window);
-    
+    Viewer *viewer = window_get_viewer(window);
+
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
         viewer->cursor->input_number = keyval - GDK_KEY_0;
         next_state = STATE_NUMBER;
     } else {
         switch (keyval) {
-            case GDK_KEY_0:
-                viewer_cursor_set_scale(viewer->cursor, 1.0);
-                break;
-            case GDK_KEY_c:
-                viewer_cursor_toggle_center_mode(viewer->cursor);
-                break;
-            case GDK_KEY_s:
-                viewer_cursor_fit_horizontal(viewer->cursor);
-                break;
-            case GDK_KEY_a:
-                viewer_cursor_fit_vertical(viewer->cursor);
-                break;
-            case GDK_KEY_g:
-                next_state = STATE_g;
-                break;
-            case GDK_KEY_G:
-                viewer->cursor->current_page = viewer->info->n_pages - 1;
-                viewer->cursor->y_offset = global_config->steps - 1;
-                break;
-            case GDK_KEY_f:
-                viewer->links->follow_links_mode = true;
-                viewer->cursor->input_number = 0;
-                next_state = STATE_FOLLOW_LINKS;
-                break;
-            case GDK_KEY_m:
-                next_state = STATE_MARK;
-                break;
-            case GDK_KEY_Tab:
-                window_toggle_toc(window);
-                next_state = STATE_TOC_FOCUS;
-                break;
-            case GDK_KEY_slash:
-                window_show_search_dialog(window);
-                break;
-            case GDK_KEY_o:
-                app_open_file_chooser(JUMPDF_APP(gtk_window_get_application(GTK_WINDOW(window))));
-                break;
-            default:
-                next_state = execute_command(window, keyval, 1);
-                break;
+        case GDK_KEY_0:
+            viewer_cursor_set_scale(viewer->cursor, 1.0);
+            break;
+        case GDK_KEY_c:
+            viewer_cursor_toggle_center_mode(viewer->cursor);
+            break;
+        case GDK_KEY_s:
+            viewer_cursor_fit_horizontal(viewer->cursor);
+            break;
+        case GDK_KEY_a:
+            viewer_cursor_fit_vertical(viewer->cursor);
+            break;
+        case GDK_KEY_g:
+            next_state = STATE_g;
+            break;
+        case GDK_KEY_G:
+            viewer->cursor->current_page = viewer->info->n_pages - 1;
+            viewer->cursor->y_offset = global_config->steps - 1;
+            break;
+        case GDK_KEY_f:
+            viewer->links->follow_links_mode = true;
+            viewer->cursor->input_number = 0;
+            next_state = STATE_FOLLOW_LINKS;
+            break;
+        case GDK_KEY_m:
+            next_state = STATE_MARK;
+            break;
+        case GDK_KEY_Tab:
+            window_toggle_toc(window);
+            next_state = STATE_TOC_FOCUS;
+            break;
+        case GDK_KEY_slash:
+            window_show_search_dialog(window);
+            break;
+        case GDK_KEY_o:
+            app_open_file_chooser(JUMPDF_APP(gtk_window_get_application(GTK_WINDOW(window))));
+            break;
+        default:
+            next_state = execute_command(window, keyval, 1);
+            break;
         }
     }
 
     return next_state;
 }
 
-InputState on_state_g(Window* window, guint keyval) {
+InputState on_state_g(Window *window, guint keyval)
+{
     InputState next_state = STATE_NORMAL;
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
-    Viewer* viewer = window_get_viewer(window);
+    Viewer *viewer = window_get_viewer(window);
     unsigned int group_i = keyval - GDK_KEY_0 - 1;
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
@@ -93,9 +95,10 @@ InputState on_state_g(Window* window, guint keyval) {
     return next_state;
 }
 
-InputState on_state_number(Window* window, guint keyval) {
+InputState on_state_number(Window *window, guint keyval)
+{
     InputState next_state;
-    Viewer* viewer = window_get_viewer(window);
+    Viewer *viewer = window_get_viewer(window);
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
         viewer->cursor->input_number = viewer->cursor->input_number * 10 + (keyval - GDK_KEY_0);
@@ -115,9 +118,10 @@ InputState on_state_number(Window* window, guint keyval) {
     return next_state;
 }
 
-InputState on_state_follow_links(Window* window, guint keyval) {
+InputState on_state_follow_links(Window *window, guint keyval)
+{
     InputState next_state;
-    Viewer* viewer = window_get_viewer(window);
+    Viewer *viewer = window_get_viewer(window);
     PopplerLinkMapping *link_mapping;
 
     if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9) {
@@ -137,7 +141,8 @@ InputState on_state_follow_links(Window* window, guint keyval) {
     return next_state;
 }
 
-InputState on_state_toc_focus(Window* window, guint keyval) {
+InputState on_state_toc_focus(Window *window, guint keyval)
+{
     InputState next_state;
     GtkListBox *toc_list_box = window_get_toc_listbox(window);
     GtkListBoxRow *current_row = gtk_list_box_get_selected_row(toc_list_box);
@@ -149,39 +154,39 @@ InputState on_state_toc_focus(Window* window, guint keyval) {
     }
 
     switch (keyval) {
-        case GDK_KEY_Tab:
-            window_toggle_toc(window);
-            next_state = STATE_NORMAL;
-            break;
-        case GDK_KEY_j:
-            if (current_row != NULL) {
-                new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index + 1);
-                while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
-                    new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) + 1);
-                }
+    case GDK_KEY_Tab:
+        window_toggle_toc(window);
+        next_state = STATE_NORMAL;
+        break;
+    case GDK_KEY_j:
+        if (current_row != NULL) {
+            new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index + 1);
+            while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
+                new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) + 1);
             }
-            next_state = STATE_TOC_FOCUS;
-            break;
-        case GDK_KEY_k:
-            if (current_row != NULL) {
-                new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index - 1);
-                while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
-                    new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) - 1);
-                }
+        }
+        next_state = STATE_TOC_FOCUS;
+        break;
+    case GDK_KEY_k:
+        if (current_row != NULL) {
+            new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index - 1);
+            while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
+                new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) - 1);
             }
-            next_state = STATE_TOC_FOCUS;
-            break;
-        case GDK_KEY_Return:
-            window_execute_toc_row(window, current_row);
-            next_state = STATE_TOC_FOCUS;
-            break;
-        case GDK_KEY_slash:
-            window_focus_toc_search(window);
-            next_state = STATE_TOC_FOCUS;
-            break;
-        default:
-            next_state = STATE_TOC_FOCUS;
-            break;
+        }
+        next_state = STATE_TOC_FOCUS;
+        break;
+    case GDK_KEY_Return:
+        window_execute_toc_row(window, current_row);
+        next_state = STATE_TOC_FOCUS;
+        break;
+    case GDK_KEY_slash:
+        window_focus_toc_search(window);
+        next_state = STATE_TOC_FOCUS;
+        break;
+    default:
+        next_state = STATE_TOC_FOCUS;
+        break;
     }
 
     if (new_row != NULL) {
@@ -191,19 +196,20 @@ InputState on_state_toc_focus(Window* window, guint keyval) {
     return next_state;
 }
 
-InputState on_state_mark(Window* window, guint keyval) {
+InputState on_state_mark(Window *window, guint keyval)
+{
     InputState next_state = STATE_NORMAL;
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     Viewer *viewer = window_get_viewer(window);
     unsigned int mark_i = keyval - GDK_KEY_0 - 1;
+    unsigned int group_i = 0;
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        if (viewer_mark_manager_get_mark(mark_manager,
-                viewer_mark_manager_get_current_group_index(mark_manager),
-                mark_i) == NULL) {
+        group_i = viewer_mark_manager_get_current_group_index(mark_manager);
+
+        if (viewer_mark_manager_get_mark(mark_manager, group_i, mark_i) == NULL) {
             viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(viewer->cursor),
-                viewer_mark_manager_get_current_group_index(mark_manager),
-                mark_i);
+                                         group_i, mark_i);
         }
 
         viewer_mark_manager_set_current_mark(mark_manager, mark_i);
@@ -212,13 +218,15 @@ InputState on_state_mark(Window* window, guint keyval) {
     return next_state;
 }
 
-InputState execute_state(InputState current_state, Window* window, guint keyval) {
+InputState execute_state(InputState current_state, Window *window, guint keyval)
+{
     return input_state_funcs[current_state](window, keyval);
 }
 
-static InputState execute_command(Window* window, guint keyval, unsigned int repeat_count) {
+static InputState execute_command(Window *window, guint keyval, unsigned int repeat_count)
+{
     InputState next_state = STATE_NORMAL;
-    Viewer* viewer = window_get_viewer(window);
+    Viewer *viewer = window_get_viewer(window);
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     ViewerCursor *search_new_cursor = NULL;
     ViewerCursor *current_cursor = viewer_mark_manager_get_current_cursor(mark_manager);
@@ -227,36 +235,36 @@ static InputState execute_command(Window* window, guint keyval, unsigned int rep
 
     for (unsigned int i = 0; i < repeat_count; i++) {
         switch (keyval) {
-            case GDK_KEY_plus:
-                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale + global_config->scale_step);
-                break;
-            case GDK_KEY_minus:
-                viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale - global_config->scale_step);
-                break;
-            case GDK_KEY_u:
-                viewer->cursor->y_offset -= global_config->steps / 2.0;
-                break;
-            case GDK_KEY_d:
-                viewer->cursor->y_offset += global_config->steps / 2.0;
-                break;
-            case GDK_KEY_h:
-                viewer->cursor->x_offset++;
-                break;
-            case GDK_KEY_j:
-                viewer->cursor->y_offset++;
-                break;
-            case GDK_KEY_k:
-                viewer->cursor->y_offset--;
-                break;
-            case GDK_KEY_l:
-                viewer->cursor->x_offset--;
-                break;
-            case GDK_KEY_n:
-                search_new_cursor = viewer_search_get_next_search(viewer->search, viewer->cursor);
-                break;
-            case GDK_KEY_N:
-                search_new_cursor = viewer_search_get_prev_search(viewer->search, viewer->cursor);
-                break;
+        case GDK_KEY_plus:
+            viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale + global_config->scale_step);
+            break;
+        case GDK_KEY_minus:
+            viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale - global_config->scale_step);
+            break;
+        case GDK_KEY_u:
+            viewer->cursor->y_offset -= global_config->steps / 2.0;
+            break;
+        case GDK_KEY_d:
+            viewer->cursor->y_offset += global_config->steps / 2.0;
+            break;
+        case GDK_KEY_h:
+            viewer->cursor->x_offset++;
+            break;
+        case GDK_KEY_j:
+            viewer->cursor->y_offset++;
+            break;
+        case GDK_KEY_k:
+            viewer->cursor->y_offset--;
+            break;
+        case GDK_KEY_l:
+            viewer->cursor->x_offset--;
+            break;
+        case GDK_KEY_n:
+            search_new_cursor = viewer_search_get_next_search(viewer->search, viewer->cursor);
+            break;
+        case GDK_KEY_N:
+            search_new_cursor = viewer_search_get_prev_search(viewer->search, viewer->cursor);
+            break;
         }
     }
 
