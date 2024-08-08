@@ -524,9 +524,10 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     viewer_links_clear_links(win->viewer->links);
     window_render_page(win, cr_pdf, page, &links_drawn_sofar);
 
-    visible_pages = win->viewer->info->view_height / (win->viewer->cursor->scale * win->viewer->info->pdf_height) - 1;
+    visible_pages = win->viewer->info->view_height / (win->viewer->cursor->scale * win->viewer->info->pdf_height);
+    // TODO: Properly calculate
     visible_pages_before = ceil(visible_pages / 2);
-    visible_pages_after = ceil(visible_pages / 2) + 1;
+    visible_pages_after = ceil(visible_pages / 2);
 
     cairo_save(cr_pdf);
     for (int i = 1; i <= visible_pages_before; i++) {
