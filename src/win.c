@@ -16,6 +16,12 @@
 #include "viewer_links.h"
 #include "input_FSM.h"
 
+// TODO: Load from file or resource
+static const char *css = 
+    ".statusline {"
+    "    background-color: black;"
+    "}";
+
 static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
 static void window_update_statusline(Window *win);
@@ -83,7 +89,7 @@ G_DEFINE_TYPE(Window, window, GTK_TYPE_APPLICATION_WINDOW)
 
 static void window_init(Window *win)
 {
-    GtkCssProvider *provider = gtk_css_provider_new();
+    GtkCssProvider *css_provider;
 
     win->viewer = NULL;
     win->current_input_state = STATE_NORMAL;
@@ -108,11 +114,7 @@ static void window_init(Window *win)
     g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
 
     win->statusline = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_style_context_add_class(gtk_widget_get_style_context(win->statusline), "bottom-bar");
-    gtk_css_provider_load_from_data(provider, "box.bottom-bar { background-color: black; }", -1);
-    gtk_style_context_add_provider(gtk_widget_get_style_context(win->statusline),
-        GTK_STYLE_PROVIDER(provider),
-        GTK_STYLE_PROVIDER_PRIORITY_USER);
+    gtk_widget_add_css_class(win->statusline, "statusline");
 
     win->statusline_left = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_hexpand(win->statusline_left, FALSE);
@@ -180,6 +182,11 @@ static void window_init(Window *win)
     gtk_box_append(GTK_BOX(win->main_container), win->view_box);
 
     gtk_window_set_title(GTK_WINDOW(win), "Jumpdf");
+
+    css_provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_string(css_provider, css);
+    gtk_style_context_add_provider_for_display(gdk_display_get_default(),
+        GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 }
 
 static void window_finalize(GObject *object)
