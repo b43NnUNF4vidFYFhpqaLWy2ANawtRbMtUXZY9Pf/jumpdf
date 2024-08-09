@@ -42,6 +42,7 @@ static void on_resize(GtkDrawingArea *area, int width, int height,
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data);
 static void on_search_entry_activate(GtkEntry *entry, gpointer user_data);
+static gboolean on_search_window_key_press(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, gpointer user_data);
 static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data);
 static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data);
 static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data);
@@ -74,6 +75,7 @@ struct _Window {
     GtkWidget *search_window;
     GtkWidget *search_box;
     GtkWidget *search_entry;
+    GtkEventController *search_event_controller;
 
     /*
     This reference to App is necessary, as the Window is not associated
@@ -178,6 +180,11 @@ static void window_init(Window *win)
     win->search_entry = gtk_entry_new();
     gtk_box_append(GTK_BOX(win->search_box), win->search_entry);
     g_signal_connect(win->search_entry, "activate", G_CALLBACK(on_search_entry_activate), win);
+
+    win->search_event_controller = gtk_event_controller_key_new();
+    g_signal_connect(win->search_event_controller, "key-pressed",
+        G_CALLBACK(on_search_window_key_press), win);
+    gtk_widget_add_controller(win->search_window, win->search_event_controller);
 
     win->main_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_window_set_child(GTK_WINDOW(win), win->main_container);
@@ -619,6 +626,20 @@ static void on_search_entry_activate(GtkEntry *entry, gpointer user_data) {
 
     gtk_window_close(GTK_WINDOW(win->search_window));
     window_redraw(win);
+}
+
+static gboolean on_search_window_key_press(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, gpointer user_data)
+{
+    Window *win = (Window *)user_data;
+
+    switch (keyval) {
+    case GDK_KEY_Escape:
+        gtk_window_close(GTK_WINDOW(win->search_window));
+        window_redraw(win);
+        return TRUE;
+    default:
+        return FALSE;
+    }
 }
 
 static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
