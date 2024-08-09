@@ -78,6 +78,11 @@ void database_create_tables(Database *db)
         "   FOREIGN KEY(mark_manager_uri) REFERENCES mark_manager(uri),"
         "   FOREIGN KEY(group_id) REFERENCES cursor_group(id)"
         ");"
+        "CREATE INDEX IF NOT EXISTS idx_cursor_id ON cursor(id);"
+        "CREATE INDEX IF NOT EXISTS idx_cursor_group_id ON cursor_group(id);"
+        "CREATE INDEX IF NOT EXISTS idx_mark_manager_uri ON mark_manager(uri);"
+        "CREATE INDEX IF NOT EXISTS idx_group_cursor_group_id_cursor_id ON group_cursor(group_id, cursor_id);"
+        "CREATE INDEX IF NOT EXISTS idx_mark_manager_group_mark_manager_uri ON mark_manager_group(mark_manager_uri);"
         ;
     char *errmsg = NULL;
     int rc = sqlite3_exec(db->db, sql, NULL, NULL, &errmsg);
