@@ -8,24 +8,33 @@
 
 // TODO: A lot of repetition in these functions
 
-static Database *database_new(void);
-static void database_init(Database *db);
 static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt);
 static void database_printerr_sql(Database *db, char *sql);
 
-struct Database {
-    sqlite3 *db;
-};
-
-Database *database_get_instance(void)
-{
-    static Database *instance = NULL;
-
-    if (instance == NULL) {
-        instance = database_new();
+Database *database_open(const char *path) {
+    Database *db = malloc(sizeof(Database));
+    if (db == NULL) {
+        return NULL;
     }
 
-    return instance;
+    database_init(db, path);
+
+    return db;
+}
+
+void database_init(Database *db, const char *path) {
+    int rc;
+
+    if (db == NULL) {
+        return;
+    }
+
+    rc = sqlite3_open(path, &(db->handle));
+    if (rc != SQLITE_OK) {
+        g_printerr("database_init: %s\n", sqlite3_errmsg(db->handle));
+        sqlite3_close(db->handle);
+        return;
+    }
 }
 
 void database_close(Database *db)
@@ -36,9 +45,9 @@ void database_close(Database *db)
         return;
     }
 
-    rc = sqlite3_close(db->db);
+    rc = sqlite3_close(db->handle);
     if (rc != SQLITE_OK) {
-        g_printerr("database_close: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_close: %s\n", sqlite3_errmsg(db->handle));
     }
 }
 
@@ -85,7 +94,7 @@ void database_create_tables(Database *db)
         "CREATE INDEX IF NOT EXISTS idx_mark_manager_group_mark_manager_uri ON mark_manager_group(mark_manager_uri);"
         ;
     char *errmsg = NULL;
-    int rc = sqlite3_exec(db->db, sql, NULL, NULL, &errmsg);
+    int rc = sqlite3_exec(db->handle, sql, NULL, NULL, &errmsg);
 
     if (rc != SQLITE_OK) {
         g_printerr("database_create_tables: %s\n", errmsg);
@@ -100,9 +109,9 @@ sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor)
     int rc;
     int cursor_id = -1;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_insert_cursor: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_insert_cursor: %s\n", sqlite3_errmsg(db->handle));
         return -1;
     }
 
@@ -117,7 +126,7 @@ sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor)
     if (rc != SQLITE_DONE) {
         database_printerr_stmt(db, stmt);
     } else {
-        cursor_id = sqlite3_last_insert_rowid(db->db);
+        cursor_id = sqlite3_last_insert_rowid(db->handle);
     }
 
     sqlite3_finalize(stmt);
@@ -134,9 +143,9 @@ void database_update_cursor(Database *db, int id, ViewerCursor *cursor)
     sqlite3_stmt *stmt;
     int rc;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_update_cursor: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_update_cursor: %s\n", sqlite3_errmsg(db->handle));
         return;
     }
 
@@ -167,9 +176,9 @@ ViewerCursor *database_get_cursor(Database *db, int id)
     int input_number;
     ViewerCursor *cursor = NULL;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_get_cursor: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_get_cursor: %s\n", sqlite3_errmsg(db->handle));
         return NULL;
     }
 
@@ -202,9 +211,9 @@ sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group)
     sqlite3_int64 group_id = -1;
     sqlite3_int64 cursor_id = -1;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_insert_group: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_insert_group: %s\n", sqlite3_errmsg(db->handle));
         return -1;
     }
 
@@ -214,7 +223,7 @@ sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group)
     if (rc != SQLITE_DONE) {
         database_printerr_stmt(db, stmt);
     } else {
-        group_id = sqlite3_last_insert_rowid(db->db);
+        group_id = sqlite3_last_insert_rowid(db->handle);
     }
 
     sqlite3_finalize(stmt);
@@ -239,9 +248,9 @@ sqlite3_int64 database_insert_group_cursor(Database *db, int group_id, int curso
     int rc;
     sqlite3_int64 group_cursor_id = -1;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_insert_group_cursor: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_insert_group_cursor: %s\n", sqlite3_errmsg(db->handle));
         return -1;
     }
 
@@ -253,7 +262,7 @@ sqlite3_int64 database_insert_group_cursor(Database *db, int group_id, int curso
     if (rc != SQLITE_DONE) {
         database_printerr_stmt(db, stmt);
     } else {
-        group_cursor_id = sqlite3_last_insert_rowid(db->db);
+        group_cursor_id = sqlite3_last_insert_rowid(db->handle);
     }
 
     sqlite3_finalize(stmt);
@@ -272,9 +281,9 @@ void database_update_group(Database *db, int id, ViewerMarkGroup *group)
     ViewerCursor **cursors_db;
     int new_cursor_id = -1;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_update_group: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_update_group: %s\n", sqlite3_errmsg(db->handle));
         return;
     }
 
@@ -317,9 +326,9 @@ void database_update_cursor_in_group(Database *db, int group_id, int cursor_inde
     int rc;
     int cursor_id;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_update_cursor_in_group: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_update_cursor_in_group: %s\n", sqlite3_errmsg(db->handle));
         return;
     }
 
@@ -350,9 +359,9 @@ ViewerMarkGroup *database_get_group(Database *db, int id)
     int current_mark;
     ViewerMarkGroup *group = NULL;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_get_group: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_get_group: %s\n", sqlite3_errmsg(db->handle));
         return NULL;
     }
 
@@ -386,9 +395,9 @@ ViewerCursor **database_get_group_cursors(Database *db, int id)
     int cursor_index;
     ViewerCursor **cursors = NULL;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_get_group_cursors: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_get_group_cursors: %s\n", sqlite3_errmsg(db->handle));
         return NULL;
     }
 
@@ -424,9 +433,9 @@ void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManag
     int rc;
     sqlite3_int64 group_id = -1;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_insert_mark_manager: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_insert_mark_manager: %s\n", sqlite3_errmsg(db->handle));
         return;
     }
 
@@ -458,9 +467,9 @@ sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, 
     int rc;
     sqlite3_int64 mark_manager_group_id = -1;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_insert_mark_manager_group: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_insert_mark_manager_group: %s\n", sqlite3_errmsg(db->handle));
         return -1;
     }
 
@@ -472,7 +481,7 @@ sqlite3_int64 database_insert_mark_manager_group(Database *db, const char *uri, 
     if (rc != SQLITE_DONE) {
         database_printerr_stmt(db, stmt);
     } else {
-        mark_manager_group_id = sqlite3_last_insert_rowid(db->db);
+        mark_manager_group_id = sqlite3_last_insert_rowid(db->handle);
     }
 
     sqlite3_finalize(stmt);
@@ -490,9 +499,9 @@ void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManag
     int rc;
     ViewerMarkGroup **groups_db;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_update_mark_manager: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_update_mark_manager: %s\n", sqlite3_errmsg(db->handle));
         return;
     }
 
@@ -534,9 +543,9 @@ void database_update_groups_in_mark_manager(Database *db, const char *uri, Viewe
     int group_id;
     int group_index;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_update_groups_in_mark_manager: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_update_groups_in_mark_manager: %s\n", sqlite3_errmsg(db->handle));
         return;
     }
 
@@ -567,9 +576,9 @@ ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri)
     ViewerMarkGroup **groups = NULL;
     ViewerMarkManager *manager = NULL;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_get_mark_manager: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_get_mark_manager: %s\n", sqlite3_errmsg(db->handle));
         return NULL;
     }
 
@@ -605,9 +614,9 @@ ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri
     int group_index;
     ViewerMarkGroup **groups = NULL;
 
-    rc = sqlite3_prepare_v2(db->db, sql, -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        g_printerr("database_get_mark_manager_groups: %s\n", sqlite3_errmsg(db->db));
+        g_printerr("database_get_mark_manager_groups: %s\n", sqlite3_errmsg(db->handle));
         return NULL;
     }
 
@@ -636,39 +645,6 @@ ViewerMarkGroup **database_get_mark_manager_groups(Database *db, const char *uri
     return groups;
 }
 
-static Database *database_new(void)
-{
-    Database *db = malloc(sizeof(Database));
-    if (db == NULL) {
-        return NULL;
-    }
-
-    database_init(db);
-
-    return db;
-}
-
-static void database_init(Database *db)
-{
-    gchar *db_file = expand_path(global_config->db_filename);
-    int rc;
-
-    if (db == NULL) {
-        return;
-    }
-
-    ensure_path_exists(db_file);
-
-    rc = sqlite3_open(db_file, &(db->db));
-    if (rc != SQLITE_OK) {
-        g_printerr("database_init: %s\n", sqlite3_errmsg(db->db));
-        sqlite3_close(db->db);
-        return;
-    }
-
-    g_free(db_file);
-}
-
 static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt)
 {
     char *query = sqlite3_expanded_sql(stmt);
@@ -681,5 +657,5 @@ static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt)
 }
 static void database_printerr_sql(Database *db, char *sql)
 {
-    g_print("\"%s\": %s\n", sql, sqlite3_errmsg(db->db));
+    g_print("\"%s\": %s\n", sql, sqlite3_errmsg(db->handle));
 }

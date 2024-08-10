@@ -5,10 +5,12 @@
 #include "viewer_mark_group.h"
 #include "viewer_mark_manager.h"
 
-// Singleton unnecessary?
-typedef struct Database Database;
+typedef struct Database {
+    sqlite3 *handle;
+} Database;
 
-Database *database_get_instance(void);
+Database *database_open(const char *path);
+void database_init(Database *db, const char *path);
 void database_close(Database *db);
 
 // Table creation

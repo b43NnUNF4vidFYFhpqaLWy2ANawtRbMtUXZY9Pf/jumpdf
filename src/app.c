@@ -22,6 +22,7 @@ struct _App {
     */
     GHashTable *uri_mark_manager_map;
     GPtrArray *windows;
+    Database *db;
 };
 
 G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION);
@@ -37,9 +38,16 @@ int app_run(int argc, char *argv[])
 
 static void app_init(App *app)
 {
+    gchar *db_filename = NULL;
+
     global_config = config_new();
     config_load(global_config);
-    database_create_tables(database_get_instance());
+
+    db_filename = expand_path(global_config->db_filename);
+    app->db = database_open(db_filename);
+    g_free(db_filename);
+    database_create_tables(app->db);
+
     app->uri_mark_manager_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)viewer_mark_manager_destroy);
     app->windows = g_ptr_array_new();
 }
@@ -53,7 +61,9 @@ static void app_finalize(GObject *object)
 
     g_ptr_array_free(app->windows, TRUE);
 
-    database_close(database_get_instance());
+    database_close(app->db);
+    free(app->db);
+
     config_destroy(global_config);
     free(global_config);
 
@@ -99,7 +109,6 @@ App *app_new(void)
 
 ViewerMarkManager *app_get_mark_manager(App *app, GFile *file)
 {
-    Database *db = database_get_instance();
     char *uri = g_file_get_uri(file);
     ViewerInfo *info = viewer_info_new_from_gfile(file);
     ViewerMarkGroup **groups = NULL;
@@ -112,7 +121,7 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file)
 
     if (mark_manager_memory == NULL) {
         app_update_database_mark_managers(JUMPDF_APP(app));
-        mark_manager_db = database_get_mark_manager(db, uri);
+        mark_manager_db = database_get_mark_manager(app->db, uri);
 
         if (mark_manager_db == NULL) {
             groups = malloc(NUM_GROUPS * sizeof(ViewerMarkGroup *));
@@ -130,7 +139,7 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file)
             mark_manager = viewer_mark_manager_new(groups, 0);
             free(groups);
 
-            database_insert_mark_manager(db, uri, mark_manager);
+            database_insert_mark_manager(app->db, uri, mark_manager);
         } else {
             mark_manager = mark_manager_db;
         }
@@ -182,8 +191,7 @@ void app_redraw_windows(App *app)
 void app_update_database_mark_managers(App *app)
 {
     g_hash_table_foreach(app->uri_mark_manager_map,
-        (GHFunc)database_update_mark_manager_cb,
-        NULL);
+        (GHFunc)database_update_mark_manager_cb, app);
 }
 
 void app_open_file_chooser(App *app)
@@ -205,9 +213,9 @@ static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_p
 {
     const char *uri = uri_ptr;
     ViewerMarkManager *manager = manager_ptr;
-    Database *db = database_get_instance();
+    App *app = (App *)user_data;
 
-    database_update_mark_manager(db, uri, manager);
+    database_update_mark_manager(app->db, uri, manager);
 }
 
 static void on_file_dialog_response(GObject *source_object, GAsyncResult *res, gpointer user_data)
