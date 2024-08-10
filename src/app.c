@@ -83,12 +83,14 @@ static void app_open(GApplication *app, GFile **files, int n_files,
     GPtrArray *new_windows = g_ptr_array_sized_new(n_files);
 
     for (int i = 0; i < n_files; i++) {
-        win = window_new(JUMPDF_APP(app));
-        g_ptr_array_add(new_windows, win);
-
         mark_manager = app_get_mark_manager(JUMPDF_APP(app), files[i]);
-        window_open(win, files[i], mark_manager);
-        gtk_window_present(GTK_WINDOW(win));
+        if (mark_manager != NULL) {
+            win = window_new(JUMPDF_APP(app));
+            g_ptr_array_add(new_windows, win);
+
+            window_open(win, files[i], mark_manager);
+            gtk_window_present(GTK_WINDOW(win));
+        }
     }
 
     g_ptr_array_extend_and_steal(JUMPDF_APP(app)->windows, new_windows);
@@ -109,16 +111,24 @@ App *app_new(void)
 
 ViewerMarkManager *app_get_mark_manager(App *app, GFile *file)
 {
-    char *uri = g_file_get_uri(file);
-    ViewerInfo *info = viewer_info_new_from_gfile(file);
+    char *uri = NULL;
+    ViewerInfo *info = NULL;
     ViewerMarkGroup **groups = NULL;
     ViewerCursor **default_cursors = NULL;
     ViewerCursor *default_cursor = NULL;
     ViewerCursor *cursor = NULL;
     ViewerMarkManager *mark_manager = NULL;
-    ViewerMarkManager *mark_manager_memory = g_hash_table_lookup(JUMPDF_APP(app)->uri_mark_manager_map, uri);
+    ViewerMarkManager *mark_manager_memory = NULL;
     ViewerMarkManager *mark_manager_db = NULL;
 
+    info = viewer_info_new_from_gfile(file);
+    if (info == NULL) {
+        g_free(uri);
+        return NULL;
+    }
+
+    uri = g_file_get_uri(file);
+    mark_manager_memory = g_hash_table_lookup(JUMPDF_APP(app)->uri_mark_manager_map, uri);
     if (mark_manager_memory == NULL) {
         app_update_database_mark_managers(JUMPDF_APP(app));
         mark_manager_db = database_get_mark_manager(app->db, uri);
