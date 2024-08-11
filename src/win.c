@@ -308,12 +308,12 @@ void window_focus_toc_search(Window *win)
 
 void window_execute_toc_row(Window *win, GtkListBoxRow *row)
 {
-    GtkWidget *label;
+    GtkWidget *toc_entry_box;
     PopplerDest *dest;
 
     if (row != NULL) {
-        label = gtk_list_box_row_get_child(row);
-        dest = g_object_get_data(G_OBJECT(label), "dest");
+        toc_entry_box = gtk_list_box_row_get_child(row);
+        dest = g_object_get_data(G_OBJECT(toc_entry_box), "dest");
 
         if (dest) {
             viewer_cursor_goto_poppler_dest(win->viewer->cursor, dest);
@@ -573,30 +573,42 @@ static void window_populate_toc(Window *win)
 static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int level)
 {
     PopplerAction *action;
-    gchar *markup;
-    GtkWidget *label;
-    PopplerIndexIter *child;
     PopplerDest *dest;
+    gchar *title_markup, *page_markup;
+    GtkWidget *title_label, *page_label;
+    GtkWidget *toc_entry_box;
+    PopplerIndexIter *child;
     GtkListBoxRow *first_row;
 
     while (iter) {
         action = poppler_index_iter_get_action(iter);
         if (action && action->type == POPPLER_ACTION_GOTO_DEST) {
-            markup = g_markup_printf_escaped("%*s%s", level * 2, " ", action->any.title);
-            label = gtk_label_new(NULL);
-            gtk_label_set_markup(GTK_LABEL(label), markup);
-            g_free(markup);
-            gtk_label_set_xalign(GTK_LABEL(label), 0.0); // Align to the left to maintain indentation
-            gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
-
             dest = viewer_info_get_dest(win->viewer->info, action->goto_dest.dest);
-            g_object_set_data(G_OBJECT(label), "dest", poppler_dest_copy(dest));
+
+            title_markup = g_markup_printf_escaped("%*s%s", level * 2, " ", action->any.title);
+            title_label = gtk_label_new(title_markup);
+            g_free(title_markup);
+            gtk_label_set_xalign(GTK_LABEL(title_label), 0.0);
+            gtk_label_set_justify(GTK_LABEL(title_label), GTK_JUSTIFY_LEFT);
+            gtk_widget_set_hexpand(title_label, TRUE);
+
+            page_markup = g_markup_printf_escaped("%d", dest->page_num + 1);
+            page_label = gtk_label_new(page_markup);
+            g_free(page_markup);
+            gtk_label_set_xalign(GTK_LABEL(page_label), 1.0);
+            gtk_label_set_justify(GTK_LABEL(page_label), GTK_JUSTIFY_RIGHT);
+
+            toc_entry_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+            gtk_box_append(GTK_BOX(toc_entry_box), title_label);
+            gtk_box_append(GTK_BOX(toc_entry_box), page_label);
+
+            g_object_set_data_full(G_OBJECT(toc_entry_box), "dest", poppler_dest_copy(dest), (GDestroyNotify)poppler_dest_free);
             if (action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
                 // Won't be freed by poppler_action_free
                 poppler_dest_free(dest);
             }
 
-            gtk_list_box_insert(GTK_LIST_BOX(win->toc_container), label, -1);
+            gtk_list_box_append(GTK_LIST_BOX(win->toc_container), toc_entry_box);
 
             child = poppler_index_iter_get_child(iter);
             if (child) {
