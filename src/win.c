@@ -667,15 +667,17 @@ static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data)
     Window *win = (Window *)user_data;
     const gchar *text = gtk_editable_get_text(GTK_EDITABLE(entry));
     GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(win->toc_container));
-    GtkWidget *label;
+    GtkWidget *box;
+    GtkWidget *title_label;
     const gchar *child_text;
     gboolean visible;
     GtkListBoxRow *first_visible_row;
 
     while (child) {
-        label = gtk_widget_get_first_child(child);
-        if (GTK_IS_LABEL(label)) {
-            child_text = gtk_label_get_text(GTK_LABEL(label));
+        box = gtk_widget_get_first_child(child);
+        title_label = gtk_widget_get_first_child(box);
+        if (GTK_IS_LABEL(title_label)) {
+            child_text = gtk_label_get_text(GTK_LABEL(title_label));
 
             visible = strcasestr(child_text, text) != NULL;
             gtk_widget_set_visible(child, visible);
