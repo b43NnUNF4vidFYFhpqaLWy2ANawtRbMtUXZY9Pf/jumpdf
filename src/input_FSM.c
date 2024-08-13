@@ -15,6 +15,7 @@ input_state_func input_state_funcs[] = {
     on_state_follow_links,
     on_state_toc_focus,
     on_state_mark,
+    on_state_mark_overwrite,
 };
 
 InputState on_state_normal(Window *window, guint keyval)
@@ -202,16 +203,38 @@ InputState on_state_mark(Window *window, guint keyval)
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     Viewer *viewer = window_get_viewer(window);
     unsigned int mark_i = keyval - GDK_KEY_0 - 1;
-    unsigned int group_i = 0;
+    unsigned int group_i = viewer_mark_manager_get_current_group_index(mark_manager);
+    ViewerCursor *stored_cursor = viewer_mark_manager_get_mark(mark_manager, group_i, mark_i);
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        group_i = viewer_mark_manager_get_current_group_index(mark_manager);
-
-        if (viewer_mark_manager_get_mark(mark_manager, group_i, mark_i) == NULL) {
+        if (stored_cursor == NULL) {
             viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(viewer->cursor),
                                          group_i, mark_i);
         }
 
+        viewer_mark_manager_set_current_mark(mark_manager, mark_i);
+    } else if (keyval == GDK_KEY_o) {
+        next_state = STATE_MARK_OVERWRITE;
+    }
+
+    return next_state;
+}
+
+InputState on_state_mark_overwrite(Window *window, guint keyval) {
+    InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
+    Viewer *viewer = window_get_viewer(window);
+    unsigned int mark_i = keyval - GDK_KEY_0 - 1;
+    unsigned int group_i = viewer_mark_manager_get_current_group_index(mark_manager);
+    ViewerCursor *stored_cursor = viewer_mark_manager_get_mark(mark_manager, group_i, mark_i);
+
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        if (stored_cursor != NULL) {
+            viewer_cursor_destroy(stored_cursor);
+            free(stored_cursor);
+        }
+
+        viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(viewer->cursor), group_i, mark_i);
         viewer_mark_manager_set_current_mark(mark_manager, mark_i);
     }
 
