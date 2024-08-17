@@ -61,6 +61,7 @@ void database_create_tables(Database *db)
         "   y_offset REAL NOT NULL,"
         "   scale REAL NOT NULL,"
         "   center_mode BOOLEAN NOT NULL,"
+        "   dark_mode BOOLEAN NOT NULL,"
         "   input_number INTEGER NOT NULL"
         ");"
         "CREATE TABLE IF NOT EXISTS cursor_group ("
@@ -104,7 +105,7 @@ void database_create_tables(Database *db)
 
 sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor)
 {
-    const char *sql = "INSERT INTO cursor (current_page, x_offset, y_offset, scale, center_mode, input_number) VALUES (?, ?, ?, ?, ?, ?);";
+    const char *sql = "INSERT INTO cursor (current_page, x_offset, y_offset, scale, center_mode, dark_mode, input_number) VALUES (?, ?, ?, ?, ?, ?, ?);";
     sqlite3_stmt *stmt;
     int rc;
     int cursor_id = -1;
@@ -120,7 +121,8 @@ sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor)
     sqlite3_bind_double(stmt, 3, cursor->y_offset);
     sqlite3_bind_double(stmt, 4, cursor->scale);
     sqlite3_bind_int(stmt, 5, cursor->center_mode);
-    sqlite3_bind_int(stmt, 6, cursor->input_number);
+    sqlite3_bind_int(stmt, 6, cursor->dark_mode);
+    sqlite3_bind_int(stmt, 7, cursor->input_number);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -138,7 +140,7 @@ void database_update_cursor(Database *db, int id, ViewerCursor *cursor)
 {
     const char *sql =
         "UPDATE cursor "
-        "SET current_page = ?, x_offset = ?, y_offset = ?, scale = ?, center_mode = ?, input_number = ? "
+        "SET current_page = ?, x_offset = ?, y_offset = ?, scale = ?, center_mode = ?, dark_mode = ?, input_number = ? "
         "WHERE id = ?;";
     sqlite3_stmt *stmt;
     int rc;
@@ -154,8 +156,9 @@ void database_update_cursor(Database *db, int id, ViewerCursor *cursor)
     sqlite3_bind_double(stmt, 3, cursor->y_offset);
     sqlite3_bind_double(stmt, 4, cursor->scale);
     sqlite3_bind_int(stmt, 5, cursor->center_mode);
-    sqlite3_bind_int(stmt, 6, cursor->input_number);
-    sqlite3_bind_int(stmt, 7, id);
+    sqlite3_bind_int(stmt, 6, cursor->dark_mode);
+    sqlite3_bind_int(stmt, 7, cursor->input_number);
+    sqlite3_bind_int(stmt, 8, id);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -167,12 +170,13 @@ void database_update_cursor(Database *db, int id, ViewerCursor *cursor)
 
 ViewerCursor *database_get_cursor(Database *db, int id)
 {
-    const char *sql = "SELECT current_page, x_offset, y_offset, scale, center_mode, input_number FROM cursor WHERE id = ?;";
+    const char *sql = "SELECT current_page, x_offset, y_offset, scale, center_mode, dark_mode, input_number FROM cursor WHERE id = ?;";
     sqlite3_stmt *stmt;
     int rc;
     int current_page;
     double x_offset, y_offset, scale;
     int center_mode;
+    int dark_mode;
     int input_number;
     ViewerCursor *cursor = NULL;
 
@@ -191,9 +195,10 @@ ViewerCursor *database_get_cursor(Database *db, int id)
         y_offset = sqlite3_column_double(stmt, 2);
         scale = sqlite3_column_double(stmt, 3);
         center_mode = sqlite3_column_int(stmt, 4);
-        input_number = sqlite3_column_int(stmt, 5);
+        dark_mode = sqlite3_column_int(stmt, 5);
+        input_number = sqlite3_column_int(stmt, 6);
 
-        cursor = viewer_cursor_new(NULL, current_page, x_offset, y_offset, scale, center_mode, input_number);
+        cursor = viewer_cursor_new(NULL, current_page, x_offset, y_offset, scale, center_mode, dark_mode, input_number);
     } else {
         database_printerr_stmt(db, stmt);
     }

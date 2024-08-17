@@ -34,6 +34,9 @@ InputState on_state_normal(Window *window, guint keyval)
         case GDK_KEY_c:
             viewer_cursor_toggle_center_mode(viewer->cursor);
             break;
+        case GDK_KEY_b:
+            viewer_cursor_toggle_dark_mode(viewer->cursor);
+            break;
         case GDK_KEY_s:
             viewer_cursor_fit_horizontal(viewer->cursor);
             break;

@@ -171,7 +171,7 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file)
     }
 
     if (viewer_mark_manager_get_current_cursor(mark_manager) == NULL) {
-        default_cursor = viewer_cursor_new(info, 0, 0.0, 0.0, 1.0, TRUE, 0);
+        default_cursor = viewer_cursor_new(info, 0, 0.0, 0.0, 1.0, TRUE, FALSE, 0);
         viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(default_cursor),
             viewer_mark_manager_get_current_group_index(mark_manager),
             viewer_mark_manager_get_current_mark_index(mark_manager));

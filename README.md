@@ -78,6 +78,7 @@ Note that multiple windows can be opened at the same time.
   - <kbd>n</kbd>, <kbd>N</kbd> (Goto next, previous page containing the search string)
 - <kbd>0</kbd> (Reset zoom)
 - <kbd>c</kbd> (Toggle center mode)
+- <kbd>b</kbd> (Toggle dark mode)
 - <kbd>s</kbd> (Fit horizontally to page)
 - <kbd>a</kbd> (Fit vertically to page)
 - <kbd>gg</kbd>, <kbd>G</kbd>, <kbd>\<number>G</kbd> (Goto first, last page, page \<number>)

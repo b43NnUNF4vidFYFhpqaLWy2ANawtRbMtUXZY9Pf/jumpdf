@@ -9,6 +9,7 @@ ViewerCursor *viewer_cursor_new(ViewerInfo *info,
                                 double y_offset,
                                 double scale,
                                 bool center_mode,
+                                bool dark_mode,
                                 unsigned int input_number)
 {
     ViewerCursor *cursor = malloc(sizeof(ViewerCursor));
@@ -16,7 +17,7 @@ ViewerCursor *viewer_cursor_new(ViewerInfo *info,
         return NULL;
     }
 
-    viewer_cursor_init(cursor, info, current_page, x_offset, y_offset, scale, center_mode, input_number);
+    viewer_cursor_init(cursor, info, current_page, x_offset, y_offset, scale, center_mode, dark_mode, input_number);
 
     return cursor;
 }
@@ -29,6 +30,7 @@ ViewerCursor *viewer_cursor_copy(ViewerCursor *cursor)
                              cursor->y_offset,
                              cursor->scale,
                              cursor->center_mode,
+                             cursor->dark_mode,
                              cursor->input_number);
 }
 
@@ -39,6 +41,7 @@ void viewer_cursor_init(ViewerCursor *cursor,
                         double y_offset,
                         double scale,
                         bool center_mode,
+                        bool dark_mode,
                         unsigned int input_number)
 {
     cursor->info = info;
@@ -47,6 +50,7 @@ void viewer_cursor_init(ViewerCursor *cursor,
     cursor->y_offset = y_offset;
     cursor->scale = scale;
     cursor->center_mode = center_mode;
+    cursor->dark_mode = dark_mode;
     cursor->input_number = input_number;
 }
 
@@ -67,6 +71,10 @@ void viewer_cursor_fit_vertical(ViewerCursor *cursor)
 void viewer_cursor_toggle_center_mode(ViewerCursor *cursor)
 {
     cursor->center_mode = !cursor->center_mode;
+}
+
+void viewer_cursor_toggle_dark_mode(ViewerCursor *cursor) {
+    cursor->dark_mode = !cursor->dark_mode;
 }
 
 void viewer_cursor_center(ViewerCursor *cursor)
