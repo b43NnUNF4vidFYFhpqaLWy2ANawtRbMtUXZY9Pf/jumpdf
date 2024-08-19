@@ -26,9 +26,6 @@ static const char *css =
 static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
 static void window_update_statusline(Window *win);
-static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
-static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page);
-static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to);
 static void window_populate_toc(Window *win);
 static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int level);
 
@@ -364,84 +361,6 @@ static void window_update_statusline(Window *win)
     g_free(statusline_right_str);
 }
 
-static void window_render_page(Window *win, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar)
-{
-    unsigned int links_to_draw;
-
-    // Clear to white background (for PDFs with missing background)
-    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-    cairo_rectangle(cr, 0, 0, win->viewer->info->pdf_width, win->viewer->info->pdf_height);
-    cairo_fill(cr);
-
-    poppler_page_render(page, cr);
-
-    cairo_set_line_width(cr, 1.0);
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_move_to(cr, 0, 0);
-    cairo_rel_line_to(cr, win->viewer->info->pdf_width, 0);
-    cairo_stroke(cr);
-
-    window_highlight_search(win, cr, page);
-
-    if (win->viewer->links->follow_links_mode) {
-        links_to_draw = viewer_links_get_links(win->viewer->links, page);
-        window_draw_links(win, cr, *links_drawn_sofar, *links_drawn_sofar + links_to_draw);
-        *links_drawn_sofar += links_to_draw;
-    }
-}
-
-static void window_highlight_search(Window *win, cairo_t *cr, PopplerPage *page)
-{
-    PopplerRectangle *highlight_rect;
-    double highlight_rect_x, highlight_rect_y, highlight_rect_width,
-        highlight_rect_height;
-    GList *matches;
-
-    if (!win->viewer->search->search_text) {
-        return;
-    }
-
-    matches = poppler_page_find_text(page, win->viewer->search->search_text);
-    for (GList *elem = matches; elem; elem = elem->next) {
-        highlight_rect = elem->data;
-        highlight_rect_x = highlight_rect->x1;
-        highlight_rect_y = win->viewer->info->pdf_height - highlight_rect->y1;
-        highlight_rect_width = highlight_rect->x2 - highlight_rect->x1;
-        highlight_rect_height = highlight_rect->y1 - highlight_rect->y2;
-
-        cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 0.5);
-        cairo_rectangle(cr, highlight_rect_x, highlight_rect_y, highlight_rect_width,
-            highlight_rect_height);
-        cairo_fill(cr);
-    }
-
-    g_list_free_full(matches, (GDestroyNotify)poppler_rectangle_free);
-}
-
-static void window_draw_links(Window *win, cairo_t *cr, unsigned int from, unsigned int to)
-{
-    PopplerLinkMapping *link_mapping;
-    char *link_text;
-
-    for (int i = from; i < to; i++) {
-        link_mapping = g_ptr_array_index(win->viewer->links->visible_links, i);
-        link_text = g_strdup_printf("%d", i + 1);
-
-        // Outline
-        cairo_move_to(cr, link_mapping->area.x1, win->viewer->info->pdf_height - link_mapping->area.y1);
-        cairo_text_path(cr, link_text);
-        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-        cairo_set_line_width(cr, 2.0);
-        cairo_stroke_preserve(cr);
-
-        // Actual text
-        cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-        cairo_fill(cr);
-
-        g_free(link_text);
-    }
-}
-
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
     guint keycode, GdkModifierType state,
     GtkEventControllerKey *event_controller)
@@ -498,77 +417,12 @@ static void on_resize(GtkDrawingArea *area, int width, int height,
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     int height, gpointer user_data)
 {
-    Window *win;
-    PopplerPage *page;
-    cairo_surface_t *surface;
-    cairo_t *cr_pdf;
-    double visible_pages;
-    unsigned int visible_pages_before, visible_pages_after;
-    unsigned int links_drawn_sofar = 0;
-
-    win = (Window *)user_data;
-    if (!win->viewer->info->doc || !win->viewer->info->pages) {
-        return;
-    }
-
-    page = win->viewer->info->pages[win->viewer->cursor->current_page];
-    poppler_page_get_size(page, &win->viewer->info->pdf_width, &win->viewer->info->pdf_height);
-
-    if (win->viewer->cursor->center_mode) {
-        viewer_cursor_center(win->viewer->cursor);
-    }
-
-    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, win->viewer->info->view_width,
-        win->viewer->info->view_height);
-    cr_pdf = cairo_create(surface);
-
-    cairo_translate(cr_pdf, win->viewer->info->view_width / 2.0, win->viewer->info->view_height / 2.0);
-    cairo_scale(cr_pdf, win->viewer->cursor->scale, win->viewer->cursor->scale);
-    cairo_translate(cr_pdf, -win->viewer->info->view_width / 2.0, -win->viewer->info->view_height / 2.0);
-
-    cairo_translate(cr_pdf, win->viewer->cursor->x_offset * win->viewer->info->pdf_width / global_config->steps,
-        -win->viewer->cursor->y_offset * win->viewer->info->pdf_height / global_config->steps);
-
-    if (win->viewer->cursor->dark_mode) {
-        cairo_set_source_rgb(cr_pdf, 1.0, 1.0, 1.0);
-        cairo_paint(cr_pdf);
-    }
-
-    viewer_links_clear_links(win->viewer->links);
-    window_render_page(win, cr_pdf, page, &links_drawn_sofar);
-
-    visible_pages = win->viewer->info->view_height / (win->viewer->cursor->scale * win->viewer->info->pdf_height);
-    // TODO: Properly calculate
-    visible_pages_before = ceil(visible_pages / 2);
-    visible_pages_after = ceil(visible_pages / 2) + 1;
-
-    cairo_save(cr_pdf);
-    for (int i = 1; i <= visible_pages_before; i++) {
-        if (win->viewer->cursor->current_page - i >= 0) {
-            cairo_translate(cr_pdf, 0, -win->viewer->info->pdf_height);
-            window_render_page(win, cr_pdf, win->viewer->info->pages[win->viewer->cursor->current_page - i], &links_drawn_sofar);
-        }
-    }
-    cairo_restore(cr_pdf);
-    cairo_save(cr_pdf);
-    for (int i = 1; i <= visible_pages_after; i++) {
-        if (win->viewer->cursor->current_page + i < win->viewer->info->n_pages) {
-            cairo_translate(cr_pdf, 0, win->viewer->info->pdf_height);
-            window_render_page(win, cr_pdf, win->viewer->info->pages[win->viewer->cursor->current_page + i], &links_drawn_sofar);
-        }
-    }
-    cairo_restore(cr_pdf);
-
-    if (win->viewer->cursor->dark_mode) {
-        cairo_set_operator(cr_pdf, CAIRO_OPERATOR_DIFFERENCE);
-        cairo_set_source_rgb(cr_pdf, 1.0, 1.0, 1.0);
-        cairo_paint(cr_pdf);
-    }
+    Window *win = (Window *)user_data;
+    cairo_surface_t *surface = viewer_render(win->viewer);
 
     cairo_set_source_surface(cr, surface, 0, 0);
     cairo_paint(cr);
 
-    cairo_destroy(cr_pdf);
     cairo_surface_destroy(surface);
 }
 
