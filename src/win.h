@@ -22,4 +22,3 @@ void window_execute_toc_row(Window *win, GtkListBoxRow *row);
 
 ViewerMarkManager *window_get_mark_manager(Window *win);
 Viewer *window_get_viewer(Window *win);
-GtkListBox *window_get_toc_listbox(Window *win);

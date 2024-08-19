@@ -9,6 +9,7 @@
 #include "project_config.h"
 #include "app.h"
 #include "config.h"
+#include "toc.h"
 #include "viewer.h"
 #include "render.h"
 #include "viewer_mark_manager.h"
@@ -27,8 +28,7 @@ static const char *css =
 static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
 static void window_update_statusline(Window *win);
-static void window_populate_toc(Window *win);
-static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int level);
+static void window_init_toc(Window *win);
 
 static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
                                guint keycode, GdkModifierType state,
@@ -41,9 +41,12 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data);
 static void on_search_entry_activate(GtkEntry *entry, gpointer user_data);
 static gboolean on_search_window_key_press(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, gpointer user_data);
-static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data);
+static void on_toc_row_activated(GtkListView *list_view, guint position, gpointer user_data);
 static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data);
 static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data);
+static GListModel* get_children(GObject *item, gpointer user_data);
+static void on_setup(GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data);
+static void on_bind(GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data);
 
 struct _Window {
     // TODO: Breakdown into separate structs
@@ -68,7 +71,10 @@ struct _Window {
     GtkWidget *toc_scroll_window;
     GtkWidget *toc_box;
     GtkWidget *toc_search_entry;
-    GtkWidget *toc_container;
+
+    GListModel *toc_list_model;
+    GtkTreeListModel *toc_tree_list_model;
+    GtkWidget *toc_list_view;
 
     GtkWidget *search_window;
     GtkWidget *search_box;
@@ -149,13 +155,9 @@ static void window_init(Window *win)
     g_signal_connect(win->toc_search_entry, "search-changed", G_CALLBACK(on_toc_search_changed), win);
     g_signal_connect(win->toc_search_entry, "stop-search", G_CALLBACK(on_toc_search_stopped), win);
 
-    win->toc_container = gtk_list_box_new();
-    gtk_widget_set_hexpand(win->toc_container, TRUE);
-    g_signal_connect(win->toc_container, "row-activated", G_CALLBACK(on_toc_row_activated), win);
-
     win->toc_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_hexpand(win->toc_box, TRUE);
     gtk_box_append(GTK_BOX(win->toc_box), win->toc_search_entry);
-    gtk_box_append(GTK_BOX(win->toc_box), win->toc_container);
 
     win->toc_scroll_window = gtk_scrolled_window_new();
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(win->toc_scroll_window), win->toc_box);
@@ -248,7 +250,7 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager)
     win->mark_manager = mark_manager;
     win->viewer = viewer_new(cursor->info, cursor, search, links);
 
-    window_populate_toc(win);
+    window_init_toc(win);
     window_update_statusline(win);
 
     file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &err);
@@ -330,11 +332,6 @@ ViewerMarkManager *window_get_mark_manager(Window *win)
 Viewer *window_get_viewer(Window *win)
 {
     return win->viewer;
-}
-
-GtkListBox *window_get_toc_listbox(Window *win)
-{
-    return GTK_LIST_BOX(win->toc_container);
 }
 
 static void window_update_cursors(Window *win)
@@ -427,73 +424,31 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_surface_destroy(surface);
 }
 
-static void window_populate_toc(Window *win)
-{
-    PopplerIndexIter *iter = poppler_index_iter_new(win->viewer->info->doc);
-    if (iter) {
-        window_add_toc_entries(win, iter, 0);
-        poppler_index_iter_free(iter);
-    }
-}
+static void window_init_toc(Window *win) {
+    GtkSingleSelection *selection_model;
+    GtkListItemFactory *factory;
 
-static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int level)
-{
-    PopplerAction *action;
-    PopplerDest *dest;
-    gchar *title_markup, *page_markup;
-    GtkWidget *title_label, *page_label;
-    GtkWidget *toc_entry_box;
-    PopplerIndexIter *child;
-    GtkListBoxRow *first_row;
+    win->toc_list_model = get_toc_tree(win->viewer->info->doc);
 
-    while (iter) {
-        action = poppler_index_iter_get_action(iter);
-        if (action && action->type == POPPLER_ACTION_GOTO_DEST) {
-            dest = viewer_info_get_dest(win->viewer->info, action->goto_dest.dest);
+    win->toc_tree_list_model = gtk_tree_list_model_new(
+        win->toc_list_model,
+        FALSE,
+        TRUE,
+        (GtkTreeListModelCreateModelFunc)get_children,
+        NULL,
+        NULL
+    );
 
-            title_markup = g_strdup_printf("%*s%s", level * 2, " ", action->any.title);
-            title_label = gtk_label_new(title_markup);
-            g_free(title_markup);
-            gtk_label_set_xalign(GTK_LABEL(title_label), 0.0);
-            gtk_label_set_justify(GTK_LABEL(title_label), GTK_JUSTIFY_LEFT);
-            gtk_widget_set_hexpand(title_label, TRUE);
+    selection_model = gtk_single_selection_new(win->toc_list_model);
 
-            page_markup = g_markup_printf_escaped("%d", dest->page_num + 1);
-            page_label = gtk_label_new(page_markup);
-            g_free(page_markup);
-            gtk_label_set_xalign(GTK_LABEL(page_label), 1.0);
-            gtk_label_set_justify(GTK_LABEL(page_label), GTK_JUSTIFY_RIGHT);
+    factory = gtk_signal_list_item_factory_new();
+    g_signal_connect(factory, "setup", G_CALLBACK(on_setup), NULL);
+    g_signal_connect(factory, "bind", G_CALLBACK(on_bind), NULL);
 
-            toc_entry_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-            gtk_box_append(GTK_BOX(toc_entry_box), title_label);
-            gtk_box_append(GTK_BOX(toc_entry_box), page_label);
+    win->toc_list_view = gtk_list_view_new(GTK_SELECTION_MODEL(selection_model), factory);
+    g_signal_connect(win->toc_list_view, "activate", G_CALLBACK(on_toc_row_activated), win);
 
-            g_object_set_data_full(G_OBJECT(toc_entry_box), "dest", poppler_dest_copy(dest), (GDestroyNotify)poppler_dest_free);
-            if (action->goto_dest.dest->type == POPPLER_DEST_NAMED) {
-                // Won't be freed by poppler_action_free
-                poppler_dest_free(dest);
-            }
-
-            gtk_list_box_append(GTK_LIST_BOX(win->toc_container), toc_entry_box);
-
-            child = poppler_index_iter_get_child(iter);
-            if (child) {
-                window_add_toc_entries(win, child, level + 1);
-                poppler_index_iter_free(child);
-            }
-        }
-
-        poppler_action_free(action);
-
-        if (!poppler_index_iter_next(iter)) {
-            break;
-        }
-    }
-
-    first_row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(win->toc_container), 0);
-    if (first_row != NULL) {
-        gtk_list_box_select_row(GTK_LIST_BOX(win->toc_container), first_row);
-    }
+    gtk_box_append(GTK_BOX(win->toc_box), win->toc_list_view);
 }
 
 static void on_search_entry_activate(GtkEntry *entry, gpointer user_data) {
@@ -520,45 +475,14 @@ static gboolean on_search_window_key_press(GtkEventControllerKey *controller, gu
     }
 }
 
-static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
+static void on_toc_row_activated(GtkListView *list_view, guint position, gpointer user_data)
 {
-    Window *win = (Window *)user_data;
-    GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(box);
-
-    window_execute_toc_row(win, selected_row);
 }
 
 static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data)
 {
     Window *win = (Window *)user_data;
     const gchar *text = gtk_editable_get_text(GTK_EDITABLE(entry));
-    GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(win->toc_container));
-    GtkWidget *box;
-    GtkWidget *title_label;
-    const gchar *child_text;
-    gboolean visible;
-    GtkListBoxRow *first_visible_row;
-
-    while (child) {
-        box = gtk_widget_get_first_child(child);
-        title_label = gtk_widget_get_first_child(box);
-        if (GTK_IS_LABEL(title_label)) {
-            child_text = gtk_label_get_text(GTK_LABEL(title_label));
-
-            visible = strcasestr(child_text, text) != NULL;
-            gtk_widget_set_visible(child, visible);
-        }
-
-        child = gtk_widget_get_next_sibling(child);
-    }
-
-    first_visible_row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(win->toc_container), 0);
-    while (first_visible_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(first_visible_row))) {
-        first_visible_row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(win->toc_container), gtk_list_box_row_get_index(first_visible_row) + 1);
-    }
-    if (first_visible_row != NULL) {
-        gtk_list_box_select_row(GTK_LIST_BOX(win->toc_container), first_visible_row);
-    }
 }
 
 static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data)
@@ -566,4 +490,50 @@ static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data)
     Window *win = (Window *)user_data;
 
     gtk_widget_grab_focus(win->toc_scroll_window);
+}
+
+static GListModel* get_children(GObject *item, gpointer user_data) {
+    TOCItem *toc_item = (TOCItem *)item;
+
+    if (!toc_item->children) {
+        return NULL;
+    } else {
+        return G_LIST_MODEL(toc_item->children);
+    }
+}
+
+static void on_setup(GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data) {
+    GtkWidget *expander = gtk_tree_expander_new();
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkWidget *title_label, *page_label;
+
+    title_label = gtk_label_new(NULL);
+    gtk_label_set_xalign(GTK_LABEL(title_label), 0.0);
+    gtk_widget_set_hexpand(title_label, TRUE);
+
+    page_label = gtk_label_new(NULL);
+    gtk_label_set_xalign(GTK_LABEL(page_label), 1.0);
+
+    gtk_box_append(GTK_BOX(box), title_label);
+    gtk_box_append(GTK_BOX(box), page_label);
+
+    gtk_tree_expander_set_child(GTK_TREE_EXPANDER(expander), box);
+    gtk_list_item_set_child(list_item, expander);
+}
+
+static void on_bind(GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data) {
+    GtkTreeExpander *expander = GTK_TREE_EXPANDER(gtk_list_item_get_child(list_item));
+    GtkWidget *box = gtk_tree_expander_get_child(expander);
+    GtkWidget *title_label = gtk_widget_get_first_child(box);
+    GtkWidget *page_label = gtk_widget_get_last_child(box);
+    TOCItem *toc_item = (TOCItem *)gtk_list_item_get_item(list_item);
+    gchar *page_number = g_strdup_printf("%d", toc_item->page + 1);
+    GtkTreeListRow *list_row = GTK_TREE_LIST_ROW(gtk_list_item_get_item(list_item));
+
+    gtk_tree_expander_set_list_row(expander, list_row);
+
+    gtk_label_set_text(GTK_LABEL(title_label), toc_item->title);
+    gtk_label_set_text(GTK_LABEL(page_label), page_number);
+
+    g_free(page_number);
 }

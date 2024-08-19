@@ -148,41 +148,11 @@ InputState on_state_follow_links(Window *window, guint keyval)
 InputState on_state_toc_focus(Window *window, guint keyval)
 {
     InputState next_state;
-    GtkListBox *toc_list_box = window_get_toc_listbox(window);
-    GtkListBoxRow *current_row = gtk_list_box_get_selected_row(toc_list_box);
-    int current_index;
-    GtkListBoxRow *new_row = NULL;
-
-    if (current_row != NULL) {
-        current_index = gtk_list_box_row_get_index(current_row);
-    }
 
     switch (keyval) {
     case GDK_KEY_Tab:
         window_toggle_toc(window);
         next_state = STATE_NORMAL;
-        break;
-    case GDK_KEY_j:
-        if (current_row != NULL) {
-            new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index + 1);
-            while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
-                new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) + 1);
-            }
-        }
-        next_state = STATE_TOC_FOCUS;
-        break;
-    case GDK_KEY_k:
-        if (current_row != NULL) {
-            new_row = gtk_list_box_get_row_at_index(toc_list_box, current_index - 1);
-            while (new_row != NULL && !gtk_widget_get_visible(GTK_WIDGET(new_row))) {
-                new_row = gtk_list_box_get_row_at_index(toc_list_box, gtk_list_box_row_get_index(new_row) - 1);
-            }
-        }
-        next_state = STATE_TOC_FOCUS;
-        break;
-    case GDK_KEY_Return:
-        window_execute_toc_row(window, current_row);
-        next_state = STATE_TOC_FOCUS;
         break;
     case GDK_KEY_slash:
         window_focus_toc_search(window);
@@ -191,10 +161,6 @@ InputState on_state_toc_focus(Window *window, guint keyval)
     default:
         next_state = STATE_TOC_FOCUS;
         break;
-    }
-
-    if (new_row != NULL) {
-        gtk_list_box_select_row(toc_list_box, new_row);
     }
 
     return next_state;
