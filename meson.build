@@ -23,6 +23,7 @@ src_files = [
         'src/statusline.c',
         'src/database.c',
         'src/viewer.c',
+        'src/render.c',
         'src/input_FSM.c',
         'src/viewer_info.c',
         'src/viewer_cursor.c',

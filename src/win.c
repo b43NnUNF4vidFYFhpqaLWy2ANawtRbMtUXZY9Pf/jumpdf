@@ -10,6 +10,7 @@
 #include "app.h"
 #include "config.h"
 #include "viewer.h"
+#include "render.h"
 #include "viewer_mark_manager.h"
 #include "viewer_info.h"
 #include "viewer_cursor.h"

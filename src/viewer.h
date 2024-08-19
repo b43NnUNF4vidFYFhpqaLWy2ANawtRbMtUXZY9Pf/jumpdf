@@ -15,5 +15,3 @@ typedef struct Viewer {
 Viewer *viewer_new(ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links);
 void viewer_init(Viewer *viewer, ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links);
 void viewer_destroy(Viewer *viewer);
-
-cairo_surface_t *viewer_render(Viewer *viewer);
