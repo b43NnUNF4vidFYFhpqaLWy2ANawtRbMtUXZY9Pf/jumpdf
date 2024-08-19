@@ -53,7 +53,7 @@ static void viewer_offset_translate(Viewer *viewer, cairo_t *cr) {
 
     cairo_translate(cr,
         (viewer->cursor->x_offset / global_config->steps) * viewer->info->pdf_width,
-        (viewer->cursor->y_offset / global_config->steps) * viewer->info->pdf_height
+        -(viewer->cursor->y_offset / global_config->steps) * viewer->info->pdf_height
     );
 }
 
