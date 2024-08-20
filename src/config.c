@@ -11,7 +11,7 @@
 #define DEFAULT_SCALE_STEP 0.1 // How much to scale the PDF on each event
 #define DEFAULT_STATUSLINE_SEPARATOR " | "
 
-Config *global_config = NULL;
+Config *g_config = NULL;
 
 static void config_parse(Config *config, FILE *fp);
 static void config_load_default_statusline_left(Config *config);

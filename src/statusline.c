@@ -39,7 +39,7 @@ gchar *statusline_section_to_str(GArray *section, Window *win)
     str_array = g_strv_builder_end(builder);
     g_strv_builder_unref(builder);
 
-    final_str = g_strjoinv(global_config->statusline_separator, str_array);
+    final_str = g_strjoinv(g_config->statusline_separator, str_array);
     g_strfreev(str_array);
 
     return final_str;

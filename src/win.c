@@ -350,9 +350,9 @@ static void window_redraw_all_windows(Window *win)
 
 static void window_update_statusline(Window *win)
 {
-    gchar *statusline_left_str = statusline_section_to_str(global_config->statusline_left, win);
-    gchar *statusline_middle_str = statusline_section_to_str(global_config->statusline_middle, win);
-    gchar *statusline_right_str = statusline_section_to_str(global_config->statusline_right, win);
+    gchar *statusline_left_str = statusline_section_to_str(g_config->statusline_left, win);
+    gchar *statusline_middle_str = statusline_section_to_str(g_config->statusline_middle, win);
+    gchar *statusline_right_str = statusline_section_to_str(g_config->statusline_right, win);
 
     gtk_label_set_text(GTK_LABEL(win->left_label), statusline_left_str);
     gtk_label_set_text(GTK_LABEL(win->middle_label), statusline_middle_str);
@@ -395,7 +395,7 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
         state = gdk_event_get_modifier_state(event);
         switch (state) {
         case GDK_CONTROL_MASK:
-            viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * global_config->scale_step);
+            viewer_cursor_set_scale(win->viewer->cursor, win->viewer->cursor->scale - dy * g_config->scale_step);
             break;
         default:
             win->viewer->cursor->x_offset -= dx;

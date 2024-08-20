@@ -42,10 +42,10 @@ static void app_init(App *app)
 {
     gchar *db_filename = NULL;
 
-    global_config = config_new();
-    config_load(global_config);
+    g_config = config_new();
+    config_load(g_config);
 
-    db_filename = expand_path(global_config->db_filename);
+    db_filename = expand_path(g_config->db_filename);
     app->db = database_open(db_filename);
     g_free(db_filename);
     database_create_tables(app->db);
@@ -66,8 +66,8 @@ static void app_finalize(GObject *object)
     database_close(app->db);
     free(app->db);
 
-    config_destroy(global_config);
-    free(global_config);
+    config_destroy(g_config);
+    free(g_config);
 
     G_OBJECT_CLASS(app_parent_class)->finalize(object);
 }
@@ -211,7 +211,7 @@ void app_update_database_mark_managers(App *app)
 void app_open_file_chooser(App *app)
 {
     GtkFileDialog *file_dialog = gtk_file_dialog_new();
-    gchar *initial_folder_path = expand_path(global_config->file_chooser_initial_folder_path);
+    gchar *initial_folder_path = expand_path(g_config->file_chooser_initial_folder_path);
     GFile *initial_folder = g_file_new_for_path(initial_folder_path);
 
     g_free(initial_folder_path);

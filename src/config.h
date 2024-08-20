@@ -17,7 +17,7 @@ typedef struct Config {
     GArray *statusline_right;
 } Config;
 
-extern Config *global_config;
+extern Config *g_config;
 
 Config *config_new(void);
 void config_init(Config *config);
