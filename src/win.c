@@ -7,6 +7,7 @@
 
 #include "win.h"
 #include "project_config.h"
+#include "utils.h"
 #include "app.h"
 #include "config.h"
 #include "viewer.h"
@@ -366,8 +367,11 @@ static gboolean on_key_pressed(GtkWidget *user_data, guint keyval,
     guint keycode, GdkModifierType state,
     GtkEventControllerKey *event_controller)
 {
-    Window *win;
-    win = (Window *)user_data;
+    UNUSED(keycode);
+    UNUSED(state);
+    UNUSED(event_controller);
+
+    Window *win = (Window *)user_data;
 
     win->current_input_state = execute_state(win->current_input_state, win, keyval);
     window_update_cursors(win);
@@ -407,6 +411,8 @@ static void on_scroll(GtkEventControllerScroll *controller, double dx,
 static void on_resize(GtkDrawingArea *area, int width, int height,
     gpointer user_data)
 {
+    UNUSED(area);
+
     Window *win;
 
     win = (Window *)user_data;
@@ -418,6 +424,10 @@ static void on_resize(GtkDrawingArea *area, int width, int height,
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     int height, gpointer user_data)
 {
+    UNUSED(area);
+    UNUSED(width);
+    UNUSED(height);
+
     Window *win = (Window *)user_data;
     cairo_surface_t *surface = viewer_render(win->viewer);
 
@@ -508,6 +518,10 @@ static void on_search_entry_activate(GtkEntry *entry, gpointer user_data) {
 
 static gboolean on_search_window_key_press(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, gpointer user_data)
 {
+    UNUSED(controller);
+    UNUSED(state);
+    UNUSED(keycode);
+
     Window *win = (Window *)user_data;
 
     switch (keyval) {
@@ -522,6 +536,8 @@ static gboolean on_search_window_key_press(GtkEventControllerKey *controller, gu
 
 static void on_toc_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
 {
+    UNUSED(row);
+
     Window *win = (Window *)user_data;
     GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(box);
 
@@ -563,6 +579,8 @@ static void on_toc_search_changed(GtkSearchEntry *entry, gpointer user_data)
 
 static void on_toc_search_stopped(GtkSearchEntry *entry, gpointer user_data)
 {
+    UNUSED(entry);
+
     Window *win = (Window *)user_data;
 
     gtk_widget_grab_focus(win->toc_scroll_window);

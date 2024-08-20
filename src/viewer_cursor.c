@@ -2,6 +2,7 @@
 
 #include "viewer_cursor.h"
 #include "config.h"
+#include "utils.h"
 
 ViewerCursor *viewer_cursor_new(ViewerInfo *info,
                                 int current_page,
@@ -54,7 +55,10 @@ void viewer_cursor_init(ViewerCursor *cursor,
     cursor->input_number = input_number;
 }
 
-void viewer_cursor_destroy(ViewerCursor *cursor) {}
+void viewer_cursor_destroy(ViewerCursor *cursor)
+{
+    UNUSED(cursor);
+}
 
 void viewer_cursor_fit_horizontal(ViewerCursor *cursor)
 {

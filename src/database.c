@@ -3,7 +3,7 @@
 #include <gtk/gtk.h>
 
 #include "database.h"
-#include "file_utils.h"
+#include "utils.h"
 #include "config.h"
 
 // TODO: A lot of repetition in these functions

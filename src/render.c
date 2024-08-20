@@ -59,7 +59,7 @@ static void viewer_offset_translate(Viewer *viewer, cairo_t *cr) {
 
 static void viewer_render_pages(Viewer *viewer, cairo_t *cr) {
     double visible_pages;
-    unsigned int visible_pages_before, visible_pages_after;
+    int visible_pages_before, visible_pages_after;
     unsigned int links_drawn_sofar = 0;
 
     if (viewer->cursor->dark_mode) {
@@ -155,7 +155,7 @@ static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, un
     PopplerLinkMapping *link_mapping = NULL;
     char *link_text = NULL;
 
-    for (int i = from; i < to; i++) {
+    for (unsigned int i = from; i < to; i++) {
         link_mapping = g_ptr_array_index(viewer->links->visible_links, i);
         link_text = g_strdup_printf("%d", i + 1);
 

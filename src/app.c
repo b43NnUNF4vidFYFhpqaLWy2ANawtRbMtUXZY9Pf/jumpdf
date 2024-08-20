@@ -4,9 +4,11 @@
 #include "app.h"
 #include "project_config.h"
 #include "config.h"
-#include "file_utils.h"
+#include "utils.h"
 #include "database.h"
 
+static void window_update_cursor_cb(gpointer win_ptr, gpointer user_data);
+static void window_redraw_cb(gpointer win_ptr, gpointer user_data);
 static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_ptr, gpointer user_data);
 
 static void on_file_dialog_response(GObject *source_object, GAsyncResult *res, gpointer user_data);
@@ -25,7 +27,7 @@ struct _App {
     Database *db;
 };
 
-G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION);
+G_DEFINE_TYPE(App, app, GTK_TYPE_APPLICATION)
 
 int app_run(int argc, char *argv[])
 {
@@ -78,6 +80,8 @@ static void app_activate(GApplication *app)
 static void app_open(GApplication *app, GFile **files, int n_files,
     const char *hint)
 {
+    UNUSED(hint);
+
     ViewerMarkManager *mark_manager;
     Window *win;
     GPtrArray *new_windows = g_ptr_array_sized_new(n_files);
@@ -190,12 +194,12 @@ void app_remove_window(App *app, Window *win)
 
 void app_update_cursors(App *app)
 {
-    g_ptr_array_foreach(app->windows, (GFunc)window_update_cursor, NULL);
+    g_ptr_array_foreach(app->windows, window_update_cursor_cb, NULL);
 }
 
 void app_redraw_windows(App *app)
 {
-    g_ptr_array_foreach(app->windows, (GFunc)window_redraw, NULL);
+    g_ptr_array_foreach(app->windows, window_redraw_cb, NULL);
 }
 
 void app_update_database_mark_managers(App *app)
@@ -217,6 +221,24 @@ void app_open_file_chooser(App *app)
 
     g_application_hold(G_APPLICATION(app));
     gtk_file_dialog_open_multiple(file_dialog, NULL, NULL, (GAsyncReadyCallback)on_file_dialog_response, app);
+}
+
+static void window_update_cursor_cb(gpointer win_ptr, gpointer user_data)
+{
+    UNUSED(user_data);
+
+    Window *win = win_ptr;
+
+    window_update_cursor(win);
+}
+
+static void window_redraw_cb(gpointer win_ptr, gpointer user_data)
+{
+    UNUSED(user_data);
+
+    Window *win = win_ptr;
+
+    window_redraw(win);
 }
 
 static void database_update_mark_manager_cb(gpointer uri_ptr, gpointer manager_ptr, gpointer user_data)

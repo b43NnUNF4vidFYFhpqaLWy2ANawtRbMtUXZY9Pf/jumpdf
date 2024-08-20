@@ -17,7 +17,7 @@ configure_file(input : 'src/project_config.h.in',
 src_files = [
         'src/main.c',
         'src/config.c',
-        'src/file_utils.c',
+        'src/utils.c',
         'src/app.c',
         'src/win.c',
         'src/statusline.c',

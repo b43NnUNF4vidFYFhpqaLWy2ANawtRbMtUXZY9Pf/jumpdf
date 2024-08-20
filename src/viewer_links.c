@@ -1,4 +1,7 @@
 #include "viewer_links.h"
+#include "utils.h"
+
+static void poppler_link_mapping_free_cb(gpointer mapping_ptr, gpointer user_data);
 
 ViewerLinks *viewer_links_new(void)
 {
@@ -42,6 +45,13 @@ unsigned int viewer_links_get_links(ViewerLinks *links, PopplerPage *page)
 
 void viewer_links_clear_links(ViewerLinks *links)
 {
-    g_ptr_array_foreach(links->visible_links, (GFunc)poppler_link_mapping_free, NULL);
+    g_ptr_array_foreach(links->visible_links, poppler_link_mapping_free_cb, NULL);
     g_ptr_array_set_size(links->visible_links, 0);
+}
+
+static void poppler_link_mapping_free_cb(gpointer mapping_ptr, gpointer user_data) {
+    UNUSED(user_data);
+
+    PopplerLinkMapping *mapping = mapping_ptr;
+    poppler_link_mapping_free(mapping);
 }
