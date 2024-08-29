@@ -1,6 +1,6 @@
 #pragma once
 
-#include "win.h"
+#include "window.h"
 
 /* 0 is "unknown" */
 typedef enum StatuslineComponent {

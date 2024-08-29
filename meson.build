@@ -19,7 +19,7 @@ src_files = [
         'src/config.c',
         'src/utils.c',
         'src/app.c',
-        'src/win.c',
+        'src/window.c',
         'src/statusline.c',
         'src/database.c',
         'src/viewer.c',

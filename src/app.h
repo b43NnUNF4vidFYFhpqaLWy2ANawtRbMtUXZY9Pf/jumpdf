@@ -2,7 +2,7 @@
 
 #include <gtk/gtk.h>
 
-#include "win.h"
+#include "window.h"
 
 #define APP_TYPE (app_get_type())
 G_DECLARE_FINAL_TYPE(App, app, JUMPDF, APP, GtkApplication)

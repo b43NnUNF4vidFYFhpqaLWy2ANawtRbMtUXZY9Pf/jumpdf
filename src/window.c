@@ -5,7 +5,7 @@
 #include <poppler.h>
 #include <stdbool.h>
 
-#include "win.h"
+#include "window.h"
 #include "project_config.h"
 #include "utils.h"
 #include "app.h"
