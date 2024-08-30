@@ -4,7 +4,6 @@
 #include "config.h"
 #include "project_config.h"
 
-#define DEFAULT_DB_FILENAME "~/.local/share/jumpdf/jumpdf.db"
 #define DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH "~/Documents"
 #define DEFAULT_STEPS 15 // Number of steps in a page.
 #define DEFAULT_MIN_SCALE 0.3 // To prevent divide by zero
@@ -34,7 +33,6 @@ Config *config_new(void)
 
 void config_init(Config *config)
 {
-    config->db_filename = NULL;
     config->file_chooser_initial_folder_path = NULL;
     config->steps = -1;
     config->min_scale = -1.0;
@@ -48,11 +46,6 @@ void config_init(Config *config)
 
 void config_destroy(Config *config)
 {
-    if (config->db_filename) {
-        g_free(config->db_filename);
-        config->db_filename = NULL;
-    }
-
     if (config->file_chooser_initial_folder_path) {
         g_free(config->file_chooser_initial_folder_path);
         config->file_chooser_initial_folder_path = NULL;
@@ -62,11 +55,6 @@ void config_destroy(Config *config)
     g_array_free(config->statusline_left, TRUE);
     g_array_free(config->statusline_middle, TRUE);
     g_array_free(config->statusline_right, TRUE);
-}
-
-void config_set_db_filename(Config *config, gchar *db_filename)
-{
-    config->db_filename = db_filename;
 }
 
 void config_set_file_chooser_initial_folder_path(Config *config, gchar *file_chooser_initial_folder_path)
@@ -128,7 +116,6 @@ void config_load(Config *config)
 
 void config_load_default(Config *config)
 {
-    config_set_db_filename(config, g_strdup(DEFAULT_DB_FILENAME));
     config_set_file_chooser_initial_folder_path(config, g_strdup(DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH));
     config_set_steps(config, DEFAULT_STEPS);
     config_set_min_scale(config, DEFAULT_MIN_SCALE);
@@ -159,14 +146,6 @@ static void config_parse(Config *config, FILE *fp)
 
     settings = toml_table_in(conf, "Settings");
     if (settings) {
-        datum = toml_string_in(settings, "db_filename");
-        if (datum.ok) {
-            config_set_db_filename(config, datum.u.s);
-        } else {
-            g_printerr("Error parsing \"db_filename\". Using default value.\n");
-            config_set_db_filename(config, g_strdup(DEFAULT_DB_FILENAME));
-        }
-
         datum = toml_string_in(settings, "file_chooser_initial_folder_path");
         if (datum.ok) {
             config_set_file_chooser_initial_folder_path(config, datum.u.s);

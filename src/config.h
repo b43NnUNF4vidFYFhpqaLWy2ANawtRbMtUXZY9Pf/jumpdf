@@ -5,7 +5,6 @@
 #include "statusline.h"
 
 typedef struct Config {
-    gchar *db_filename;
     gchar *file_chooser_initial_folder_path;
     int steps;
     double min_scale;
@@ -23,7 +22,6 @@ Config *config_new(void);
 void config_init(Config *config);
 void config_destroy(Config *config);
 
-void config_set_db_filename(Config *config, gchar *db_filename);
 void config_set_file_chooser_initial_folder_path(Config *config, gchar *file_chooser_initial_folder_path);
 void config_set_steps(Config *config, int steps);
 void config_set_min_scale(Config *config, double min_scale);
