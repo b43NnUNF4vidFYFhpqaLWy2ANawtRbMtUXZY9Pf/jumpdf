@@ -1,7 +1,7 @@
 project('jumpdf', 'c',
         version : '0.1',
         license : 'MIT',
-        meson_version : '>=1.4.0',
+        meson_version : '>=1.3.0',
         default_options : ['c_std=c99', 'warning_level=3'])
 
 app_name = 'jumpdf'
@@ -39,7 +39,7 @@ cc = meson.get_compiler('c')
 deps = [
         dependency('gtk4', required : true, version : '>=4.14', include_type : 'system'),
         dependency('poppler-glib', required : true, version : '>=24.02', include_type : 'system'),
-        dependency('sqlite3', required : true, version : '>=3.45', include_type : 'system'),
+        dependency('sqlite3', required : true, version : '>=3.42', include_type : 'system'),
         cc.find_library('m', required : true),
 ]
 
