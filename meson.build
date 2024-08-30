@@ -17,6 +17,7 @@ configure_file(input : 'src/project_config.h.in',
 src_files = [
         'src/main.c',
         'src/config.c',
+        'src/toml.c',
         'src/utils.c',
         'src/app.c',
         'src/window.c',
@@ -39,7 +40,6 @@ deps = [
         dependency('gtk4', required : true, version : '>=4.14', include_type : 'system'),
         dependency('poppler-glib', required : true, version : '>=24.02', include_type : 'system'),
         dependency('sqlite3', required : true, version : '>=3.45', include_type : 'system'),
-        cc.find_library('toml', required : true),
         cc.find_library('m', required : true),
 ]
 

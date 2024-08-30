@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include <toml.h>
 
 #include "config.h"
+#include "toml.h"
 #include "project_config.h"
 
 #define DEFAULT_FILE_CHOOSER_INITIAL_FOLDER_PATH "~/Documents"

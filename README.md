@@ -36,7 +36,6 @@ Required:
 - `gtk4` (>= 4.14)
 - `poppler-glib` (>= 24.02)
 - `sqlite3` (>= 3.45)
-- `tomlc99` (>= 1.0.0)
 
 ### Install
 
