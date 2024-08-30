@@ -5,7 +5,7 @@ project('jumpdf', 'c',
         default_options : ['c_std=c99', 'warning_level=3'])
 
 app_name = 'jumpdf'
-app_id = 'com.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf'
+app_id = 'io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf'
 
 conf_data = configuration_data()
 conf_data.set('app_name', app_name)
