@@ -4,6 +4,10 @@
   
   <name>jumpdf</name>
   <summary>PDF viewer</summary>
+
+  <developer id="io.github.b43nnunf4vidfyfhpqalwy2anawtrbmtuxzy9pf">
+    <name>b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf</name>
+  </developer>
   
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
@@ -19,6 +23,8 @@
       Existing PDF viewers like [sioyek](https://sioyek.info/) and [zathura](https://pwmt.org/projects/zathura/) also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
     </p>
   </description>
+
+  <url type="homepage">https://github.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf</url>
   
   <launchable type="desktop-id">io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf.desktop</launchable>
 </component>
