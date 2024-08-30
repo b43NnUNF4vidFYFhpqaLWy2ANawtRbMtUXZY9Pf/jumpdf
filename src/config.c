@@ -114,7 +114,7 @@ void config_load(Config *config)
     FILE *fp;
     gchar *config_file_path;
 
-    config_file_path = g_build_filename(g_get_home_dir(), ".config", APP_NAME_STR, "config.toml", NULL);
+    config_file_path = g_build_filename(g_get_user_config_dir(), APP_NAME_STR, "config.toml", NULL);
     fp = fopen(config_file_path, "r");
     g_free(config_file_path);
 
