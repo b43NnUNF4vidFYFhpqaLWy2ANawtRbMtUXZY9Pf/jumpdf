@@ -39,8 +39,10 @@ icon_conf = configure_file(
     copy: true
 )
 
-install_data(icon_conf,
-             install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', '512x512', 'apps'))
+fs.copyfile('app.png', '@0@.png'.format(app_id),
+    install : true,
+    install_dir : join_paths(get_option('datadir'), 'icons', 'hicolor', '512x512', 'apps')
+)
 
 meson.add_install_script('install_config.sh')
 meson.add_install_script('install_data_dir.sh')
