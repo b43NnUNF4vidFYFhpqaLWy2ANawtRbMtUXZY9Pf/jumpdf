@@ -68,6 +68,9 @@ InputState on_state_normal(Window *window, guint keyval)
         case GDK_KEY_o:
             app_open_file_chooser(JUMPDF_APP(gtk_window_get_application(GTK_WINDOW(window))));
             break;
+        case GDK_KEY_F11:
+            window_toggle_fullscreen(window);
+            break;
         default:
             next_state = execute_command(window, keyval, 1);
             break;

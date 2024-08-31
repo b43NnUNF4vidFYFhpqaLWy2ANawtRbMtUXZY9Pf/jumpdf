@@ -305,6 +305,15 @@ void window_focus_toc_search(Window *win)
     gtk_widget_grab_focus(win->toc_search_entry);
 }
 
+void window_toggle_fullscreen(Window *win)
+{
+    if (gtk_window_is_fullscreen(GTK_WINDOW(win))) {
+        gtk_window_unfullscreen(GTK_WINDOW(win));
+    } else {
+        gtk_window_fullscreen(GTK_WINDOW(win));
+    }
+}
+
 void window_execute_toc_row(Window *win, GtkListBoxRow *row)
 {
     GtkWidget *toc_entry_box;
