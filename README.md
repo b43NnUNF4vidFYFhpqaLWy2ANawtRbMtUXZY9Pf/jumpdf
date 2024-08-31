@@ -2,6 +2,8 @@
 
 Jumpdf is a keyboard-focused PDF viewer for documents where one needs to jump between different sections of the document frequently.
 
+![jumpdf](./data/screenshots/jumpdf.png)
+
 ## Table of Contents
 
 - [jumpdf](#jumpdf)
