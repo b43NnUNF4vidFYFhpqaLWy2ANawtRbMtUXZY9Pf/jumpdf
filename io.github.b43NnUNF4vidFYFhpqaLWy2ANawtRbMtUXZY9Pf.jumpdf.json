@@ -33,6 +33,9 @@
             "name": "jumpdf",
             "builddir": true,
             "buildsystem": "meson",
+            "config-opts": [
+                "--buildtype=release"
+            ],
             "sources": [
                 {
                     "type": "git",
