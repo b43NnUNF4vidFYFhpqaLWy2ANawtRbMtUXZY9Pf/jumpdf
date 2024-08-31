@@ -11,6 +11,7 @@ developer_id = 'io.github.b43nnunf4vidfyfhpqalwy2anawtrbmtuxzy9pf'
 
 gnome = import('gnome')
 i18n = import('i18n')
+fs = import('fs')
 
 cc = meson.get_compiler('c')
 
