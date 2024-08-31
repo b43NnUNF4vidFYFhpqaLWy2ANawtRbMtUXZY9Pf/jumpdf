@@ -86,7 +86,7 @@ Note that multiple windows can be opened at the same time.
 - <kbd>f</kbd> (Show link numbers) + <kbd>\<number></kbd> + <kbd>Enter</kbd> (Execute link)
 - <kbd>m\<1-9></kbd> (Set current mark to \<1-9>. If the mark hasn't been set, it will be set to the current cursor)
 - <kbd>mo\<1-9></kbd> (Overwrite mark \<1-9> with the current cursor and switch to it)
-- <kbd>g\<1-9></kbd> (Set curren group to \<1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor)
+- <kbd>g\<1-9></kbd> (Set current group to \<1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor)
 - <kbd>/</kbd>, <kbd>Esc</kbd> (Show/hide search dialog)
 - <kbd>o</kbd> (Open file chooser)
 - <kbd>Tab</kbd> (Toggle table of contents)
