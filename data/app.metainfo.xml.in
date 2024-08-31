@@ -20,12 +20,21 @@
       Jumpdf solves this by having multiple marks/cursors one can switch between. Instead of scrolling, one can create a new mark at the desired location and jump back and forth. In addition, the marks are grouped into groups, which one can also switch between, enabling one to maintain different sets of related marks. For example, in a textbook, one can have a group with marks for the exercises and solutions and another group for reading the material relevant to the exercises. Having these groups also enables one to have a separate window for each group. See the [keybindings](#keybindings) section for more.
     </p>
     <p>
-      Existing PDF viewers like [sioyek](https://sioyek.info/) and [zathura](https://pwmt.org/projects/zathura/) also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
+      Existing PDF viewers like <a href="https://sioyek.info/">sioyek</a> and <a href="https://pwmt.org/projects/zathura/">zathura</a> also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
     </p>
   </description>
+
+  <releases>
+    <release version="1.0" date="2024-08-31">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
 
   <url type="homepage">https://github.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf</url>
   
   <launchable type="desktop-id">@app_id@.desktop</launchable>
   <provides>@app_id@.desktop</provides>
+  <content_rating type="oars-1.1"/>
 </component>
