@@ -6,8 +6,11 @@ project('jumpdf', 'c',
 
 app_name = 'jumpdf'
 app_id = 'io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf'
+version = meson.project_version()
+developer_id = 'io.github.b43nnunf4vidfyfhpqalwy2anawtrbmtuxzy9pf'
 
 gnome = import('gnome')
+i18n = import('i18n')
 
 cc = meson.get_compiler('c')
 

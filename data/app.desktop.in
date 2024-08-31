@@ -1,9 +1,9 @@
 [Desktop Entry]
-Version=0.1.0
+Version=@app_version@
 Type=Application
-Name=Jumpdf
+Name=@app_name@
 Comment=Keyboard-focused PDF viewer for documents where one needs to jump between different sections of the document frequently.
-Icon=io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf
+Icon=@app_id@
 Exec=jumpdf %U
 Terminal=false
 Categories=Office;Viewer;

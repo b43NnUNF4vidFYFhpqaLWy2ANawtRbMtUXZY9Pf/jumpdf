@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf</id>
+  <id>@app_id@</id>
   
-  <name>jumpdf</name>
+  <name>@app_name@</name>
   <summary>PDF viewer</summary>
 
-  <developer id="io.github.b43nnunf4vidfyfhpqalwy2anawtrbmtuxzy9pf">
+  <developer id="@developer_id@">
     <name>b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf</name>
   </developer>
   
@@ -26,5 +26,6 @@
 
   <url type="homepage">https://github.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf</url>
   
-  <launchable type="desktop-id">io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf.desktop</launchable>
+  <launchable type="desktop-id">@app_id@.desktop</launchable>
+  <provides>@app_id@.desktop</provides>
 </component>
