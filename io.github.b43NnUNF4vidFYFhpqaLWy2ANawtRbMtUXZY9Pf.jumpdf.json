@@ -45,7 +45,8 @@
         "--share=ipc",
         "--socket=fallback-x11",
         "--socket=wayland",
-        "--filesystem=xdg-config:ro",
-        "--filesystem=xdg-data:create"
+        "--device=dri",
+        "--filesystem=xdg-config/jumpdf:ro",
+        "--filesystem=xdg-data/jumpdf:create"
     ]
 }
