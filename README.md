@@ -31,13 +31,13 @@ Existing PDF viewers like [sioyek](https://sioyek.info/) and [zathura](https://p
 
 Build dependencies:
 
-- `meson` (>= 1.4.0)
+- `meson` (>= 1.3.0)
 
 Required:
 
 - `gtk4` (>= 4.14)
 - `poppler-glib` (>= 24.02)
-- `sqlite3` (>= 3.45)
+- `sqlite3` (>= 3.42)
 
 ### Install
 
