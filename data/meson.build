@@ -19,6 +19,13 @@ desktop_file = i18n.merge_file(
     install_dir: get_option('datadir') / 'applications'
 )
 
+desktop_utils = find_program('desktop-file-validate', required: false)
+if desktop_utils.found()
+    test('Validate desktop file', desktop_utils,
+        args: [desktop_file]
+    )
+endif
+
 appstream_conf = configure_file(
     input: 'app.metainfo.xml.in',
     output: '@0@.metainfo.xml.in'.format(app_id),
@@ -33,11 +40,12 @@ appstream_file = i18n.merge_file(
     install_dir: get_option('datadir') / 'metainfo'
 )
 
-icon_conf = configure_file(
-    input: 'app.png',
-    output: '@0@.png'.format(app_id),
-    copy: true
-)
+appstream_util = find_program('appstream-util', required: false)
+if appstream_util.found()
+    test('Validate appstream file', appstream_util,
+        args: ['validate', '--nonet', appstream_file]
+    )
+endif
 
 fs.copyfile('app.png', '@0@.png'.format(app_id),
     install : true,
