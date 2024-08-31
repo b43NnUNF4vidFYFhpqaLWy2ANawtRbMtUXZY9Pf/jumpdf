@@ -17,10 +17,10 @@
       When reading a document where one has to switch between various sections, e.g. due to references, it is often necessary to manually scroll back and forth. This is especially inefficient when the sections are far apart.
     </p>
     <p>
-      Jumpdf solves this by having multiple marks/cursors one can switch between. Instead of scrolling, one can create a new mark at the desired location and jump back and forth. In addition, the marks are grouped into groups, which one can also switch between, enabling one to maintain different sets of related marks. For example, in a textbook, one can have a group with marks for the exercises and solutions and another group for reading the material relevant to the exercises. Having these groups also enables one to have a separate window for each group. See the [keybindings](#keybindings) section for more.
+      Jumpdf solves this by having multiple marks/cursors one can switch between. Instead of scrolling, one can create a new mark at the desired location and jump back and forth. In addition, the marks are grouped into groups, which one can also switch between, enabling one to maintain different sets of related marks. For example, in a textbook, one can have a group with marks for the exercises and solutions and another group for reading the material relevant to the exercises. Having these groups also enables one to have a separate window for each group.
     </p>
     <p>
-      Existing PDF viewers like <a href="https://sioyek.info/">sioyek</a> and <a href="https://pwmt.org/projects/zathura/">zathura</a> also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
+      Existing PDF viewers like sioyek and zathura also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
     </p>
   </description>
 
