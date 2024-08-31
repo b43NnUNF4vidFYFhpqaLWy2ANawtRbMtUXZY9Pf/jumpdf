@@ -1,5 +1,3 @@
-gnome = import('gnome')
-
 metainfo_dir = join_paths(get_option('prefix'), 'share', 'metainfo')
 install_data('io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf.metainfo.xml', install_dir : metainfo_dir)
 
@@ -12,6 +10,3 @@ install_data('io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf.png', ins
 
 meson.add_install_script('install_config.sh')
 meson.add_install_script('install_data_dir.sh')
-
-gnome.post_install(gtk_update_icon_cache: true,
-                   update_desktop_database: true)
