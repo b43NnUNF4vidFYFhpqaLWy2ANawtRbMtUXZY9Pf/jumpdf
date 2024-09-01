@@ -1,7 +1,6 @@
 conf = configuration_data()
 conf.set('app_name', app_name)
 conf.set('app_id', app_id)
-conf.set('app_version', version)
 conf.set('developer_id', developer_id)
 
 desktop_conf = configure_file(
