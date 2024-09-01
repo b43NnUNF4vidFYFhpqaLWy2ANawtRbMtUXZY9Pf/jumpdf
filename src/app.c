@@ -46,6 +46,7 @@ static void app_init(App *app)
     config_load(g_config);
 
     db_filename = g_build_filename(g_get_user_data_dir(), APP_NAME_STR, "jumpdf.db", NULL);
+    ensure_path_exists(db_filename);
     app->db = database_open(db_filename);
     g_free(db_filename);
     database_create_tables(app->db);
