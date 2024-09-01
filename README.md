@@ -97,4 +97,9 @@ Note that multiple windows can be opened at the same time.
 
 ### Configuration
 
-See `~/.config/jumpdf/config.toml`.
+```sh
+# Copy default configuration file
+mkdir -p ~/.config/jumpdf && cp data/config.toml "$_"
+# For flatpak installations
+mkdir -p ~/.var/app/io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf/config/jumpdf && cp data/config.toml "$_"
+```
