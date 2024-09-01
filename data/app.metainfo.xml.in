@@ -32,6 +32,11 @@
   </screenshots>
 
   <releases>
+    <release version="1.0.1" date="2024-09-02">
+      <description>
+        <p>Fix database file not being automatically created</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2024-09-01">
       <description>
         <p>Initial release.</p>
