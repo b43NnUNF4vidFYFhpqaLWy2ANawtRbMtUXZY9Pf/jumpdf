@@ -10,9 +10,11 @@ Jumpdf is a keyboard-focused PDF viewer for documents where one needs to jump be
   - [Table of Contents](#table-of-contents)
   - [Motivation](#motivation)
   - [Installation](#installation)
-    - [Dependencies](#dependencies)
-    - [Install](#install)
-    - [Uninstall](#uninstall)
+    - [Flatpak](#flatpak)
+    - [Build](#build)
+      - [Dependencies](#dependencies)
+      - [Install](#install)
+      - [Uninstall](#uninstall)
   - [Usage](#usage)
     - [Keybindings](#keybindings)
     - [Configuration](#configuration)
@@ -27,7 +29,13 @@ Existing PDF viewers like [sioyek](https://sioyek.info/) and [zathura](https://p
 
 ## Installation
 
-### Dependencies
+### Flatpak
+
+[![jumpdf](https://flathub.org/assets/badges/flathub-badge-en.png)](https://flathub.org/apps/io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf)
+
+### Build
+
+#### Dependencies
 
 Build dependencies:
 
@@ -39,14 +47,14 @@ Required:
 - `poppler-glib` (>= 24.02)
 - `sqlite3` (>= 3.42)
 
-### Install
+#### Install
 
 ```sh
 meson setup release --buildtype=release
 meson install -C release
 ```
 
-### Uninstall
+#### Uninstall
 
 ```sh
 ninja uninstall -C release
