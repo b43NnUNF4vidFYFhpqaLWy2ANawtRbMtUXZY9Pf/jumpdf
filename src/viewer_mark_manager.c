@@ -130,8 +130,8 @@ void viewer_mark_manager_overwrite_mark(ViewerMarkManager *manager, unsigned int
     if (stored_cursor != current_cursor) {
         viewer_cursor_destroy(stored_cursor);
         free(stored_cursor);
-    }
 
-    viewer_mark_manager_set_mark(manager, viewer_cursor_copy(current_cursor), group_i, mark_i);
-    viewer_mark_manager_set_current_mark(manager, mark_i);
+        viewer_mark_manager_set_mark(manager, viewer_cursor_copy(current_cursor), group_i, mark_i);
+        viewer_mark_manager_set_current_mark(manager, mark_i);
+    }
 }
