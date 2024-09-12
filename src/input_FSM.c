@@ -15,6 +15,7 @@ input_state_func input_state_funcs[] = {
     on_state_follow_links,
     on_state_toc_focus,
     on_state_mark,
+    on_state_mark_clear,
     on_state_mark_overwrite,
 };
 
@@ -205,13 +206,27 @@ InputState on_state_mark(Window *window, guint keyval)
 {
     InputState next_state = STATE_NORMAL;
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
-    Viewer *viewer = window_get_viewer(window);
     unsigned int mark_i = keyval - GDK_KEY_0 - 1;
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
         viewer_mark_manager_switch_mark(mark_manager, mark_i);
+    } else if (keyval == GDK_KEY_c) {
+        next_state = STATE_MARK_CLEAR;
     } else if (keyval == GDK_KEY_o) {
         next_state = STATE_MARK_OVERWRITE;
+    }
+
+    return next_state;
+}
+
+InputState on_state_mark_clear(Window *window, guint keyval)
+{
+    InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
+    unsigned int mark_i = keyval - GDK_KEY_0 - 1;
+
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        viewer_mark_manager_clear_mark(mark_manager, mark_i);
     }
 
     return next_state;

@@ -10,6 +10,7 @@ typedef enum {
     STATE_FOLLOW_LINKS,
     STATE_TOC_FOCUS,
     STATE_MARK,
+    STATE_MARK_CLEAR,
     STATE_MARK_OVERWRITE,
 } InputState;
 
@@ -21,6 +22,7 @@ InputState on_state_number(Window *window, guint keyval);
 InputState on_state_follow_links(Window *window, guint keyval);
 InputState on_state_toc_focus(Window *window, guint keyval);
 InputState on_state_mark(Window *window, guint keyval);
+InputState on_state_mark_clear(Window *window, guint keyval);
 InputState on_state_mark_overwrite(Window *window, guint keyval);
 
 InputState execute_state(InputState current_state, Window *window, guint keyval);

@@ -46,6 +46,7 @@ static const Keybinding keybindings[] = {
     {"gg, G, <number>G", "Goto first, last page, page <number>", 0},
     {"f + <number> + Enter", "Show link numbers and execute link", 0},
     {"m<1-9>", "Set current mark to <1-9>. If the mark hasn't been set, it will be set to the current cursor", 0},
+    {"mc<1-9>", "Clear mark <1-9>", 0},
     {"mo<1-9>", "Overwrite mark <1-9> with the current cursor and switch to it", 0},
     {"g<1-9>", "Set current group to <1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor", 0},
     {"/, Esc", "Show/hide search dialog", 0},

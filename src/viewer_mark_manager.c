@@ -108,6 +108,19 @@ void viewer_mark_manager_switch_mark(ViewerMarkManager *manager, unsigned int ma
     viewer_mark_manager_set_current_mark(manager, mark_i);
 }
 
+void viewer_mark_manager_clear_mark(ViewerMarkManager *manager, unsigned int mark_i)
+{
+    unsigned int group_i = viewer_mark_manager_get_current_group_index(manager);
+    ViewerCursor *stored_cursor = viewer_mark_manager_get_mark(manager, group_i, mark_i);
+    ViewerCursor *current_cursor = viewer_mark_manager_get_current_cursor(manager);
+
+    if (stored_cursor != current_cursor) {
+        viewer_cursor_destroy(stored_cursor);
+        free(stored_cursor);
+        viewer_mark_manager_set_mark(manager, NULL, group_i, mark_i);
+    }
+}
+
 void viewer_mark_manager_overwrite_mark(ViewerMarkManager *manager, unsigned int mark_i)
 {
     unsigned int group_i = viewer_mark_manager_get_current_group_index(manager);
