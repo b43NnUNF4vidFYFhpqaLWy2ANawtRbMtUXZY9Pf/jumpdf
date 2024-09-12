@@ -91,12 +91,7 @@ InputState on_state_g(Window *window, guint keyval)
     unsigned int group_i = keyval - GDK_KEY_0 - 1;
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        viewer_mark_manager_set_current_group(mark_manager, group_i);
-        if (viewer_mark_manager_get_current_cursor(mark_manager) == NULL) {
-            viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(viewer->cursor),
-                viewer_mark_manager_get_current_group_index(mark_manager),
-                viewer_mark_manager_get_current_mark_index(mark_manager));
-        }
+        viewer_mark_manager_switch_group(mark_manager, group_i);
     } else if (keyval == GDK_KEY_g) {
         viewer->cursor->current_page = 0;
         viewer->cursor->y_offset = 0;
@@ -212,16 +207,9 @@ InputState on_state_mark(Window *window, guint keyval)
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     Viewer *viewer = window_get_viewer(window);
     unsigned int mark_i = keyval - GDK_KEY_0 - 1;
-    unsigned int group_i = viewer_mark_manager_get_current_group_index(mark_manager);
-    ViewerCursor *stored_cursor = viewer_mark_manager_get_mark(mark_manager, group_i, mark_i);
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        if (stored_cursor == NULL) {
-            viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(viewer->cursor),
-                                         group_i, mark_i);
-        }
-
-        viewer_mark_manager_set_current_mark(mark_manager, mark_i);
+        viewer_mark_manager_switch_mark(mark_manager, mark_i);
     } else if (keyval == GDK_KEY_o) {
         next_state = STATE_MARK_OVERWRITE;
     }
@@ -233,18 +221,9 @@ InputState on_state_mark_overwrite(Window *window, guint keyval) {
     InputState next_state = STATE_NORMAL;
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     unsigned int mark_i = keyval - GDK_KEY_0 - 1;
-    unsigned int group_i = viewer_mark_manager_get_current_group_index(mark_manager);
-    ViewerCursor *stored_cursor = viewer_mark_manager_get_mark(mark_manager, group_i, mark_i);
-    ViewerCursor *current_cursor = viewer_mark_manager_get_current_cursor(mark_manager);
 
-    if (stored_cursor != current_cursor && keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        if (stored_cursor != NULL) {
-            viewer_cursor_destroy(stored_cursor);
-            free(stored_cursor);
-        }
-
-        viewer_mark_manager_set_mark(mark_manager, viewer_cursor_copy(current_cursor), group_i, mark_i);
-        viewer_mark_manager_set_current_mark(mark_manager, mark_i);
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        viewer_mark_manager_overwrite_mark(mark_manager, mark_i);
     }
 
     return next_state;

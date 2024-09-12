@@ -21,3 +21,8 @@ unsigned int viewer_mark_manager_get_current_group_index(ViewerMarkManager *mana
 void viewer_mark_manager_set_current_mark(ViewerMarkManager *manager, unsigned int mark_i);
 unsigned int viewer_mark_manager_get_current_mark_index(ViewerMarkManager *manager);
 ViewerCursor *viewer_mark_manager_get_current_cursor(ViewerMarkManager *manager);
+void viewer_mark_manager_set_current_cursor(ViewerMarkManager *manager, ViewerCursor *cursor);
+
+void viewer_mark_manager_switch_group(ViewerMarkManager *manager, unsigned int group_i);
+void viewer_mark_manager_switch_mark(ViewerMarkManager *manager, unsigned int mark_i);
+void viewer_mark_manager_overwrite_mark(ViewerMarkManager *manager, unsigned int mark_i);
