@@ -24,6 +24,32 @@ static const char *css =
     ".statusline {"
     "    background-color: black;"
     "}";
+static const char *keybindings_text =
+    "Keybindings:\n"
+    "- <number><command> (repeats <command> <number> times)\n"
+    "  - j, k (Move down, up)\n"
+    "  - h, l (Move left, right. Must not be in center mode)\n"
+    "  - d, u (Move down, up half a page)\n"
+    "  - +, - (Zoom in, out)\n"
+    "  - n, N (Goto next, previous page containing the search string)\n"
+    "- 0 (Reset zoom)\n"
+    "- c (Toggle center mode)\n"
+    "- b (Toggle dark mode)\n"
+    "- s (Fit horizontally to page)\n"
+    "- a (Fit vertically to page)\n"
+    "- gg, G, <number>G (Goto first, last page, page <number>)\n"
+    "- f (Show link numbers) + <number> + Enter (Execute link)\n"
+    "- m<1-9> (Set current mark to <1-9>. If the mark hasn't been set, it will be set to the current cursor)\n"
+    "- mo<1-9> (Overwrite mark <1-9> with the current cursor and switch to it)\n"
+    "- g<1-9> (Set current group to <1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor)\n"
+    "- /, Esc (Show/hide search dialog)\n"
+    "- o (Open file chooser)\n"
+    "- Tab (Toggle table of contents)\n"
+    "  - j, k (Move down, up)\n"
+    "  - /, Esc (Focus/unfocus search entry)\n"
+    "  - Enter (Goto selected page)\n"
+    "- F11 (Toggle fullscreen)\n"
+    "- ?, F1 (Show help dialog)\n";
 
 static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
@@ -278,6 +304,55 @@ void window_redraw(Window *win)
     gtk_widget_queue_draw(win->view);
 }
 
+void window_toggle_fullscreen(Window *win)
+{
+    if (gtk_window_is_fullscreen(GTK_WINDOW(win))) {
+        gtk_window_unfullscreen(GTK_WINDOW(win));
+    } else {
+        gtk_window_fullscreen(GTK_WINDOW(win));
+    }
+}
+
+void window_show_help_dialog(Window *win)
+{
+    GtkWidget *dialog;
+    GtkWidget *box;
+    GtkWidget *scrolled_window;
+    GtkWidget *label;
+    GdkSurface *win_surface;
+    int win_width, win_height;
+    int dialog_width, dialog_height;
+
+    dialog = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(dialog), "Help");
+    gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(win));
+    win_surface = gtk_native_get_surface(GTK_NATIVE(win));
+    win_width = gdk_surface_get_width(win_surface);
+    win_height = gdk_surface_get_height(win_surface);
+    dialog_width = win_width * 0.8;
+    dialog_height = win_height * 0.8;
+    gtk_window_set_default_size(GTK_WINDOW(dialog), dialog_width, dialog_height);
+
+    box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_window_set_child(GTK_WINDOW(dialog), box);
+
+    scrolled_window = gtk_scrolled_window_new();
+    gtk_widget_set_vexpand(scrolled_window, TRUE);
+    gtk_widget_set_hexpand(scrolled_window, TRUE);
+    gtk_box_append(GTK_BOX(box), scrolled_window);
+
+    label = gtk_label_new(keybindings_text);
+    gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+    gtk_widget_set_margin_top(label, 10);
+    gtk_widget_set_margin_bottom(label, 10);
+    gtk_widget_set_margin_start(label, 10);
+    gtk_widget_set_margin_end(label, 10);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), label);
+
+    gtk_window_present(GTK_WINDOW(dialog));
+}
+
 void window_show_search_dialog(Window *win)
 {
     gtk_window_present(GTK_WINDOW(win->search_window));
@@ -303,15 +378,6 @@ void window_toggle_toc(Window *win)
 void window_focus_toc_search(Window *win)
 {
     gtk_widget_grab_focus(win->toc_search_entry);
-}
-
-void window_toggle_fullscreen(Window *win)
-{
-    if (gtk_window_is_fullscreen(GTK_WINDOW(win))) {
-        gtk_window_unfullscreen(GTK_WINDOW(win));
-    } else {
-        gtk_window_fullscreen(GTK_WINDOW(win));
-    }
 }
 
 void window_execute_toc_row(Window *win, GtkListBoxRow *row)

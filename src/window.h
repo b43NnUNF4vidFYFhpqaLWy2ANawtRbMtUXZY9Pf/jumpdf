@@ -15,10 +15,11 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager);
 
 void window_update_cursor(Window *win);
 void window_redraw(Window *win);
+void window_toggle_fullscreen(Window *win);
 void window_show_search_dialog(Window *win);
+void window_show_help_dialog(Window *win);
 void window_toggle_toc(Window *win);
 void window_focus_toc_search(Window *win);
-void window_toggle_fullscreen(Window *win);
 void window_execute_toc_row(Window *win, GtkListBoxRow *row);
 
 ViewerMarkManager *window_get_mark_manager(Window *win);

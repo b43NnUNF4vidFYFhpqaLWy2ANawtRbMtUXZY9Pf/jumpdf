@@ -102,6 +102,7 @@ Note that multiple windows can be opened at the same time.
   - <kbd>/</kbd>, <kbd>Esc</kbd> (Focus/unfocus search entry)
   - <kbd>Enter</kbd> (Goto selected page)
 - <kbd>F11</kbd> (Toggle fullscreen)
+- <kbd>?</kbd> (Show help dialog)
 
 ### Configuration
 

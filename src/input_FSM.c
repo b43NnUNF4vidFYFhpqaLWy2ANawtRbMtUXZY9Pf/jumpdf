@@ -65,6 +65,9 @@ InputState on_state_normal(Window *window, guint keyval)
         case GDK_KEY_slash:
             window_show_search_dialog(window);
             break;
+        case GDK_KEY_question:
+            window_show_help_dialog(window);
+            break;
         case GDK_KEY_o:
             app_open_file_chooser(JUMPDF_APP(gtk_window_get_application(GTK_WINDOW(window))));
             break;
