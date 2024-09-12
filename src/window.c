@@ -25,7 +25,6 @@ static const char *css =
     "    background-color: black;"
     "}";
 static const char *keybindings_text =
-    "Keybindings:\n"
     "- <number><command> (repeats <command> <number> times)\n"
     "  - j, k (Move down, up)\n"
     "  - h, l (Move left, right. Must not be in center mode)\n"
@@ -318,7 +317,9 @@ void window_show_help_dialog(Window *win)
     GtkWidget *dialog;
     GtkWidget *box;
     GtkWidget *scrolled_window;
-    GtkWidget *label;
+    GtkWidget *text_box;
+    GtkWidget *keybindings_header_label;
+    GtkWidget *keybindings_label;
     GdkSurface *win_surface;
     int win_width, win_height;
     int dialog_width, dialog_height;
@@ -342,14 +343,27 @@ void window_show_help_dialog(Window *win)
     gtk_widget_set_hexpand(scrolled_window, TRUE);
     gtk_box_append(GTK_BOX(box), scrolled_window);
 
-    label = gtk_label_new(keybindings_text);
-    gtk_label_set_xalign(GTK_LABEL(label), 0.0);
-    gtk_label_set_yalign(GTK_LABEL(label), 0.0);
-    gtk_widget_set_margin_top(label, 10);
-    gtk_widget_set_margin_bottom(label, 10);
-    gtk_widget_set_margin_start(label, 10);
-    gtk_widget_set_margin_end(label, 10);
-    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), label);
+    text_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), text_box);
+
+    keybindings_header_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(keybindings_header_label), "<b>Keybindings</b>");
+    gtk_label_set_xalign(GTK_LABEL(keybindings_header_label), 0.0);
+    gtk_label_set_yalign(GTK_LABEL(keybindings_header_label), 0.0);
+    gtk_widget_set_margin_top(keybindings_header_label, 10);
+    gtk_widget_set_margin_bottom(keybindings_header_label, 10);
+    gtk_widget_set_margin_start(keybindings_header_label, 10);
+    gtk_widget_set_margin_end(keybindings_header_label, 10);
+    gtk_box_append(GTK_BOX(text_box), keybindings_header_label);
+
+    keybindings_label = gtk_label_new(keybindings_text);
+    gtk_label_set_xalign(GTK_LABEL(keybindings_label), 0.0);
+    gtk_label_set_yalign(GTK_LABEL(keybindings_label), 0.0);
+    gtk_widget_set_margin_top(keybindings_label, 10);
+    gtk_widget_set_margin_bottom(keybindings_label, 10);
+    gtk_widget_set_margin_start(keybindings_label, 10);
+    gtk_widget_set_margin_end(keybindings_label, 10);
+    gtk_box_append(GTK_BOX(text_box), keybindings_label);
 
     gtk_window_present(GTK_WINDOW(dialog));
 }
