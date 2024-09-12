@@ -344,6 +344,7 @@ void window_show_help_dialog(Window *win)
 
     label = gtk_label_new(keybindings_text);
     gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+    gtk_label_set_yalign(GTK_LABEL(label), 0.0);
     gtk_widget_set_margin_top(label, 10);
     gtk_widget_set_margin_bottom(label, 10);
     gtk_widget_set_margin_start(label, 10);
