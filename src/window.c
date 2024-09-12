@@ -24,31 +24,39 @@ static const char *css =
     ".statusline {"
     "    background-color: black;"
     "}";
-static const char *keybindings_text =
-    "- <number><command> (repeats <command> <number> times)\n"
-    "  - j, k (Move down, up)\n"
-    "  - h, l (Move left, right. Must not be in center mode)\n"
-    "  - d, u (Move down, up half a page)\n"
-    "  - +, - (Zoom in, out)\n"
-    "  - n, N (Goto next, previous page containing the search string)\n"
-    "- 0 (Reset zoom)\n"
-    "- c (Toggle center mode)\n"
-    "- b (Toggle dark mode)\n"
-    "- s (Fit horizontally to page)\n"
-    "- a (Fit vertically to page)\n"
-    "- gg, G, <number>G (Goto first, last page, page <number>)\n"
-    "- f (Show link numbers) + <number> + Enter (Execute link)\n"
-    "- m<1-9> (Set current mark to <1-9>. If the mark hasn't been set, it will be set to the current cursor)\n"
-    "- mo<1-9> (Overwrite mark <1-9> with the current cursor and switch to it)\n"
-    "- g<1-9> (Set current group to <1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor)\n"
-    "- /, Esc (Show/hide search dialog)\n"
-    "- o (Open file chooser)\n"
-    "- Tab (Toggle table of contents)\n"
-    "  - j, k (Move down, up)\n"
-    "  - /, Esc (Focus/unfocus search entry)\n"
-    "  - Enter (Goto selected page)\n"
-    "- F11 (Toggle fullscreen)\n"
-    "- ?, F1 (Show help dialog)\n";
+
+typedef struct {
+    const char *key;
+    const char *description;
+    const int indent_level;
+} Keybinding;
+
+static const Keybinding keybindings[] = {
+    {"<number><command>", "Repeats <command> <number> times", 0},
+    {"j, k", "Move down, up", 1},
+    {"h, l", "Move left, right. Must not be in center mode", 1},
+    {"d, u", "Move down, up half a page", 1},
+    {"+, -", "Zoom in, out", 1},
+    {"n, N", "Goto next, previous page containing the search string", 1},
+    {"0", "Reset zoom", 0},
+    {"c", "Toggle center mode", 0},
+    {"b", "Toggle dark mode", 0},
+    {"s", "Fit horizontally to page", 0},
+    {"a", "Fit vertically to page", 0},
+    {"gg, G, <number>G", "Goto first, last page, page <number>", 0},
+    {"f + <number> + Enter", "Show link numbers and execute link", 0},
+    {"m<1-9>", "Set current mark to <1-9>. If the mark hasn't been set, it will be set to the current cursor", 0},
+    {"mo<1-9>", "Overwrite mark <1-9> with the current cursor and switch to it", 0},
+    {"g<1-9>", "Set current group to <1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor", 0},
+    {"/, Esc", "Show/hide search dialog", 0},
+    {"o", "Open file chooser", 0},
+    {"Tab", "Toggle table of contents", 0},
+    {"j, k", "Move down, up in table of contents", 1},
+    {"/, Esc", "Focus/unfocus search entry in table of contents", 1},
+    {"Enter", "Goto selected page in table of contents", 1},
+    {"F11", "Toggle fullscreen", 0},
+    {"?", "Show help dialog", 0}
+};
 
 static void window_update_cursors(Window *win);
 static void window_redraw_all_windows(Window *win);
@@ -319,7 +327,10 @@ void window_show_help_dialog(Window *win)
     GtkWidget *scrolled_window;
     GtkWidget *text_box;
     GtkWidget *keybindings_header_label;
-    GtkWidget *keybindings_label;
+    GtkWidget *keybindings_grid;
+    GtkWidget *key_label;
+    GtkWidget *description_label;
+    const int margin = 10;
     GdkSurface *win_surface;
     int win_width, win_height;
     int dialog_width, dialog_height;
@@ -350,20 +361,34 @@ void window_show_help_dialog(Window *win)
     gtk_label_set_markup(GTK_LABEL(keybindings_header_label), "<b>Keybindings</b>");
     gtk_label_set_xalign(GTK_LABEL(keybindings_header_label), 0.0);
     gtk_label_set_yalign(GTK_LABEL(keybindings_header_label), 0.0);
-    gtk_widget_set_margin_top(keybindings_header_label, 10);
-    gtk_widget_set_margin_bottom(keybindings_header_label, 10);
-    gtk_widget_set_margin_start(keybindings_header_label, 10);
-    gtk_widget_set_margin_end(keybindings_header_label, 10);
+    gtk_widget_set_margin_top(keybindings_header_label, margin);
+    gtk_widget_set_margin_bottom(keybindings_header_label, margin);
+    gtk_widget_set_margin_start(keybindings_header_label, margin);
+    gtk_widget_set_margin_end(keybindings_header_label, margin);
     gtk_box_append(GTK_BOX(text_box), keybindings_header_label);
 
-    keybindings_label = gtk_label_new(keybindings_text);
-    gtk_label_set_xalign(GTK_LABEL(keybindings_label), 0.0);
-    gtk_label_set_yalign(GTK_LABEL(keybindings_label), 0.0);
-    gtk_widget_set_margin_top(keybindings_label, 10);
-    gtk_widget_set_margin_bottom(keybindings_label, 10);
-    gtk_widget_set_margin_start(keybindings_label, 10);
-    gtk_widget_set_margin_end(keybindings_label, 10);
-    gtk_box_append(GTK_BOX(text_box), keybindings_label);
+    keybindings_grid = gtk_grid_new();
+    gtk_grid_set_column_spacing(GTK_GRID(keybindings_grid), margin);
+    gtk_widget_set_margin_bottom(keybindings_grid, margin);
+    gtk_widget_set_margin_start(keybindings_grid, margin);
+    gtk_widget_set_margin_end(keybindings_grid, margin);
+    gtk_box_append(GTK_BOX(text_box), keybindings_grid);
+
+    for (size_t i = 0; i < G_N_ELEMENTS(keybindings); i++) {
+        int indent_margin;
+
+        key_label = gtk_label_new(keybindings[i].key);
+        description_label = gtk_label_new(keybindings[i].description);
+
+        gtk_label_set_xalign(GTK_LABEL(key_label), 0.0);
+        gtk_label_set_xalign(GTK_LABEL(description_label), 0.0);
+
+        indent_margin = keybindings[i].indent_level * margin;
+        gtk_widget_set_margin_start(key_label, indent_margin);
+
+        gtk_grid_attach(GTK_GRID(keybindings_grid), key_label, 0, i, 1, 1);
+        gtk_grid_attach(GTK_GRID(keybindings_grid), description_label, 1, i, 1, 1);
+    }
 
     gtk_window_present(GTK_WINDOW(dialog));
 }
