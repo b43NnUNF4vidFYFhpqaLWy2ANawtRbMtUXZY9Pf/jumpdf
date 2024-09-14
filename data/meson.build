@@ -50,3 +50,10 @@ fs.copyfile('app.png', '@0@.png'.format(app_id),
     install : true,
     install_dir : join_paths(get_option('datadir'), 'icons', 'hicolor', '512x512', 'apps')
 )
+
+man_pages = [
+    'jumpdf.1',
+    'jumpdfconfig.5',
+]
+
+install_man(man_pages)
