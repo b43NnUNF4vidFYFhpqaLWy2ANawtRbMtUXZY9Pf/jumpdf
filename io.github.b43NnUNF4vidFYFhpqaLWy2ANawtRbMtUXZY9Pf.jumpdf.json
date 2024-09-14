@@ -22,6 +22,7 @@
                 "-DBUILD_QT6_TESTS=OFF",
                 "-DBUILD_MANUAL_TESTS=OFF",
                 "-DENABLE_UTILS=OFF",
+                "-DENABLE_GOBJECT_INTROSPECTION=OFF",
                 "-DENABLE_GTK_DOC=OFF",
                 "-DENABLE_QT5=OFF",
                 "-DENABLE_QT6=OFF",
