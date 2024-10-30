@@ -94,27 +94,16 @@ void viewer_cursor_set_scale(ViewerCursor *cursor, double new)
 
 void viewer_cursor_handle_offset_update(ViewerCursor *cursor)
 {
-    int old_page;
+    const int old_page = cursor->current_page;
+    cursor->current_page = CLAMP(
+        cursor->current_page + cursor->y_offset / g_config->steps,
+        0,
+        cursor->info->n_pages - 1);
 
-    old_page = cursor->current_page;
-    cursor->current_page =
-        MIN(cursor->info->n_pages - 1,
-            MAX(0, cursor->current_page + cursor->y_offset / g_config->steps)
-        );
-
-    if (cursor->y_offset < 0) {
-        // If cursor->current_page just updated to 0, we still want to scroll up
-        if (cursor->current_page > 0 || old_page > 0) {
-            cursor->y_offset = g_config->steps - 1;
-        } else if (cursor->current_page == 0) {
-            cursor->y_offset = 0;
-        }
-    } else if (cursor->y_offset >= g_config->steps) {
-        if (cursor->current_page < cursor->info->n_pages - 1 || old_page < cursor->info->n_pages - 1) {
-            cursor->y_offset = 0;
-        } else if (cursor->current_page == cursor->info->n_pages - 1) {
-            cursor->y_offset = g_config->steps - 1;
-        }
+    if (cursor->y_offset < 0 && cursor->current_page < old_page) {
+        cursor->y_offset = g_config->steps - 1;
+    } else if (cursor->y_offset >= g_config->steps && cursor->current_page > old_page) {
+        cursor->y_offset = 0;
     }
 }
 
