@@ -5,6 +5,7 @@ project('jumpdf', 'c',
         default_options : ['c_std=c99', 'warning_level=3'])
 
 app_name = 'jumpdf'
+app_version = meson.project_version()
 app_id = 'io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf'
 developer_id = 'io.github.b43nnunf4vidfyfhpqalwy2anawtrbmtuxzy9pf'
 

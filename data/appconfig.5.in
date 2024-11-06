@@ -1,4 +1,4 @@
-.TH JUMPDFCONFIG 5 "2 September 2023" "1.0.2" "jumpdf Configuration Manual"
+.TH JUMPDFCONFIG 5 "2 September 2023" "@app_version@" "jumpdf Configuration Manual"
 .SH NAME
 jumpdfconfig \- Configuration file for jumpdf
 

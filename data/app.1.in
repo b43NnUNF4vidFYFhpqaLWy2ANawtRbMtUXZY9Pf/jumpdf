@@ -1,4 +1,4 @@
-.TH JUMPDF 1 "2 September 2024" "1.0.2" "jumpdf Manual"
+.TH JUMPDF 1 "2 September 2024" "@app_version@" "jumpdf Manual"
 .SH NAME
 jumpdf \- A keyboard-focused PDF viewer for documents requiring frequent jumps between sections.
 

@@ -1,5 +1,6 @@
 conf = configuration_data()
 conf.set('app_name', app_name)
+conf.set('app_version', app_version)
 conf.set('app_id', app_id)
 conf.set('developer_id', developer_id)
 
@@ -51,9 +52,19 @@ fs.copyfile('app.png', '@0@.png'.format(app_id),
     install_dir : join_paths(get_option('datadir'), 'icons', 'hicolor', '512x512', 'apps')
 )
 
-man_pages = [
-    'jumpdf.1',
-    'jumpdfconfig.5',
-]
+man_file = configure_file(
+    input: 'app.1.in',
+    output: '@0@.1'.format(app_name),
+    configuration: conf
+)
 
-install_man(man_pages)
+man_config_file = configure_file(
+    input: 'appconfig.5.in',
+    output: '@0@config.5'.format(app_name),
+    configuration: conf
+)
+
+install_man([
+    man_file,
+    man_config_file
+])
