@@ -111,12 +111,13 @@ void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page)
 {
     cursor->current_page = page;
     cursor->y_offset = 0;
-    viewer_cursor_fit_vertical(cursor);
+    cursor->scale = 1.0;
 }
 
 void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
 {
-    if (dest->change_top == 1) {
+    /* Sanity check for PDFs with invalid dest->top values */
+    if (dest->change_top == 1 && dest->top < cursor->info->pdf_height) {
         cursor->current_page = dest->page_num - 1;
 
         /*
