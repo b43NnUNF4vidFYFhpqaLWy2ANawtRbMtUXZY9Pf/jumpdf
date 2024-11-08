@@ -35,6 +35,23 @@
   </screenshots>
 
   <releases>
+    <release version="1.1.0" date="2024-11-08">
+      <description>
+        <p>Changes:</p>
+        <ul>
+          <li>Open help dialog with "?"</li>
+          <li>Add keybind to clear mark</li>
+          <li>Add man pages for jumpdf and its configuration file</li>
+        </ul>
+
+        <p>Fixes:</p>
+        <ul>
+          <li>Fix the current mark being overwriteable</li>
+          <li>Fix inability to scroll up to the top of the first page if zoomed in</li>
+          <li>When going to a destination, avoid automatically scrolling to a point such that the destination is at the top of the view if the PDF is reporting invalid destination coordinates</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.2" date="2024-09-02">
       <description>
         <p>Fix crash when overwritng the same mark as the current mark</p>
