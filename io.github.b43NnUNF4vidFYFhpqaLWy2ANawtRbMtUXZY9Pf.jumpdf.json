@@ -32,7 +32,7 @@
                 {
                     "type": "archive",
                     "url": "https://poppler.freedesktop.org/poppler-24.11.0.tar.xz",
-                    "sha256": "97453fbddf0c9a9eafa0ea45ac710d3d49bcf23a62e864585385d3c0b4403174"
+                    "sha256": "7723d880565211740c13649d24a300257b86ddd7fa2d208187ff7e5cc8dfbd58"
                 }
             ],
             "modules": [
