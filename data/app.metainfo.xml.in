@@ -22,6 +22,9 @@
     <p>
       Existing PDF viewers like sioyek and zathura also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
     </p>
+    <p>
+      For more information and to fully use the features, see the GitHub page linked under the "Links" tab near the bottom.
+    </p>
   </description>
 
   <screenshots>
