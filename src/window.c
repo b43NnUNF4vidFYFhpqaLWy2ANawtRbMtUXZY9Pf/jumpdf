@@ -269,7 +269,7 @@ Window *window_new(App *app)
 
 void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager)
 {
-    GError *err = NULL;
+    GError *error = NULL;
     ViewerCursor *cursor;
     ViewerSearch *search;
     ViewerLinks *links;
@@ -282,20 +282,21 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager)
 
     win->mark_manager = mark_manager;
     win->viewer = viewer_new(cursor->info, cursor, search, links);
+    viewer_init_render_tp(win->viewer, win->view);
 
     window_populate_toc(win);
     window_update_statusline(win);
 
-    file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &err);
+    file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &error);
     if (file_info == NULL) {
-        g_printerr("GFile: %s\n", err->message);
-        g_error_free(err);
+        g_printerr("GFile: %s\n", error->message);
+        g_error_free(error);
     } else {
         gtk_window_set_title(GTK_WINDOW(win), g_file_info_get_display_name(file_info));
         g_object_unref(file_info);
     }
 
-    poppler_page_get_size(win->viewer->info->pages[0], &default_width, &default_height);
+    poppler_page_get_size(viewer_info_get_poppler_page(win->viewer->info, 0), &default_width, &default_height);
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
         (int)default_width);
 }
@@ -545,6 +546,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     UNUSED(height);
 
     Window *win = (Window *)user_data;
+    
     cairo_surface_t *surface = viewer_render(win->viewer);
 
     cairo_set_source_surface(cr, surface, 0, 0);

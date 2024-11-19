@@ -37,18 +37,19 @@ void viewer_info_init(ViewerInfo *info, PopplerDocument *doc)
 {
     info->doc = doc;
     info->n_pages = poppler_document_get_n_pages(doc);
-    info->pages = malloc(sizeof(PopplerPage *) * info->n_pages);
+    info->pages = malloc(sizeof(Page *) * info->n_pages);
     if (info->pages == NULL) {
         return;
     }
 
     for (int i = 0; i < info->n_pages; i++) {
-        info->pages[i] = poppler_document_get_page(info->doc, i);
-
-      if (!info->pages[i]) {
-        g_printerr("Could not open %i'th page of document\n", i);
-        g_object_unref(info->pages[i]);
-      }
+        PopplerPage *page = poppler_document_get_page(doc, i);
+        if (page == NULL) {
+            g_printerr("Could not open %i'th page of document\n", i);
+            g_object_unref(info->pages[i]);
+        } else {
+            info->pages[i] = page_new(page);
+        }
     }
 
     info->view_width = 0;
@@ -66,7 +67,8 @@ void viewer_info_destroy(ViewerInfo *info)
 
     if (info->pages) {
         for (int i = 0; i < info->n_pages; i++) {
-            g_object_unref(info->pages[i]);
+            page_destroy(info->pages[i]);
+            free(info->pages[i]);
             info->pages[i] = NULL;
         }
 
@@ -86,4 +88,13 @@ PopplerDest *viewer_info_get_dest(ViewerInfo *info, PopplerDest *dest)
     }
 
     return actual_dest;
+}
+
+PopplerPage *viewer_info_get_poppler_page(ViewerInfo *info, int page_num)
+{
+    if (page_num >= info->n_pages) {
+        return NULL;
+    }
+
+    return info->pages[page_num]->poppler_page;
 }

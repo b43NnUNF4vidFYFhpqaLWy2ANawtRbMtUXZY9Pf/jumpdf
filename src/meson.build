@@ -10,6 +10,7 @@ sources = [
     'viewer.c',
     'render.c',
     'input_FSM.c',
+    'page.c',
     'viewer_info.c',
     'viewer_cursor.c',
     'viewer_search.c',
