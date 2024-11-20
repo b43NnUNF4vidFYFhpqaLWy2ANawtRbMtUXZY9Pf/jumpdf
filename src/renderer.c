@@ -87,8 +87,6 @@ cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
             cairo_paint(cr);
 
             if (page->render_status == PAGE_RENDERED) {
-                cairo_surface_destroy(page->surface);
-                page->surface = NULL;
                 page->render_status = PAGE_NOT_RENDERED;
             }
         }
@@ -137,8 +135,10 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
                 g_warning("Failed to push render task to thread pool: %s", error->message);
                 g_error_free(error);
             } else {
-                poppler_page_get_size(page->poppler_page, &width, &height);
-                page->surface = create_loading_surface(width, height);
+                if (page->surface == NULL) {
+                    poppler_page_get_size(page->poppler_page, &width, &height);
+                    page->surface = create_loading_surface(width, height);
+                }
                 page->render_status = PAGE_RENDERING;
             }
         }
@@ -165,7 +165,7 @@ static void render_page_async(gpointer data, gpointer user_data)
 
     viewer_render_page(viewer, cr, page->poppler_page, links_drawn_sofar);
 
-    if (page->surface) {
+    if (page->surface != NULL) {
         cairo_surface_destroy(page->surface);
     }
     page->surface = page_surface;
