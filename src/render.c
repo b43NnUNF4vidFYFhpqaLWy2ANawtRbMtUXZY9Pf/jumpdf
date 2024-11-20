@@ -7,7 +7,6 @@ static void viewer_offset_translate(Viewer *viewer, cairo_t *cr);
 static void viewer_render_pages(Viewer *viewer, cairo_t *cr);
 static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
 static cairo_surface_t* create_loading_surface(int width, int height);
-static gboolean queue_draw_wrapper(gpointer user_data);
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page);
 static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, unsigned int to);
 
@@ -78,7 +77,7 @@ void render_page_async(gpointer data, gpointer user_data) {
     cairo_destroy(cr);
     g_free(render_page_data);
 
-    g_idle_add(queue_draw_wrapper, view);
+    gtk_widget_queue_draw(view);
 }
 
 static void viewer_update_current_page_size(Viewer *viewer)
@@ -213,13 +212,6 @@ static cairo_surface_t* create_loading_surface(int width, int height) {
     cairo_destroy(cr);
 
     return loading_surface;
-}
-
-static gboolean queue_draw_wrapper(gpointer user_data) {
-    GtkWidget *widget = GTK_WIDGET(user_data);
-    gtk_widget_queue_draw(widget);
-
-    return G_SOURCE_REMOVE;
 }
 
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page) {
