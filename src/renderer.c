@@ -67,11 +67,13 @@ cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
         if (page->render_status == PAGE_RENDERED || page->render_status == PAGE_RENDERING) {
             poppler_page_get_size(page->poppler_page, NULL, &page_height);
 
+            g_assert(page->surface != NULL);
             cairo_set_source_surface(cr, page->surface, 0, i * page_height);
             cairo_paint(cr);
 
             if (page->render_status == PAGE_RENDERED) {
-                /* TODO: Destroy surface */
+                cairo_surface_destroy(page->surface);
+                page->surface = NULL;
                 page->render_status = PAGE_NOT_RENDERED;
             }
         }
@@ -91,6 +93,7 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer, cairo_t *c
     Page *page = NULL;
     RenderPageData *data = NULL;
     GError *error = NULL;
+    double width, height;
 
     if (viewer->cursor->dark_mode) {
         cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
@@ -118,6 +121,8 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer, cairo_t *c
                 g_warning("Failed to push render task to thread pool: %s", error->message);
                 g_error_free(error);
             } else {
+                poppler_page_get_size(page->poppler_page, &width, &height);
+                page->surface = create_loading_surface(width, height);
                 page->render_status = PAGE_RENDERING;
             }
         }
@@ -142,8 +147,6 @@ static void render_page_async(gpointer data, gpointer user_data)
 
     double width, height;
     poppler_page_get_size(page->poppler_page, &width, &height);
-
-    page->surface = create_loading_surface(width, height);
 
     cairo_surface_t *page_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
     cairo_t *cr = cairo_create(page_surface);
