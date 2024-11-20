@@ -50,27 +50,30 @@ cairo_surface_t *viewer_render(Viewer *viewer) {
 
 void render_page_async(gpointer data, gpointer user_data) {
     RenderPageData *render_page_data = (RenderPageData *)data;
-    GtkWidget *view = GTK_WIDGET(user_data);
+    Viewer *viewer = render_page_data->viewer;
+    Page *page = render_page_data->page;
+    unsigned int *links_drawn_sofar = render_page_data->links_drawn_sofar;
+    GtkWidget *view = (GtkWidget *)user_data;
+
     double width, height;
+    poppler_page_get_size(page->poppler_page, &width, &height);
 
-    poppler_page_get_size(render_page_data->page->poppler_page, &width, &height);
-
-    render_page_data->page->surface = create_loading_surface(width, height);
+    page->surface = create_loading_surface(width, height);
 
     cairo_surface_t *page_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
     cairo_t *cr = cairo_create(page_surface);
 
-    g_mutex_lock(&render_page_data->viewer->render_mutex);
+    g_mutex_lock(&viewer->render_mutex);
 
-    viewer_render_page(render_page_data->viewer, cr, render_page_data->page->poppler_page, render_page_data->links_drawn_sofar);
+    viewer_render_page(viewer, cr, page->poppler_page, links_drawn_sofar);
 
-    if (render_page_data->page->surface) {
-        cairo_surface_destroy(render_page_data->page->surface);
+    if (page->surface) {
+        cairo_surface_destroy(page->surface);
     }
-    render_page_data->page->surface = page_surface;
-    render_page_data->page->render_status = PAGE_RENDERED;
+    page->surface = page_surface;
+    page->render_status = PAGE_RENDERED;
 
-    g_mutex_unlock(&render_page_data->viewer->render_mutex);
+    g_mutex_unlock(&viewer->render_mutex);
 
     cairo_destroy(cr);
     g_free(render_page_data);
