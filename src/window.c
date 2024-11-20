@@ -280,7 +280,7 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager)
 
     win->mark_manager = mark_manager;
     win->viewer = viewer_new(cursor->info, cursor, search, links);
-    win->renderer = renderer_new(win->viewer, win->view);
+    win->renderer = renderer_new(win->view);
 
     window_populate_toc(win);
     window_update_statusline(win);

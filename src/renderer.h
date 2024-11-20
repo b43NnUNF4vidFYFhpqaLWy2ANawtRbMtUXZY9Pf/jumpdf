@@ -9,7 +9,7 @@ typedef struct Renderer {
     GMutex render_mutex;
 } Renderer;
 
-Renderer *renderer_new(Viewer *viewer, GtkWidget *view);
+Renderer *renderer_new(GtkWidget *view);
 void renderer_init(Renderer *renderer, GtkWidget *view);
 void renderer_destroy(Renderer *renderer);
 

@@ -17,7 +17,7 @@ static void viewer_offset_translate(Viewer *viewer, cairo_t *cr);
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page);
 static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, unsigned int to);
 
-Renderer *renderer_new(Viewer *viewer, GtkWidget *view)
+Renderer *renderer_new(GtkWidget *view)
 {
     Renderer *renderer = g_new0(Renderer, 1);
     renderer_init(renderer, view);
