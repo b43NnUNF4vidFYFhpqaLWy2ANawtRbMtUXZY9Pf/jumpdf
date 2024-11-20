@@ -8,7 +8,7 @@ sources = [
     'statusline.c',
     'database.c',
     'viewer.c',
-    'render.c',
+    'renderer.c',
     'input_FSM.c',
     'page.c',
     'viewer_info.c',

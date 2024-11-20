@@ -1,16 +1,52 @@
-#include "render.h"
+#include "renderer.h"
 #include "config.h"
 
+typedef struct {
+    Viewer *viewer;
+    Page *page;
+    unsigned int *links_drawn_sofar;
+} RenderPageData;
+
+static void renderer_render_pages(Renderer *renderer, Viewer *viewer, cairo_t *cr);
+static void render_page_async(gpointer data, gpointer user_data);
+static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
+static cairo_surface_t* create_loading_surface(int width, int height);
 static void viewer_update_current_page_size(Viewer *viewer);
 static void viewer_zoom(Viewer *viewer, cairo_t *cr);
 static void viewer_offset_translate(Viewer *viewer, cairo_t *cr);
-static void viewer_render_pages(Viewer *viewer, cairo_t *cr);
-static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
-static cairo_surface_t* create_loading_surface(int width, int height);
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page);
 static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, unsigned int to);
 
-cairo_surface_t *viewer_render(Viewer *viewer) {
+Renderer *renderer_new(Viewer *viewer, GtkWidget *view)
+{
+    Renderer *renderer = g_new0(Renderer, 1);
+    renderer_init(renderer, view);
+
+    return renderer;
+}
+
+void renderer_init(Renderer *renderer, GtkWidget *view)
+{
+    renderer->view = view;
+
+    GError *error = NULL;
+    renderer->render_tp = g_thread_pool_new((GFunc)render_page_async, renderer, g_get_num_processors(), FALSE, &error);
+    if (error != NULL) {
+        g_warning("Failed to create render thread pool: %s", error->message);
+        g_error_free(error);
+    } else {
+        g_mutex_init(&renderer->render_mutex);
+    }
+}
+
+void renderer_destroy(Renderer *renderer)
+{
+    g_thread_pool_free(renderer->render_tp, FALSE, TRUE);
+    g_mutex_clear(&renderer->render_mutex);
+}
+
+cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
+{
     cairo_surface_t *surface = NULL;
     cairo_t *cr = NULL;
     Page *page = NULL;
@@ -22,12 +58,12 @@ cairo_surface_t *viewer_render(Viewer *viewer) {
     viewer_update_current_page_size(viewer);
     viewer_zoom(viewer, cr);
     viewer_offset_translate(viewer, cr);
-    viewer_render_pages(viewer, cr);
+    renderer_render_pages(renderer, viewer, cr);
 
     /* TODO: Maintain a list of rendered pages */
     for (int i = 0; i < viewer->info->n_pages; i++) {
         page = viewer->info->pages[i];
-        g_mutex_lock(&viewer->render_mutex);
+        g_mutex_lock(&renderer->render_mutex);
         if (page->render_status == PAGE_RENDERED || page->render_status == PAGE_RENDERING) {
             poppler_page_get_size(page->poppler_page, NULL, &page_height);
 
@@ -39,7 +75,7 @@ cairo_surface_t *viewer_render(Viewer *viewer) {
                 page->render_status = PAGE_NOT_RENDERED;
             }
         }
-        g_mutex_unlock(&viewer->render_mutex);
+        g_mutex_unlock(&renderer->render_mutex);
     }
 
     cairo_destroy(cr);
@@ -47,77 +83,8 @@ cairo_surface_t *viewer_render(Viewer *viewer) {
     return surface;
 }
 
-void render_page_async(gpointer data, gpointer user_data) {
-    RenderPageData *render_page_data = (RenderPageData *)data;
-    Viewer *viewer = render_page_data->viewer;
-    Page *page = render_page_data->page;
-    unsigned int *links_drawn_sofar = render_page_data->links_drawn_sofar;
-    GtkWidget *view = (GtkWidget *)user_data;
-
-    double width, height;
-    poppler_page_get_size(page->poppler_page, &width, &height);
-
-    page->surface = create_loading_surface(width, height);
-
-    cairo_surface_t *page_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
-    cairo_t *cr = cairo_create(page_surface);
-
-    g_mutex_lock(&viewer->render_mutex);
-
-    viewer_render_page(viewer, cr, page->poppler_page, links_drawn_sofar);
-
-    if (page->surface) {
-        cairo_surface_destroy(page->surface);
-    }
-    page->surface = page_surface;
-    page->render_status = PAGE_RENDERED;
-
-    g_mutex_unlock(&viewer->render_mutex);
-
-    cairo_destroy(cr);
-    g_free(render_page_data);
-
-    gtk_widget_queue_draw(view);
-}
-
-static void viewer_update_current_page_size(Viewer *viewer)
+static void renderer_render_pages(Renderer *renderer, Viewer *viewer, cairo_t *cr)
 {
-    PopplerPage *page = viewer_info_get_poppler_page(viewer->info, viewer->cursor->current_page);
-
-    if (page == NULL) {
-        return;
-    } else {
-        poppler_page_get_size(page, &viewer->info->pdf_width, &viewer->info->pdf_height);
-    }
-}
-
-static void viewer_zoom(Viewer *viewer, cairo_t *cr) {
-    const double center_x = round(viewer->info->view_width / 2.0);
-    const double center_y = round(viewer->info->view_height / 2.0);
-
-    cairo_translate(cr, center_x, center_y);
-    cairo_scale(cr, viewer->cursor->scale, viewer->cursor->scale);
-    cairo_translate(cr, -center_x, -center_y);
-}
-
-static void viewer_offset_translate(Viewer *viewer, cairo_t *cr) {
-    if (viewer->cursor->center_mode) {
-        viewer_cursor_center(viewer->cursor);
-    }
-
-    const double x_offset_translate = round((viewer->cursor->x_offset / g_config->steps) * viewer->info->pdf_width);
-
-    /* Translation to get to current page */
-    const double y_page_translate = -viewer->cursor->current_page * viewer->info->pdf_height;
-    /* Translation for y offset */
-    const double y_offset_translate = -(viewer->cursor->y_offset / g_config->steps) * viewer->info->pdf_height;
-
-    const double y_translate = round(y_page_translate + y_offset_translate);
-
-    cairo_translate(cr, x_offset_translate, y_translate);
-}
-
-static void viewer_render_pages(Viewer *viewer, cairo_t *cr) {
     double visible_pages;
     int visible_pages_before, visible_pages_after;
     unsigned int links_drawn_sofar = 0;
@@ -139,14 +106,14 @@ static void viewer_render_pages(Viewer *viewer, cairo_t *cr) {
 
     for (int i = visible_pages_before; i <= visible_pages_after; i++) {
         page = viewer->info->pages[i];
-        g_mutex_lock(&viewer->render_mutex);
+        g_mutex_lock(&renderer->render_mutex);
         if (page->render_status == PAGE_NOT_RENDERED) {
             data = g_new0(RenderPageData, 1);
             data->viewer = viewer;
             data->page = page;
             data->links_drawn_sofar = &links_drawn_sofar;
 
-            g_thread_pool_push(viewer->render_tp, data, &error);
+            g_thread_pool_push(renderer->render_tp, data, &error);
             if (error != NULL) {
                 g_warning("Failed to push render task to thread pool: %s", error->message);
                 g_error_free(error);
@@ -154,7 +121,7 @@ static void viewer_render_pages(Viewer *viewer, cairo_t *cr) {
                 page->render_status = PAGE_RENDERING;
             }
         }
-        g_mutex_unlock(&viewer->render_mutex);
+        g_mutex_unlock(&renderer->render_mutex);
     }
 
     if (viewer->cursor->dark_mode) {
@@ -164,7 +131,43 @@ static void viewer_render_pages(Viewer *viewer, cairo_t *cr) {
     }
 }
 
-static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar) {
+static void render_page_async(gpointer data, gpointer user_data)
+{
+    RenderPageData *render_page_data = (RenderPageData *)data;
+    Viewer *viewer = render_page_data->viewer;
+    Page *page = render_page_data->page;
+    unsigned int *links_drawn_sofar = render_page_data->links_drawn_sofar;
+    Renderer *renderer = (Renderer *)user_data;
+    GtkWidget *view = renderer->view;
+
+    double width, height;
+    poppler_page_get_size(page->poppler_page, &width, &height);
+
+    page->surface = create_loading_surface(width, height);
+
+    cairo_surface_t *page_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+    cairo_t *cr = cairo_create(page_surface);
+
+    g_mutex_lock(&renderer->render_mutex);
+
+    viewer_render_page(viewer, cr, page->poppler_page, links_drawn_sofar);
+
+    if (page->surface) {
+        cairo_surface_destroy(page->surface);
+    }
+    page->surface = page_surface;
+    page->render_status = PAGE_RENDERED;
+
+    g_mutex_unlock(&renderer->render_mutex);
+
+    cairo_destroy(cr);
+    g_free(render_page_data);
+
+    gtk_widget_queue_draw(view);
+}
+
+static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar)
+{
     double width, height;
     poppler_page_get_size(page, &width, &height);
 
@@ -191,7 +194,8 @@ static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, u
     }
 }
 
-static cairo_surface_t* create_loading_surface(int width, int height) {
+static cairo_surface_t* create_loading_surface(int width, int height)
+{
     cairo_surface_t *loading_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
     cairo_t *cr = cairo_create(loading_surface);
 
@@ -214,7 +218,47 @@ static cairo_surface_t* create_loading_surface(int width, int height) {
     return loading_surface;
 }
 
-static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page) {
+static void viewer_update_current_page_size(Viewer *viewer)
+{
+    PopplerPage *page = viewer_info_get_poppler_page(viewer->info, viewer->cursor->current_page);
+
+    if (page == NULL) {
+        return;
+    } else {
+        poppler_page_get_size(page, &viewer->info->pdf_width, &viewer->info->pdf_height);
+    }
+}
+
+static void viewer_zoom(Viewer *viewer, cairo_t *cr)
+{
+    const double center_x = round(viewer->info->view_width / 2.0);
+    const double center_y = round(viewer->info->view_height / 2.0);
+
+    cairo_translate(cr, center_x, center_y);
+    cairo_scale(cr, viewer->cursor->scale, viewer->cursor->scale);
+    cairo_translate(cr, -center_x, -center_y);
+}
+
+static void viewer_offset_translate(Viewer *viewer, cairo_t *cr)
+{
+    if (viewer->cursor->center_mode) {
+        viewer_cursor_center(viewer->cursor);
+    }
+
+    const double x_offset_translate = round((viewer->cursor->x_offset / g_config->steps) * viewer->info->pdf_width);
+
+    /* Translation to get to current page */
+    const double y_page_translate = -viewer->cursor->current_page * viewer->info->pdf_height;
+    /* Translation for y offset */
+    const double y_offset_translate = -(viewer->cursor->y_offset / g_config->steps) * viewer->info->pdf_height;
+
+    const double y_translate = round(y_page_translate + y_offset_translate);
+
+    cairo_translate(cr, x_offset_translate, y_translate);
+}
+
+static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page)
+{
     PopplerRectangle *highlight_rect;
     double highlight_rect_x, highlight_rect_y, highlight_rect_width,
         highlight_rect_height;
@@ -241,7 +285,8 @@ static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *pa
     g_list_free_full(matches, (GDestroyNotify)poppler_rectangle_free);
 }
 
-static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, unsigned int to) {
+static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, unsigned int to)
+{
     PopplerLinkMapping *link_mapping = NULL;
     char *link_text = NULL;
 

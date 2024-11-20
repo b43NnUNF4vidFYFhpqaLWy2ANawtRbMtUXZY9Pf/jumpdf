@@ -11,13 +11,9 @@
 #include "app.h"
 #include "config.h"
 #include "viewer.h"
-#include "render.h"
 #include "viewer_mark_manager.h"
-#include "viewer_info.h"
-#include "viewer_cursor.h"
-#include "viewer_search.h"
-#include "viewer_links.h"
 #include "input_FSM.h"
+#include "renderer.h"
 
 // TODO: Load from file or resource
 static const char *css = 
@@ -91,6 +87,7 @@ struct _Window {
 
     GtkWidget *view_box;
     GtkWidget *view;
+    Renderer *renderer;
 
     GtkWidget *statusline;
     GtkWidget *statusline_left;
@@ -148,6 +145,7 @@ static void window_init(Window *win)
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(win->view), draw_function,
         win, NULL);
     g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
+    win->renderer = NULL;
 
     win->statusline = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_add_css_class(win->statusline, "statusline");
@@ -282,7 +280,7 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager)
 
     win->mark_manager = mark_manager;
     win->viewer = viewer_new(cursor->info, cursor, search, links);
-    viewer_init_render_tp(win->viewer, win->view);
+    win->renderer = renderer_new(win->viewer, win->view);
 
     window_populate_toc(win);
     window_update_statusline(win);
@@ -547,7 +545,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
 
     Window *win = (Window *)user_data;
     
-    cairo_surface_t *surface = viewer_render(win->viewer);
+    cairo_surface_t *surface = renderer_render(win->renderer, win->viewer);
 
     cairo_set_source_surface(cr, surface, 0, 0);
     cairo_paint(cr);
