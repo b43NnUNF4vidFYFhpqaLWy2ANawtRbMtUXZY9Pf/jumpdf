@@ -32,11 +32,8 @@ cairo_surface_t *viewer_render(Viewer *viewer) {
         if (page->render_status == PAGE_RENDERED || page->render_status == PAGE_RENDERING) {
             poppler_page_get_size(page->poppler_page, NULL, &page_height);
 
-            cairo_save(cr);
-            cairo_translate(cr, 0, i * page_height);
-            cairo_set_source_surface(cr, page->surface, 0, 0);
+            cairo_set_source_surface(cr, page->surface, 0, i * page_height);
             cairo_paint(cr);
-            cairo_restore(cr);
 
             if (page->render_status == PAGE_RENDERED) {
                 /* TODO: Destroy surface */
