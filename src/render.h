@@ -4,7 +4,6 @@
 
 typedef struct {
     Viewer *viewer;
-    cairo_surface_t *surface;
     Page *page;
     unsigned int *links_drawn_sofar;
 } RenderPageData;
