@@ -4,12 +4,13 @@
 typedef struct {
     Viewer *viewer;
     Page *page;
-    unsigned int *links_drawn_sofar;
+    unsigned int draw_links_from;
+    unsigned int draw_links_to;
 } RenderPageData;
 
 static void renderer_render_pages(Renderer *renderer, Viewer *viewer);
 static void render_page_async(gpointer data, gpointer user_data);
-static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar);
+static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int draw_links_from, unsigned int draw_links_to);
 static cairo_surface_t* create_loading_surface(int width, int height);
 static void viewer_update_current_page_size(Viewer *viewer);
 static void viewer_zoom(Viewer *viewer, cairo_t *cr);
@@ -108,13 +109,17 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
 {
     double visible_pages;
     int visible_pages_before, visible_pages_after;
-    unsigned int links_drawn_sofar = 0;
     Page *page = NULL;
+    PopplerPage *poppler_page = NULL;   
+    unsigned int draw_links_from = 0;
+    unsigned int draw_links_to = 0;
     RenderPageData *data = NULL;
     GError *error = NULL;
     double width, height;
 
+    if (viewer->links->follow_links_mode) {
     viewer_links_clear_links(viewer->links);
+    }
 
     visible_pages = viewer->info->view_height / (viewer->cursor->scale * viewer->info->pdf_height);
     // TODO: Properly calculate
@@ -125,10 +130,19 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
         page = viewer->info->pages[i];
         g_mutex_lock(&renderer->render_mutex);
         if (page->render_status == PAGE_NOT_RENDERED) {
+            if (viewer->links->follow_links_mode) {
+                poppler_page = page->poppler_page;
+                draw_links_from = draw_links_to;
+                draw_links_to += viewer_links_get_links(viewer->links, poppler_page);
+                g_assert(draw_links_from <= draw_links_to);
+                g_assert(draw_links_to == viewer->links->visible_links->len);
+            }
+
             data = g_new0(RenderPageData, 1);
             data->viewer = viewer;
             data->page = page;
-            data->links_drawn_sofar = &links_drawn_sofar;
+            data->draw_links_from = draw_links_from;
+            data->draw_links_to = draw_links_to;
 
             g_thread_pool_push(renderer->render_tp, data, &error);
             if (error != NULL) {
@@ -151,7 +165,8 @@ static void render_page_async(gpointer data, gpointer user_data)
     RenderPageData *render_page_data = (RenderPageData *)data;
     Viewer *viewer = render_page_data->viewer;
     Page *page = render_page_data->page;
-    unsigned int *links_drawn_sofar = render_page_data->links_drawn_sofar;
+    unsigned int draw_links_from = render_page_data->draw_links_from;
+    unsigned int draw_links_to = render_page_data->draw_links_to;
     Renderer *renderer = (Renderer *)user_data;
     GtkWidget *view = renderer->view;
 
@@ -163,7 +178,7 @@ static void render_page_async(gpointer data, gpointer user_data)
 
     g_mutex_lock(&renderer->render_mutex);
 
-    viewer_render_page(viewer, cr, page->poppler_page, links_drawn_sofar);
+    viewer_render_page(viewer, cr, page->poppler_page, draw_links_from, draw_links_to);
 
     if (page->surface != NULL) {
         cairo_surface_destroy(page->surface);
@@ -179,7 +194,7 @@ static void render_page_async(gpointer data, gpointer user_data)
     gtk_widget_queue_draw(view);
 }
 
-static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int *links_drawn_sofar)
+static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int draw_links_from, unsigned int draw_links_to)
 {
     double width, height;
     poppler_page_get_size(page, &width, &height);
@@ -192,13 +207,7 @@ static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, u
     poppler_page_render(page, cr);
 
     viewer_highlight_search(viewer, cr, page);
-
-    unsigned int links_to_draw;
-    if (viewer->links->follow_links_mode) {
-        links_to_draw = viewer_links_get_links(viewer->links, page);
-        viewer_draw_links(viewer, cr, *links_drawn_sofar, *links_drawn_sofar + links_to_draw);
-        *links_drawn_sofar += links_to_draw;
-    }
+    viewer_draw_links(viewer, cr, draw_links_from, draw_links_to);
 }
 
 static cairo_surface_t* create_loading_surface(int width, int height)
@@ -296,6 +305,11 @@ static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, un
 {
     PopplerLinkMapping *link_mapping = NULL;
     char *link_text = NULL;
+
+    g_assert(to <= viewer->links->visible_links->len);
+    if (!viewer->links->follow_links_mode) {
+        return;
+    }
 
     for (unsigned int i = from; i < to; i++) {
         link_mapping = g_ptr_array_index(viewer->links->visible_links, i);
