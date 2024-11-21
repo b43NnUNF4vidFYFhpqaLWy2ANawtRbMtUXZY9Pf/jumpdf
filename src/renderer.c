@@ -118,7 +118,7 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
     double width, height;
 
     if (viewer->links->follow_links_mode) {
-    viewer_links_clear_links(viewer->links);
+        viewer_links_clear_links(viewer->links);
     }
 
     visible_pages = viewer->info->view_height / (viewer->cursor->scale * viewer->info->pdf_height);
