@@ -87,7 +87,6 @@ struct _Window {
 
     GtkWidget *view_box;
     GtkWidget *view;
-    Renderer *renderer;
 
     GtkWidget *statusline;
     GtkWidget *statusline_left;
@@ -115,6 +114,7 @@ struct _Window {
     App *app;
     ViewerMarkManager *mark_manager;
     Viewer *viewer;
+    Renderer *renderer;
     InputState current_input_state;
 };
 
@@ -125,6 +125,7 @@ static void window_init(Window *win)
     GtkCssProvider *css_provider;
 
     win->viewer = NULL;
+    win->renderer = NULL;
     win->current_input_state = STATE_NORMAL;
 
     win->event_controller = gtk_event_controller_key_new();
@@ -145,7 +146,6 @@ static void window_init(Window *win)
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(win->view), draw_function,
         win, NULL);
     g_signal_connect(win->view, "resize", G_CALLBACK(on_resize), win);
-    win->renderer = NULL;
 
     win->statusline = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_add_css_class(win->statusline, "statusline");
@@ -233,6 +233,11 @@ static void window_finalize(GObject *object)
 {
     Window *win = (Window *)object;
 
+    if (win->renderer) {
+        renderer_destroy(win->renderer);
+        free(win->renderer);
+    }
+
     if (win->viewer) {
         // Cursor already destroyed by mark_manager destruction
         viewer_info_destroy(win->viewer->info);
@@ -308,7 +313,7 @@ void window_update_cursor(Window *win)
 void window_redraw(Window *win)
 {
     window_update_statusline(win);
-    gtk_widget_queue_draw(win->view);
+    renderer_render_pages(win->renderer, win->viewer);
 }
 
 void window_toggle_fullscreen(Window *win)
@@ -543,7 +548,16 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     UNUSED(width);
     UNUSED(height);
 
+    static bool first_render = TRUE;
+
     Window *win = (Window *)user_data;
+    
+    viewer_update_current_page_size(win->viewer);
+
+    if (first_render) {
+        renderer_render_pages(win->renderer, win->viewer);
+        first_render = FALSE;
+    }
     
     cairo_surface_t *surface = renderer_render(win->renderer, win->viewer);
 

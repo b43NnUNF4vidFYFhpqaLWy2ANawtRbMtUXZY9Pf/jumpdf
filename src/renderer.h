@@ -14,3 +14,4 @@ void renderer_init(Renderer *renderer, GtkWidget *view);
 void renderer_destroy(Renderer *renderer);
 
 cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer);
+void renderer_render_pages(Renderer *renderer, Viewer *viewer);

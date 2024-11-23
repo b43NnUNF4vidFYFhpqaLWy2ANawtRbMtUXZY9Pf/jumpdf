@@ -8,11 +8,9 @@ typedef struct {
     unsigned int draw_links_to;
 } RenderPageData;
 
-static void renderer_render_pages(Renderer *renderer, Viewer *viewer);
 static void render_page_async(gpointer data, gpointer user_data);
 static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int draw_links_from, unsigned int draw_links_to);
 static cairo_surface_t* create_loading_surface(int width, int height);
-static void viewer_update_current_page_size(Viewer *viewer);
 static void viewer_zoom(Viewer *viewer, cairo_t *cr);
 static void viewer_offset_translate(Viewer *viewer, cairo_t *cr);
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page);
@@ -31,7 +29,7 @@ void renderer_init(Renderer *renderer, GtkWidget *view)
     renderer->view = view;
 
     GError *error = NULL;
-    renderer->render_tp = g_thread_pool_new((GFunc)render_page_async, renderer, g_get_num_processors(), FALSE, &error);
+    renderer->render_tp = g_thread_pool_new((GFunc)render_page_async, renderer, g_get_num_processors(), TRUE, &error);
     if (error != NULL) {
         g_warning("Failed to create render thread pool: %s", error->message);
         g_error_free(error);
@@ -61,16 +59,14 @@ cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
         cairo_paint(cr);
     }
 
-    viewer_update_current_page_size(viewer);
     viewer_zoom(viewer, cr);
     viewer_offset_translate(viewer, cr);
-    renderer_render_pages(renderer, viewer);
 
-    /* TODO: Maintain a list of rendered pages */
+    /* TODO: Maintain a list of visible pages */
     for (int i = 0; i < viewer->info->n_pages; i++) {
         page = viewer->info->pages[i];
         g_mutex_lock(&renderer->render_mutex);
-        if (page->render_status == PAGE_RENDERED || page->render_status == PAGE_RENDERING) {
+        if (page->is_visible) {
             poppler_page_get_size(page->poppler_page, &page_width, &page_height);
 
             g_assert(page->surface != NULL);
@@ -86,10 +82,6 @@ cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
             cairo_restore(cr);
 
             cairo_paint(cr);
-
-            if (page->render_status == PAGE_RENDERED) {
-                page->render_status = PAGE_NOT_RENDERED;
-            }
         }
         g_mutex_unlock(&renderer->render_mutex);
     }
@@ -105,7 +97,7 @@ cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
     return surface;
 }
 
-static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
+void renderer_render_pages(Renderer *renderer, Viewer *viewer)
 {
     double visible_pages;
     int visible_pages_before, visible_pages_after;
@@ -116,6 +108,19 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
     RenderPageData *data = NULL;
     GError *error = NULL;
     double width, height;
+
+    /* TODO: Maintain a list of previously rendered pages */
+    for (int i = 0; i < viewer->info->n_pages; i++) {
+        page = viewer->info->pages[i];
+        
+        if (page->surface != NULL && !page->is_visible) {
+            cairo_surface_destroy(page->surface);
+            page->surface = NULL;
+        }
+
+        page->render_status = PAGE_NOT_RENDERED;
+        page->is_visible = FALSE;
+    }
 
     if (viewer->links->follow_links_mode) {
         viewer_links_clear_links(viewer->links);
@@ -128,6 +133,8 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
 
     for (int i = visible_pages_before; i <= visible_pages_after; i++) {
         page = viewer->info->pages[i];
+        page->is_visible = TRUE;
+
         g_mutex_lock(&renderer->render_mutex);
         if (page->render_status == PAGE_NOT_RENDERED) {
             if (viewer->links->follow_links_mode) {
@@ -148,6 +155,7 @@ static void renderer_render_pages(Renderer *renderer, Viewer *viewer)
             if (error != NULL) {
                 g_warning("Failed to push render task to thread pool: %s", error->message);
                 g_error_free(error);
+                g_free(data);
             } else {
                 if (page->surface == NULL) {
                     poppler_page_get_size(page->poppler_page, &width, &height);
@@ -232,17 +240,6 @@ static cairo_surface_t* create_loading_surface(int width, int height)
     cairo_destroy(cr);
 
     return loading_surface;
-}
-
-static void viewer_update_current_page_size(Viewer *viewer)
-{
-    PopplerPage *page = viewer_info_get_poppler_page(viewer->info, viewer->cursor->current_page);
-
-    if (page == NULL) {
-        return;
-    } else {
-        poppler_page_get_size(page, &viewer->info->pdf_width, &viewer->info->pdf_height);
-    }
 }
 
 static void viewer_zoom(Viewer *viewer, cairo_t *cr)
