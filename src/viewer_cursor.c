@@ -83,8 +83,7 @@ void viewer_cursor_toggle_dark_mode(ViewerCursor *cursor) {
 
 void viewer_cursor_center(ViewerCursor *cursor)
 {
-    cursor->x_offset = ((cursor->info->view_width / 2.0) - (cursor->info->pdf_width / 2.0)) /
-        (cursor->info->pdf_width / g_config->steps);
+    cursor->x_offset = 0;
 }
 
 void viewer_cursor_set_scale(ViewerCursor *cursor, double new)

@@ -11,8 +11,7 @@ typedef struct {
 static void render_page_async(gpointer data, gpointer user_data);
 static void viewer_render_page(Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int draw_links_from, unsigned int draw_links_to);
 static cairo_surface_t* create_loading_surface(int width, int height);
-static void viewer_zoom(Viewer *viewer, cairo_t *cr);
-static void viewer_offset_translate(Viewer *viewer, cairo_t *cr);
+static void viewer_translate(Viewer *viewer, cairo_t *cr);
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page);
 static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, unsigned int to);
 
@@ -59,8 +58,7 @@ cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
         cairo_paint(cr);
     }
 
-    viewer_zoom(viewer, cr);
-    viewer_offset_translate(viewer, cr);
+    viewer_translate(viewer, cr);
 
     /* TODO: Maintain a list of visible pages */
     for (int i = 0; i < viewer->info->n_pages; i++) {
@@ -68,6 +66,8 @@ cairo_surface_t *renderer_render(Renderer *renderer, Viewer *viewer)
         g_mutex_lock(&renderer->render_mutex);
         if (page->is_visible) {
             poppler_page_get_size(page->poppler_page, &page_width, &page_height);
+            page_width *= viewer->cursor->scale;
+            page_height *= viewer->cursor->scale;
 
             g_assert(page->surface != NULL);
             cairo_set_source_surface(cr, page->surface, 0, i * page_height);
@@ -108,6 +108,7 @@ void renderer_render_pages(Renderer *renderer, Viewer *viewer)
     RenderPageData *data = NULL;
     GError *error = NULL;
     double width, height;
+    double scaled_width, scaled_height;
 
     /* TODO: Maintain a list of previously rendered pages */
     for (int i = 0; i < viewer->info->n_pages; i++) {
@@ -159,7 +160,9 @@ void renderer_render_pages(Renderer *renderer, Viewer *viewer)
             } else {
                 if (page->surface == NULL) {
                     poppler_page_get_size(page->poppler_page, &width, &height);
-                    page->surface = create_loading_surface(width, height);
+                    scaled_width = (int)(width * viewer->cursor->scale);
+                    scaled_height = (int)(height * viewer->cursor->scale);
+                    page->surface = create_loading_surface(scaled_width, scaled_height);
                 }
                 page->render_status = PAGE_RENDERING;
             }
@@ -181,8 +184,14 @@ static void render_page_async(gpointer data, gpointer user_data)
     double width, height;
     poppler_page_get_size(page->poppler_page, &width, &height);
 
-    cairo_surface_t *page_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+    const double scale = viewer->cursor->scale;
+    const int scaled_width = (int)(scale * width);
+    const int scaled_height = (int)(scale * height);
+
+    cairo_surface_t *page_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, scaled_width, scaled_height);
     cairo_t *cr = cairo_create(page_surface);
+
+    cairo_scale(cr, scale, scale);
 
     g_mutex_lock(&renderer->render_mutex);
 
@@ -242,32 +251,36 @@ static cairo_surface_t* create_loading_surface(int width, int height)
     return loading_surface;
 }
 
-static void viewer_zoom(Viewer *viewer, cairo_t *cr)
-{
-    const double center_x = round(viewer->info->view_width / 2.0);
-    const double center_y = round(viewer->info->view_height / 2.0);
-
-    cairo_translate(cr, center_x, center_y);
-    cairo_scale(cr, viewer->cursor->scale, viewer->cursor->scale);
-    cairo_translate(cr, -center_x, -center_y);
-}
-
-static void viewer_offset_translate(Viewer *viewer, cairo_t *cr)
+static void viewer_translate(Viewer *viewer, cairo_t *cr)
 {
     if (viewer->cursor->center_mode) {
         viewer_cursor_center(viewer->cursor);
     }
 
-    const double x_offset_translate = round((viewer->cursor->x_offset / g_config->steps) * viewer->info->pdf_width);
+    const double x_offset = viewer->cursor->x_offset;
+    const double y_offset = viewer->cursor->y_offset;
+    const double scale = viewer->cursor->scale;
+    const double page_width = viewer->info->pdf_width;
+    const double page_height = viewer->info->pdf_height;
+    const double view_width = viewer->info->view_width;
+    const double view_height = viewer->info->view_height;
+    const int current_page = viewer->cursor->current_page;
 
-    /* Translation to get to current page */
-    const double y_page_translate = -viewer->cursor->current_page * viewer->info->pdf_height;
-    /* Translation for y offset */
-    const double y_offset_translate = -(viewer->cursor->y_offset / g_config->steps) * viewer->info->pdf_height;
+    const double page_center_x = scale * (page_width / 2.0);
+    const double page_center_y = scale * (page_height / 2.0);
+    const double view_center_x = view_width / 2.0;
+    const double view_center_y = view_height / 2.0;
 
-    const double y_translate = round(y_page_translate + y_offset_translate);
+    const double x_center_translate = view_center_x - page_center_x;
+    const double x_offset_translate = (x_offset / g_config->steps) * page_width;
+    const double x_translate = round(x_center_translate + x_offset_translate);
 
-    cairo_translate(cr, x_offset_translate, y_translate);
+    const double y_page_translate = -current_page * page_height * scale;
+    const double y_center_translate = view_center_y - page_center_y;
+    const double y_offset_translate = -(y_offset / g_config->steps) * page_height * scale;
+    const double y_translate = round(y_page_translate + y_center_translate + y_offset_translate);
+
+    cairo_translate(cr, x_translate, y_translate);
 }
 
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page)
