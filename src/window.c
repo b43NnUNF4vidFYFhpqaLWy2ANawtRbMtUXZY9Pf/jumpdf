@@ -115,6 +115,7 @@ struct _Window {
     ViewerMarkManager *mark_manager;
     Viewer *viewer;
     Renderer *renderer;
+    bool first_draw;
     InputState current_input_state;
 };
 
@@ -126,6 +127,7 @@ static void window_init(Window *win)
 
     win->viewer = NULL;
     win->renderer = NULL;
+    win->first_draw = TRUE;
     win->current_input_state = STATE_NORMAL;
 
     win->event_controller = gtk_event_controller_key_new();
@@ -548,15 +550,13 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     UNUSED(width);
     UNUSED(height);
 
-    static bool first_render = TRUE;
-
     Window *win = (Window *)user_data;
     
     viewer_update_current_page_size(win->viewer);
 
-    if (first_render) {
+    if (win->first_draw) {
         renderer_render_pages(win->renderer, win->viewer);
-        first_render = FALSE;
+        win->first_draw = FALSE;
     }
     
     cairo_surface_t *surface = renderer_render(win->renderer, win->viewer);
