@@ -110,7 +110,7 @@ void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page)
 {
     cursor->current_page = page;
     cursor->y_offset = 0;
-    cursor->scale = 1.0;
+    viewer_cursor_fit_vertical(cursor);
 }
 
 void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
@@ -125,8 +125,7 @@ void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
         * and subtract how much to go up in terms of steps
         */
         cursor->y_offset = g_config->steps - g_config->steps * (dest->top / cursor->info->pdf_height);
-        // Only with default zoom will the dest be at the top of the view
-        cursor->scale = 1.0;
+        viewer_cursor_fit_vertical(cursor);
     } else {
         viewer_cursor_goto_page(cursor, dest->page_num - 1);
     }
