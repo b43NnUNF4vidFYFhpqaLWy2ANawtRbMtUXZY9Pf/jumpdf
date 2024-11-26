@@ -22,6 +22,10 @@ deps = [
         cc.find_library('m', required : true),
 ]
 
+if get_option('buildtype') == 'release'
+    add_project_arguments('-DG_DISABLE_ASSERT', language: 'c')
+endif
+
 subdir('data')
 subdir('src')
 
