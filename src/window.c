@@ -315,7 +315,7 @@ void window_update_cursor(Window *win)
 void window_redraw(Window *win)
 {
     window_update_statusline(win);
-    renderer_render_pages(win->renderer, win->viewer);
+    renderer_render_visible_pages(win->renderer, win->viewer);
 }
 
 void window_toggle_fullscreen(Window *win)
@@ -555,7 +555,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     viewer_update_current_page_size(win->viewer);
 
     if (win->first_draw) {
-        renderer_render_pages(win->renderer, win->viewer);
+        renderer_render_visible_pages(win->renderer, win->viewer);
         win->first_draw = FALSE;
     }
     

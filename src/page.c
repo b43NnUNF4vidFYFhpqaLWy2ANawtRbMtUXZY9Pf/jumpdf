@@ -9,7 +9,6 @@ Page *page_new(PopplerPage *poppler_page)
 
     page->poppler_page = poppler_page;
     page->render_status = PAGE_NOT_RENDERED;
-    page->is_visible = FALSE;
     page->surface = NULL;
 
     return page;

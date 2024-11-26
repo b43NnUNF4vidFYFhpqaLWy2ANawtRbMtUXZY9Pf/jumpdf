@@ -155,3 +155,17 @@ void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action)
         break;
     }
 }
+
+void viewer_cursor_get_visible_pages(ViewerCursor *cursor, int *from, int *to)
+{
+    const double view_height = cursor->info->view_height;
+    const double page_height = cursor->info->pdf_height;
+    const double scale = cursor->scale;
+    const double visible_pages = view_height / (scale * page_height);
+
+    *from = MAX(0, cursor->current_page - ceil(visible_pages / 2));
+    *to = MIN(cursor->info->n_pages - 1, cursor->current_page + ceil(visible_pages / 2) + 1);
+
+    g_assert(*from <= *to);
+    g_assert(*to < cursor->info->n_pages);
+}

@@ -13,7 +13,6 @@ typedef enum {
 typedef struct {
     PopplerPage *poppler_page;
     PageRenderStatus render_status;
-    bool is_visible;
     cairo_surface_t *surface;
 } Page;
 
