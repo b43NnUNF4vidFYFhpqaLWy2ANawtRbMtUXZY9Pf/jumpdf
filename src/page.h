@@ -14,6 +14,7 @@ typedef struct {
     PopplerPage *poppler_page;
     PageRenderStatus render_status;
     cairo_surface_t *surface;
+    GMutex render_mutex;
 } Page;
 
 Page *page_new(PopplerPage *poppler_page);

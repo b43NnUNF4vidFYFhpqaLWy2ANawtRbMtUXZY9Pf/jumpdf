@@ -559,7 +559,7 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
         win->first_draw = FALSE;
     }
     
-    cairo_surface_t *surface = renderer_render(win->renderer, win->viewer);
+    cairo_surface_t *surface = get_view_surface(win->viewer);
 
     cairo_set_source_surface(cr, surface, 0, 0);
     cairo_paint(cr);
