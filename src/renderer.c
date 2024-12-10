@@ -41,8 +41,6 @@ void renderer_init(Renderer *renderer, GtkWidget *view)
     }
 
     renderer->visible_pages = g_ptr_array_new();
-    renderer->is_rendering = FALSE;
-    renderer->needs_rerender = FALSE;
 }
 
 void renderer_destroy(Renderer *renderer)
@@ -112,16 +110,6 @@ cairo_surface_t *get_view_surface(Viewer *viewer)
 
 void renderer_render_visible_pages(Renderer *renderer, Viewer *viewer)
 {
-    g_mutex_lock(&renderer->render_mutex);
-    if (renderer->is_rendering) {
-        renderer->needs_rerender = TRUE;
-        g_mutex_unlock(&renderer->render_mutex);
-
-        return;
-    }
-    renderer->is_rendering = TRUE;
-    g_mutex_unlock(&renderer->render_mutex);
-
     renderer_update_visible_pages(renderer, viewer);
 
     int from, to;
@@ -189,17 +177,6 @@ void renderer_render_pages(Renderer *renderer, Viewer *viewer, unsigned int from
         } else {
             g_mutex_unlock(&page->render_mutex);
         }
-    }
-
-    g_mutex_lock(&renderer->render_mutex);
-    renderer->is_rendering = FALSE;
-    if (renderer->needs_rerender) {
-        renderer->needs_rerender = FALSE;
-        g_mutex_unlock(&renderer->render_mutex);
-
-        renderer_render_visible_pages(renderer, viewer);
-    } else {
-        g_mutex_unlock(&renderer->render_mutex);
     }
 }
 
