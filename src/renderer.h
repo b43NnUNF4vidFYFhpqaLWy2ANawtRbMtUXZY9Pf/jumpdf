@@ -9,6 +9,8 @@ typedef struct Renderer {
     GMutex render_mutex;
 
     GPtrArray *visible_pages;
+    bool is_rendering;
+    bool needs_rerender;
 } Renderer;
 
 Renderer *renderer_new(GtkWidget *view);
