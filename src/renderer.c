@@ -112,11 +112,9 @@ static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx)
     page_height *= viewer->cursor->scale;
 
     g_mutex_lock(&page->render_mutex);
-    cairo_surface_t *surface = page->surface;
+    g_assert(page->surface != NULL);
+    cairo_set_source_surface(cr, page->surface, 0, page_idx * page_height);
     g_mutex_unlock(&page->render_mutex);
-
-    g_assert(surface != NULL);
-    cairo_set_source_surface(cr, surface, 0, page_idx * page_height);
     
     /* Draw page separator */
     cairo_save(cr);
