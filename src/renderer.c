@@ -2,6 +2,8 @@
 #include "config.h"
 #include "utils.h"
 
+#define SCALE_EPSILON 1e-6
+
 typedef struct {
     Viewer *viewer;
     Page *page;
@@ -43,6 +45,9 @@ void renderer_init(Renderer *renderer, GtkWidget *view)
     }
 
     renderer->visible_pages = g_ptr_array_new();
+    renderer->last_visible_pages_before = -1;
+    renderer->last_visible_pages_after = -1;
+    renderer->last_scale = NAN;
 }
 
 void renderer_destroy(Renderer *renderer)
@@ -177,6 +182,16 @@ static void renderer_update_visible_pages(Renderer *renderer, Viewer *viewer)
 {
     int visible_pages_before, visible_pages_after;
     viewer_cursor_get_visible_pages(viewer->cursor, &visible_pages_before, &visible_pages_after);
+
+    bool visible_pages_changed = visible_pages_before != renderer->last_visible_pages_before || visible_pages_after != renderer->last_visible_pages_after;
+    bool scale_changed = fabs(viewer->cursor->scale - renderer->last_scale) > SCALE_EPSILON;
+    if (visible_pages_changed || scale_changed) {
+        renderer->last_visible_pages_before = visible_pages_before;
+        renderer->last_visible_pages_after = visible_pages_after;
+        renderer->last_scale = viewer->cursor->scale;
+    } else {
+        return;
+    }
 
     g_ptr_array_foreach(renderer->visible_pages, (GFunc)page_reset_render, NULL);
     g_ptr_array_free(renderer->visible_pages, TRUE);

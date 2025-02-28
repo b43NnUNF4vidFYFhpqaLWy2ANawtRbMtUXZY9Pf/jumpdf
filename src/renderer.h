@@ -9,6 +9,8 @@ typedef struct Renderer {
     GMutex render_mutex;
 
     GPtrArray *visible_pages;
+    int last_visible_pages_before, last_visible_pages_after;
+    double last_scale;
 } Renderer;
 
 Renderer *renderer_new(GtkWidget *view);

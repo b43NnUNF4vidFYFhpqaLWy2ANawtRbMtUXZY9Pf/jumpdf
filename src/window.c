@@ -314,6 +314,7 @@ void window_update_cursor(Window *win)
 
 void window_redraw(Window *win)
 {
+    gtk_widget_queue_draw(win->view);
     window_update_statusline(win);
     renderer_render_visible_pages(win->renderer, win->viewer);
 }
