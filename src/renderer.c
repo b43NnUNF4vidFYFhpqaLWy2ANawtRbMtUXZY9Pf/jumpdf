@@ -9,6 +9,8 @@ typedef struct {
     unsigned int draw_links_to;
 } RenderPageData;
 
+static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx);
+static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to);
 static void renderer_update_visible_pages(Renderer *renderer, Viewer *viewer);
 static void render_page_async(gpointer data, gpointer user_data);
 static void renderer_render_page(Renderer *renderer, Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int draw_links_from, unsigned int draw_links_to);
@@ -51,17 +53,8 @@ void renderer_destroy(Renderer *renderer)
     g_ptr_array_free(renderer->visible_pages, TRUE);
 }
 
-cairo_surface_t *get_view_surface(Viewer *viewer)
+void renderer_draw(cairo_t *cr, Viewer *viewer)
 {
-    cairo_surface_t *surface = NULL;
-    cairo_t *cr = NULL;
-    int from, to;
-    Page *page = NULL;
-    double page_width, page_height;
-
-    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, viewer->info->view_width, viewer->info->view_height);
-    cr = cairo_create(surface);
-
     if (viewer->cursor->dark_mode) {
         cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
         cairo_paint(cr);
@@ -69,32 +62,10 @@ cairo_surface_t *get_view_surface(Viewer *viewer)
 
     viewer_translate(viewer, cr);
 
+    int from, to;
     viewer_cursor_get_visible_pages(viewer->cursor, &from, &to);
     for (int i = from; i <= to; i++) {
-        page = viewer->info->pages[i];
-        if (page->render_status == PAGE_NOT_RENDERED) {
-            continue;
-        }
-
-        poppler_page_get_size(page->poppler_page, &page_width, &page_height);
-        page_width *= viewer->cursor->scale;
-        page_height *= viewer->cursor->scale;
-
-        g_mutex_lock(&page->render_mutex);
-        g_assert(page->surface != NULL);
-        cairo_set_source_surface(cr, page->surface, 0, i * page_height);
-        g_mutex_unlock(&page->render_mutex);
-        
-        /* Draw page separator */
-        cairo_save(cr);
-        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-        cairo_set_line_width(cr, 1.0);
-        cairo_move_to(cr, 0, i * page_height);
-        cairo_rel_line_to(cr, page_width, 0);
-        cairo_stroke(cr);
-        cairo_restore(cr);
-
-        cairo_paint(cr);
+        renderer_draw_page(cr, viewer, i);
     }
 
     if (viewer->cursor->dark_mode) {
@@ -102,10 +73,6 @@ cairo_surface_t *get_view_surface(Viewer *viewer)
         cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
         cairo_paint(cr);
     }
-
-    cairo_destroy(cr);
-
-    return surface;
 }
 
 void renderer_render_visible_pages(Renderer *renderer, Viewer *viewer)
@@ -119,64 +86,92 @@ void renderer_render_visible_pages(Renderer *renderer, Viewer *viewer)
 
 void renderer_render_pages(Renderer *renderer, Viewer *viewer, unsigned int from, unsigned int to)
 {
-    Page *page = NULL;
-    PopplerPage *poppler_page = NULL;   
     unsigned int draw_links_from = 0;
     unsigned int draw_links_to = 0;
-    RenderPageData *data = NULL;
-    GError *error = NULL;
-    double width, height;
-    double scaled_width, scaled_height;
-    cairo_surface_t *loading_surface = NULL;
 
     if (viewer->links->follow_links_mode) {
         viewer_links_clear_links(viewer->links);
     }
 
     for (unsigned int i = from; i <= to; i++) {
-        page = viewer->info->pages[i];
+        renderer_queue_page_render(renderer, viewer, viewer->info->pages[i], &draw_links_from, &draw_links_to);
+    }
+}
 
-        g_mutex_lock(&page->render_mutex);
-        if (page->render_status == PAGE_NOT_RENDERED) {
-            g_mutex_unlock(&page->render_mutex);
+static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx)
+{
+    Page* page = viewer->info->pages[page_idx];
 
-            if (viewer->links->follow_links_mode) {
-                poppler_page = page->poppler_page;
-                draw_links_from = draw_links_to;
-                draw_links_to += viewer_links_get_links(viewer->links, poppler_page);
-                g_assert(draw_links_from <= draw_links_to);
-                g_assert(draw_links_to == viewer->links->visible_links->len);
-            }
+    if (page->render_status == PAGE_NOT_RENDERED) {
+        return;
+    }
 
-            data = g_new0(RenderPageData, 1);
-            data->viewer = viewer;
-            data->page = page;
-            data->draw_links_from = draw_links_from;
-            data->draw_links_to = draw_links_to;
+    double page_width, page_height;
+    poppler_page_get_size(page->poppler_page, &page_width, &page_height);
+    page_width *= viewer->cursor->scale;
+    page_height *= viewer->cursor->scale;
 
-            g_thread_pool_push(renderer->render_tp, data, &error);
-            if (error != NULL) {
-                g_warning("Failed to push render task to thread pool: %s", error->message);
-                g_error_free(error);
-                g_free(data);
-            } else {
-                if (page->surface == NULL) {
-                    poppler_page_get_size(page->poppler_page, &width, &height);
-                    scaled_width = (int)(width * viewer->cursor->scale);
-                    scaled_height = (int)(height * viewer->cursor->scale);
-                    loading_surface = create_loading_surface(scaled_width, scaled_height);
-                }
+    g_mutex_lock(&page->render_mutex);
+    cairo_surface_t *surface = page->surface;
+    g_mutex_unlock(&page->render_mutex);
 
-                g_mutex_lock(&page->render_mutex);
-                if (page->surface == NULL) {
-                    page->surface = loading_surface;
-                }
-                page->render_status = PAGE_RENDERING;
-                g_mutex_unlock(&page->render_mutex);
-            }
+    g_assert(surface != NULL);
+    cairo_set_source_surface(cr, surface, 0, page_idx * page_height);
+    
+    /* Draw page separator */
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_set_line_width(cr, 1.0);
+    cairo_move_to(cr, 0, page_idx * page_height);
+    cairo_rel_line_to(cr, page_width, 0);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    cairo_paint(cr);
+}
+
+static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to)
+{
+    g_mutex_lock(&page->render_mutex);
+    if (page->render_status == PAGE_NOT_RENDERED) {
+        g_mutex_unlock(&page->render_mutex);
+
+        if (viewer->links->follow_links_mode) {
+            PopplerPage* poppler_page = page->poppler_page;
+            *draw_links_from = *draw_links_to;
+            *draw_links_to = *draw_links_from + viewer_links_get_links(viewer->links, poppler_page);
+            g_assert(*draw_links_from <= *draw_links_to);
+            g_assert(*draw_links_to == viewer->links->visible_links->len);
+        }
+
+        RenderPageData* data = g_new0(RenderPageData, 1);
+        data->viewer = viewer;
+        data->page = page;
+        data->draw_links_from = *draw_links_from;
+        data->draw_links_to = *draw_links_to;
+
+        GError *error = NULL;
+        g_thread_pool_push(renderer->render_tp, data, &error);
+        if (error != NULL) {
+            g_warning("Failed to push render task to thread pool: %s", error->message);
+            g_error_free(error);
+            g_free(data);
         } else {
+            g_mutex_lock(&page->render_mutex);
+            if (page->surface == NULL) {
+                double width, height;
+                poppler_page_get_size(page->poppler_page, &width, &height);
+                double scaled_width = (int)(width * viewer->cursor->scale);
+                double scaled_height = (int)(height * viewer->cursor->scale);
+
+                page->surface = create_loading_surface(scaled_width, scaled_height);
+            }
+
+            page->render_status = PAGE_RENDERING;
             g_mutex_unlock(&page->render_mutex);
         }
+    } else {
+        g_mutex_unlock(&page->render_mutex);
     }
 }
 
@@ -233,10 +228,10 @@ static void render_page_async(gpointer data, gpointer user_data)
 
     g_mutex_unlock(&page->render_mutex);
 
+    gtk_widget_queue_draw(view);
+
     cairo_destroy(cr);
     g_free(render_page_data);
-
-    gtk_widget_queue_draw(view);
 }
 
 static void renderer_render_page(Renderer *renderer, Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int draw_links_from, unsigned int draw_links_to)
@@ -250,7 +245,7 @@ static void renderer_render_page(Renderer *renderer, Viewer *viewer, cairo_t *cr
     cairo_fill(cr);
 
     /* poppler_page_render is not thread-safe
-        * https://gitlab.freedesktop.org/poppler/poppler/-/issues/1503
+    * https://gitlab.freedesktop.org/poppler/poppler/-/issues/1503
     */
     g_mutex_lock(&renderer->render_mutex);
     poppler_page_render(page, cr);
