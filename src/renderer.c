@@ -12,6 +12,7 @@ typedef struct {
 } RenderPageData;
 
 static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx);
+static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer);
 static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to);
 static void renderer_update_visible_pages(Renderer *renderer, Viewer *viewer);
 static void render_page_async(gpointer data, gpointer user_data);
@@ -48,6 +49,7 @@ void renderer_init(Renderer *renderer, GtkWidget *view)
     renderer->last_visible_pages_before = -1;
     renderer->last_visible_pages_after = -1;
     renderer->last_scale = NAN;
+    renderer->last_follow_links_mode = FALSE;
 }
 
 void renderer_destroy(Renderer *renderer)
@@ -82,6 +84,10 @@ void renderer_draw(cairo_t *cr, Viewer *viewer)
 
 void renderer_render_visible_pages(Renderer *renderer, Viewer *viewer)
 {
+    if (!renderer_needs_rerender(renderer, viewer)) {
+        return;
+    }
+
     renderer_update_visible_pages(renderer, viewer);
 
     int from, to;
@@ -133,6 +139,27 @@ static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx)
     cairo_paint(cr);
 }
 
+static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer)
+{
+    int visible_pages_before, visible_pages_after;
+    viewer_cursor_get_visible_pages(viewer->cursor, &visible_pages_before, &visible_pages_after);
+
+    const bool visible_pages_invariant = visible_pages_before == renderer->last_visible_pages_before && visible_pages_after == renderer->last_visible_pages_after;
+    const bool scale_invariant = fabs(viewer->cursor->scale - renderer->last_scale) < SCALE_EPSILON;
+    const bool follow_links_mode_invariant = viewer->links->follow_links_mode == renderer->last_follow_links_mode;
+
+    const bool needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant;
+
+    if (needs_rerender) {
+        renderer->last_visible_pages_before = visible_pages_before;
+        renderer->last_visible_pages_after = visible_pages_after;
+        renderer->last_scale = viewer->cursor->scale;
+        renderer->last_follow_links_mode = viewer->links->follow_links_mode;
+    }
+    
+    return needs_rerender;
+}
+
 static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to)
 {
     g_mutex_lock(&page->render_mutex);
@@ -182,16 +209,6 @@ static void renderer_update_visible_pages(Renderer *renderer, Viewer *viewer)
 {
     int visible_pages_before, visible_pages_after;
     viewer_cursor_get_visible_pages(viewer->cursor, &visible_pages_before, &visible_pages_after);
-
-    bool visible_pages_changed = visible_pages_before != renderer->last_visible_pages_before || visible_pages_after != renderer->last_visible_pages_after;
-    bool scale_changed = fabs(viewer->cursor->scale - renderer->last_scale) > SCALE_EPSILON;
-    if (visible_pages_changed || scale_changed) {
-        renderer->last_visible_pages_before = visible_pages_before;
-        renderer->last_visible_pages_after = visible_pages_after;
-        renderer->last_scale = viewer->cursor->scale;
-    } else {
-        return;
-    }
 
     g_ptr_array_foreach(renderer->visible_pages, (GFunc)page_reset_render, NULL);
     g_ptr_array_free(renderer->visible_pages, TRUE);
