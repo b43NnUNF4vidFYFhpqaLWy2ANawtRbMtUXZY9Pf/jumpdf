@@ -12,6 +12,7 @@ typedef struct Renderer {
     int last_visible_pages_before, last_visible_pages_after;
     double last_scale;
     bool last_follow_links_mode;
+    char *last_search_text;
 } Renderer;
 
 Renderer *renderer_new(GtkWidget *view);

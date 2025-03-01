@@ -50,6 +50,7 @@ void renderer_init(Renderer *renderer, GtkWidget *view)
     renderer->last_visible_pages_after = -1;
     renderer->last_scale = NAN;
     renderer->last_follow_links_mode = FALSE;
+    renderer->last_search_text = NULL;
 }
 
 void renderer_destroy(Renderer *renderer)
@@ -58,6 +59,7 @@ void renderer_destroy(Renderer *renderer)
     g_mutex_clear(&renderer->render_mutex);
 
     g_ptr_array_free(renderer->visible_pages, TRUE);
+    g_free(renderer->last_search_text);
 }
 
 void renderer_draw(cairo_t *cr, Viewer *viewer)
@@ -147,14 +149,17 @@ static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer)
     const bool visible_pages_invariant = visible_pages_before == renderer->last_visible_pages_before && visible_pages_after == renderer->last_visible_pages_after;
     const bool scale_invariant = fabs(viewer->cursor->scale - renderer->last_scale) < SCALE_EPSILON;
     const bool follow_links_mode_invariant = viewer->links->follow_links_mode == renderer->last_follow_links_mode;
+    const bool search_text_invariant = g_strcmp0(viewer->search->search_text, renderer->last_search_text) == 0;
 
-    const bool needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant;
+    const bool needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant || !search_text_invariant;
 
     if (needs_rerender) {
         renderer->last_visible_pages_before = visible_pages_before;
         renderer->last_visible_pages_after = visible_pages_after;
         renderer->last_scale = viewer->cursor->scale;
         renderer->last_follow_links_mode = viewer->links->follow_links_mode;
+        g_free(renderer->last_search_text);
+        renderer->last_search_text = g_strdup(viewer->search->search_text);
     }
     
     return needs_rerender;
