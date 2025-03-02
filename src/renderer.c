@@ -12,17 +12,15 @@ typedef struct {
 } RenderPageData;
 
 static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx);
-static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer);
+static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer, int *const reset_from, int *const reset_to, int *const render_from, int *const render_to);
+static void renderer_reset_pages(Viewer *viewer, int from, int to);
 static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to);
-static void renderer_update_visible_pages(Renderer *renderer, Viewer *viewer);
 static void render_page_async(gpointer data, gpointer user_data);
 static void renderer_render_page(Renderer *renderer, Viewer *viewer, cairo_t *cr, PopplerPage *page, unsigned int draw_links_from, unsigned int draw_links_to);
 static cairo_surface_t* create_loading_surface(int width, int height);
 static void viewer_translate(Viewer *viewer, cairo_t *cr);
 static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *page);
 static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, unsigned int to);
-
-static void page_reset_render(gpointer data, gpointer user_data);
 
 Renderer *renderer_new(GtkWidget *view)
 {
@@ -45,7 +43,6 @@ void renderer_init(Renderer *renderer, GtkWidget *view)
         g_mutex_init(&renderer->render_mutex);
     }
 
-    renderer->visible_pages = g_ptr_array_new();
     renderer->last_visible_pages_before = -1;
     renderer->last_visible_pages_after = -1;
     renderer->last_scale = NAN;
@@ -58,7 +55,6 @@ void renderer_destroy(Renderer *renderer)
     g_thread_pool_free(renderer->render_tp, FALSE, TRUE);
     g_mutex_clear(&renderer->render_mutex);
 
-    g_ptr_array_free(renderer->visible_pages, TRUE);
     g_free(renderer->last_search_text);
 }
 
@@ -86,27 +82,31 @@ void renderer_draw(cairo_t *cr, Viewer *viewer)
 
 void renderer_render_visible_pages(Renderer *renderer, Viewer *viewer)
 {
-    if (!renderer_needs_rerender(renderer, viewer)) {
+    int reset_from = -1, reset_to = -1, render_from = -1, render_to = -1;
+    bool needs_rerender = renderer_needs_rerender(renderer, viewer, &reset_from, &reset_to, &render_from, &render_to);
+
+    if (!needs_rerender) {
         return;
     }
 
-    renderer_update_visible_pages(renderer, viewer);
-
-    int from, to;
-    viewer_cursor_get_visible_pages(viewer->cursor, &from, &to);
-    renderer_render_pages(renderer, viewer, from, to);
+    renderer_reset_pages(viewer, reset_from, reset_to);
+    renderer_render_pages(renderer, viewer, render_from, render_to);
 }
 
-void renderer_render_pages(Renderer *renderer, Viewer *viewer, unsigned int from, unsigned int to)
+void renderer_render_pages(Renderer *renderer, Viewer *viewer, int from, int to)
 {
     unsigned int draw_links_from = 0;
     unsigned int draw_links_to = 0;
+
+    if (from < 0 || to < 0) {
+        return;
+    }
 
     if (viewer->links->follow_links_mode) {
         viewer_links_clear_links(viewer->links);
     }
 
-    for (unsigned int i = from; i <= to; i++) {
+    for (int i = from; i <= to; i++) {
         renderer_queue_page_render(renderer, viewer, viewer->info->pages[i], &draw_links_from, &draw_links_to);
     }
 }
@@ -141,7 +141,7 @@ static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx)
     cairo_paint(cr);
 }
 
-static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer)
+static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer, int *const reset_from, int *const reset_to, int *const render_from, int *const render_to)
 {
     int visible_pages_before, visible_pages_after;
     viewer_cursor_get_visible_pages(viewer->cursor, &visible_pages_before, &visible_pages_after);
@@ -154,6 +154,33 @@ static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer)
     const bool needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant || !search_text_invariant;
 
     if (needs_rerender) {
+        const bool scrolling_down =
+            scale_invariant &&
+            renderer->last_visible_pages_before < visible_pages_before &&
+            visible_pages_before <= renderer->last_visible_pages_after;
+        const bool scrolling_up =
+            scale_invariant &&
+            renderer->last_visible_pages_before <= visible_pages_after &&
+            visible_pages_after < renderer->last_visible_pages_after;
+        g_assert(!(scrolling_down && scrolling_up));
+        
+        if (scrolling_down) {
+            *reset_from = renderer->last_visible_pages_before;
+            *reset_to = visible_pages_before - 1;
+            *render_from = renderer->last_visible_pages_after + 1;
+            *render_to = visible_pages_after;
+        } else if (scrolling_up) {
+            *reset_from = visible_pages_after + 1;
+            *reset_to = renderer->last_visible_pages_after;
+            *render_from = visible_pages_before;
+            *render_to = renderer->last_visible_pages_before - 1;
+        } else {
+            *reset_from = renderer->last_visible_pages_before;
+            *reset_to = renderer->last_visible_pages_after;
+            *render_from = visible_pages_before;
+            *render_to = visible_pages_after;
+        }
+
         renderer->last_visible_pages_before = visible_pages_before;
         renderer->last_visible_pages_after = visible_pages_after;
         renderer->last_scale = viewer->cursor->scale;
@@ -163,6 +190,25 @@ static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer)
     }
     
     return needs_rerender;
+}
+
+static void renderer_reset_pages(Viewer *viewer, int from, int to)
+{
+    if (from < 0 || to < 0) {
+        return;
+    }
+
+    for (int i = from; i <= to; i++) {
+        Page *page = viewer->info->pages[i];
+
+        g_mutex_lock(&page->render_mutex);
+        if (page->surface != NULL) {
+            cairo_surface_destroy(page->surface);
+            page->surface = NULL;
+        }
+        page->render_status = PAGE_NOT_RENDERED;
+        g_mutex_unlock(&page->render_mutex);
+    }
 }
 
 static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to)
@@ -208,25 +254,6 @@ static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page*
     } else {
         g_mutex_unlock(&page->render_mutex);
     }
-}
-
-static void renderer_update_visible_pages(Renderer *renderer, Viewer *viewer)
-{
-    int visible_pages_before, visible_pages_after;
-    viewer_cursor_get_visible_pages(viewer->cursor, &visible_pages_before, &visible_pages_after);
-
-    g_ptr_array_foreach(renderer->visible_pages, (GFunc)page_reset_render, NULL);
-    g_ptr_array_free(renderer->visible_pages, TRUE);
-
-    const guint visible_pages = visible_pages_after - visible_pages_before + 1;
-    renderer->visible_pages = g_ptr_array_sized_new(visible_pages);
-    Page *page = NULL;
-    for (int i = visible_pages_before; i <= visible_pages_after; i++) {
-        page = viewer->info->pages[i];
-        g_ptr_array_add(renderer->visible_pages, page);
-    }
-
-    g_assert(renderer->visible_pages->len == visible_pages);
 }
 
 static void render_page_async(gpointer data, gpointer user_data)
@@ -401,19 +428,4 @@ static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, un
 
         g_free(link_text);
     }
-}
-
-static void page_reset_render(gpointer data, gpointer user_data)
-{
-    UNUSED(user_data);
-
-    Page *page = (Page *)data;
-
-    g_mutex_lock(&page->render_mutex);
-    if (page->surface != NULL) {
-        cairo_surface_destroy(page->surface);
-        page->surface = NULL;
-    }
-    page->render_status = PAGE_NOT_RENDERED;
-    g_mutex_unlock(&page->render_mutex);
 }
