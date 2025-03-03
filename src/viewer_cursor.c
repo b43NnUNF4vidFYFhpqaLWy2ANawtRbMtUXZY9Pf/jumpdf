@@ -83,8 +83,7 @@ void viewer_cursor_toggle_dark_mode(ViewerCursor *cursor) {
 
 void viewer_cursor_center(ViewerCursor *cursor)
 {
-    cursor->x_offset = ((cursor->info->view_width / 2.0) - (cursor->info->pdf_width / 2.0)) /
-        (cursor->info->pdf_width / g_config->steps);
+    cursor->x_offset = 0;
 }
 
 void viewer_cursor_set_scale(ViewerCursor *cursor, double new)
@@ -111,7 +110,7 @@ void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page)
 {
     cursor->current_page = page;
     cursor->y_offset = 0;
-    cursor->scale = 1.0;
+    viewer_cursor_fit_vertical(cursor);
 }
 
 void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
@@ -126,8 +125,7 @@ void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
         * and subtract how much to go up in terms of steps
         */
         cursor->y_offset = g_config->steps - g_config->steps * (dest->top / cursor->info->pdf_height);
-        // Only with default zoom will the dest be at the top of the view
-        cursor->scale = 1.0;
+        viewer_cursor_fit_vertical(cursor);
     } else {
         viewer_cursor_goto_page(cursor, dest->page_num - 1);
     }
@@ -156,4 +154,18 @@ void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action)
         g_printerr("Poppler: Unsupported link type\n");
         break;
     }
+}
+
+void viewer_cursor_get_visible_pages(ViewerCursor *cursor, int *from, int *to)
+{
+    const double view_height = cursor->info->view_height;
+    const double page_height = cursor->info->pdf_height;
+    const double scale = cursor->scale;
+    const double visible_pages = view_height / (scale * page_height);
+
+    *from = MAX(0, cursor->current_page - ceil(visible_pages / 2));
+    *to = MIN(cursor->info->n_pages - 1, cursor->current_page + ceil(visible_pages / 2) + 1);
+
+    g_assert(*from <= *to);
+    g_assert(*to < cursor->info->n_pages);
 }

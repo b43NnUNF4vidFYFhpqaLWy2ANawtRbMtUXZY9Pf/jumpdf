@@ -43,3 +43,14 @@ void viewer_destroy(Viewer *viewer)
     viewer_info_destroy(viewer->info);
     free(viewer->info);
 }
+
+void viewer_update_current_page_size(Viewer *viewer)
+{
+    PopplerPage *page = viewer_info_get_poppler_page(viewer->info, viewer->cursor->current_page);
+
+    if (page == NULL) {
+        return;
+    } else {
+        poppler_page_get_size(page, &viewer->info->pdf_width, &viewer->info->pdf_height);
+    }
+}

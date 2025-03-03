@@ -11,13 +11,9 @@
 #include "app.h"
 #include "config.h"
 #include "viewer.h"
-#include "render.h"
 #include "viewer_mark_manager.h"
-#include "viewer_info.h"
-#include "viewer_cursor.h"
-#include "viewer_search.h"
-#include "viewer_links.h"
 #include "input_FSM.h"
+#include "renderer.h"
 
 // TODO: Load from file or resource
 static const char *css = 
@@ -118,6 +114,8 @@ struct _Window {
     App *app;
     ViewerMarkManager *mark_manager;
     Viewer *viewer;
+    Renderer *renderer;
+    bool first_draw;
     InputState current_input_state;
 };
 
@@ -128,6 +126,8 @@ static void window_init(Window *win)
     GtkCssProvider *css_provider;
 
     win->viewer = NULL;
+    win->renderer = NULL;
+    win->first_draw = TRUE;
     win->current_input_state = STATE_NORMAL;
 
     win->event_controller = gtk_event_controller_key_new();
@@ -235,6 +235,11 @@ static void window_finalize(GObject *object)
 {
     Window *win = (Window *)object;
 
+    if (win->renderer) {
+        renderer_destroy(win->renderer);
+        free(win->renderer);
+    }
+
     if (win->viewer) {
         // Cursor already destroyed by mark_manager destruction
         viewer_info_destroy(win->viewer->info);
@@ -269,7 +274,7 @@ Window *window_new(App *app)
 
 void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager)
 {
-    GError *err = NULL;
+    GError *error = NULL;
     ViewerCursor *cursor;
     ViewerSearch *search;
     ViewerLinks *links;
@@ -282,20 +287,21 @@ void window_open(Window *win, GFile *file, ViewerMarkManager *mark_manager)
 
     win->mark_manager = mark_manager;
     win->viewer = viewer_new(cursor->info, cursor, search, links);
+    win->renderer = renderer_new(win->view);
 
     window_populate_toc(win);
     window_update_statusline(win);
 
-    file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &err);
+    file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, G_FILE_QUERY_INFO_NONE, NULL, &error);
     if (file_info == NULL) {
-        g_printerr("GFile: %s\n", err->message);
-        g_error_free(err);
+        g_printerr("GFile: %s\n", error->message);
+        g_error_free(error);
     } else {
         gtk_window_set_title(GTK_WINDOW(win), g_file_info_get_display_name(file_info));
         g_object_unref(file_info);
     }
 
-    poppler_page_get_size(win->viewer->info->pages[0], &default_width, &default_height);
+    poppler_page_get_size(viewer_info_get_poppler_page(win->viewer->info, 0), &default_width, &default_height);
     gtk_window_set_default_size(GTK_WINDOW(win), (int)default_width,
         (int)default_width);
 }
@@ -308,8 +314,9 @@ void window_update_cursor(Window *win)
 
 void window_redraw(Window *win)
 {
-    window_update_statusline(win);
     gtk_widget_queue_draw(win->view);
+    window_update_statusline(win);
+    renderer_render_visible_pages(win->renderer, win->viewer);
 }
 
 void window_toggle_fullscreen(Window *win)
@@ -545,12 +552,15 @@ static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width,
     UNUSED(height);
 
     Window *win = (Window *)user_data;
-    cairo_surface_t *surface = viewer_render(win->viewer);
+    
+    viewer_update_current_page_size(win->viewer);
 
-    cairo_set_source_surface(cr, surface, 0, 0);
-    cairo_paint(cr);
-
-    cairo_surface_destroy(surface);
+    if (win->first_draw) {
+        renderer_render_visible_pages(win->renderer, win->viewer);
+        win->first_draw = FALSE;
+    }
+    
+    renderer_draw(cr, win->viewer);
 }
 
 static void window_populate_toc(Window *win)

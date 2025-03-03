@@ -45,3 +45,5 @@ void viewer_cursor_handle_offset_update(ViewerCursor *cursor);
 void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page);
 void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest);
 void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action);
+
+void viewer_cursor_get_visible_pages(ViewerCursor *cursor, int *from, int *to);
