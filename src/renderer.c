@@ -5,6 +5,14 @@
 #define SCALE_EPSILON 1e-6
 
 typedef struct {
+    int reset_from;
+    int reset_to;
+    int render_from;
+    int render_to;
+    bool needs_rerender;
+} RenderRequest;
+
+typedef struct {
     Viewer *viewer;
     Page *page;
     unsigned int draw_links_from;
@@ -12,7 +20,7 @@ typedef struct {
 } RenderPageData;
 
 static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx);
-static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer, int *const reset_from, int *const reset_to, int *const render_from, int *const render_to);
+static RenderRequest renderer_generate_request(Renderer *renderer, Viewer *viewer);
 static void renderer_reset_pages(Viewer *viewer, int from, int to);
 static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to);
 static void render_page_async(gpointer data, gpointer user_data);
@@ -82,15 +90,14 @@ void renderer_draw(cairo_t *cr, Viewer *viewer)
 
 void renderer_render_visible_pages(Renderer *renderer, Viewer *viewer)
 {
-    int reset_from = -1, reset_to = -1, render_from = -1, render_to = -1;
-    bool needs_rerender = renderer_needs_rerender(renderer, viewer, &reset_from, &reset_to, &render_from, &render_to);
+    RenderRequest request = renderer_generate_request(renderer, viewer);
 
-    if (!needs_rerender) {
+    if (!request.needs_rerender) {
         return;
     }
 
-    renderer_reset_pages(viewer, reset_from, reset_to);
-    renderer_render_pages(renderer, viewer, render_from, render_to);
+    renderer_reset_pages(viewer, request.reset_from, request.reset_to);
+    renderer_render_pages(renderer, viewer, request.render_from, request.render_to);
 }
 
 void renderer_render_pages(Renderer *renderer, Viewer *viewer, int from, int to)
@@ -141,8 +148,16 @@ static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx)
     cairo_paint(cr);
 }
 
-static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer, int *const reset_from, int *const reset_to, int *const render_from, int *const render_to)
+static RenderRequest renderer_generate_request(Renderer *renderer, Viewer *viewer)
 {
+    RenderRequest request = {
+        .reset_from = -1,
+        .reset_to = -1,
+        .render_from = -1,
+        .render_to = -1,
+        .needs_rerender = FALSE
+    };
+
     int visible_pages_before, visible_pages_after;
     viewer_cursor_get_visible_pages(viewer->cursor, &visible_pages_before, &visible_pages_after);
 
@@ -151,9 +166,9 @@ static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer, int *con
     const bool follow_links_mode_invariant = viewer->links->follow_links_mode == renderer->last_follow_links_mode;
     const bool search_text_invariant = g_strcmp0(viewer->search->search_text, renderer->last_search_text) == 0;
 
-    const bool needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant || !search_text_invariant;
+    request.needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant || !search_text_invariant;
 
-    if (needs_rerender) {
+    if (request.needs_rerender) {
         const bool scrolling_down =
             scale_invariant &&
             renderer->last_visible_pages_before < visible_pages_before &&
@@ -165,20 +180,20 @@ static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer, int *con
         g_assert(!(scrolling_down && scrolling_up));
         
         if (scrolling_down) {
-            *reset_from = renderer->last_visible_pages_before;
-            *reset_to = visible_pages_before - 1;
-            *render_from = renderer->last_visible_pages_after + 1;
-            *render_to = visible_pages_after;
+            request.reset_from = renderer->last_visible_pages_before;
+            request.reset_to = visible_pages_before - 1;
+            request.render_from = renderer->last_visible_pages_after + 1;
+            request.render_to = visible_pages_after;
         } else if (scrolling_up) {
-            *reset_from = visible_pages_after + 1;
-            *reset_to = renderer->last_visible_pages_after;
-            *render_from = visible_pages_before;
-            *render_to = renderer->last_visible_pages_before - 1;
+            request.reset_from = visible_pages_after + 1;
+            request.reset_to = renderer->last_visible_pages_after;
+            request.render_from = visible_pages_before;
+            request.render_to = renderer->last_visible_pages_before - 1;
         } else {
-            *reset_from = renderer->last_visible_pages_before;
-            *reset_to = renderer->last_visible_pages_after;
-            *render_from = visible_pages_before;
-            *render_to = visible_pages_after;
+            request.reset_from = renderer->last_visible_pages_before;
+            request.reset_to = renderer->last_visible_pages_after;
+            request.render_from = visible_pages_before;
+            request.render_to = visible_pages_after;
         }
 
         renderer->last_visible_pages_before = visible_pages_before;
@@ -189,7 +204,7 @@ static bool renderer_needs_rerender(Renderer *renderer, Viewer *viewer, int *con
         renderer->last_search_text = g_strdup(viewer->search->search_text);
     }
     
-    return needs_rerender;
+    return request;
 }
 
 static void renderer_reset_pages(Viewer *viewer, int from, int to)
