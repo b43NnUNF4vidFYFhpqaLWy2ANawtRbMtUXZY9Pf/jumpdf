@@ -9,7 +9,6 @@ typedef struct {
     int reset_to;
     int render_from;
     int render_to;
-    bool needs_rerender;
 } RenderRequest;
 
 typedef struct {
@@ -92,10 +91,6 @@ void renderer_render_visible_pages(Renderer *renderer, Viewer *viewer)
 {
     RenderRequest request = renderer_generate_request(renderer, viewer);
 
-    if (!request.needs_rerender) {
-        return;
-    }
-
     renderer_reset_pages(viewer, request.reset_from, request.reset_to);
     renderer_render_pages(renderer, viewer, request.render_from, request.render_to);
 }
@@ -154,8 +149,7 @@ static RenderRequest renderer_generate_request(Renderer *renderer, Viewer *viewe
         .reset_from = -1,
         .reset_to = -1,
         .render_from = -1,
-        .render_to = -1,
-        .needs_rerender = FALSE
+        .render_to = -1
     };
 
     int visible_pages_before, visible_pages_after;
@@ -166,9 +160,9 @@ static RenderRequest renderer_generate_request(Renderer *renderer, Viewer *viewe
     const bool follow_links_mode_invariant = viewer->links->follow_links_mode == renderer->last_follow_links_mode;
     const bool search_text_invariant = g_strcmp0(viewer->search->search_text, renderer->last_search_text) == 0;
 
-    request.needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant || !search_text_invariant;
+    const bool needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant || !search_text_invariant;
 
-    if (request.needs_rerender) {
+    if (needs_rerender) {
         const bool scrolling_down =
             scale_invariant &&
             renderer->last_visible_pages_before < visible_pages_before &&
