@@ -268,21 +268,27 @@ static InputState execute_command(Window *window, guint keyval, unsigned int rep
             viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale - g_config->scale_step);
             break;
         case GDK_KEY_u:
+        case GDK_KEY_Page_Up:
             viewer->cursor->y_offset -= g_config->steps / 2.0;
             break;
         case GDK_KEY_d:
+        case GDK_KEY_Page_Down:
             viewer->cursor->y_offset += g_config->steps / 2.0;
             break;
         case GDK_KEY_h:
+        case GDK_KEY_Left:
             viewer->cursor->x_offset++;
             break;
         case GDK_KEY_j:
+        case GDK_KEY_Down:
             viewer->cursor->y_offset++;
             break;
         case GDK_KEY_k:
+        case GDK_KEY_Up:
             viewer->cursor->y_offset--;
             break;
         case GDK_KEY_l:
+        case GDK_KEY_Right:
             viewer->cursor->x_offset--;
             break;
         case GDK_KEY_n:
