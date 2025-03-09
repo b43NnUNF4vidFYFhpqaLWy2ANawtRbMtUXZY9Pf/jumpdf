@@ -115,6 +115,10 @@ void viewer_cursor_goto_page(ViewerCursor *cursor, unsigned int page)
 
 void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
 {
+    if (dest == NULL) {
+        return;
+    }
+
     /* Sanity check for PDFs with invalid dest->top values */
     if (dest->change_top == 1 && dest->top < cursor->info->pdf_height) {
         cursor->current_page = dest->page_num - 1;
