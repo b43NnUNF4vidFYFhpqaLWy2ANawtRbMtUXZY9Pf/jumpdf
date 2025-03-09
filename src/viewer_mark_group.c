@@ -23,6 +23,7 @@ void viewer_mark_group_init(ViewerMarkGroup *group, ViewerCursor *marks[NUM_MARK
     }
 
     group->current_mark = current_mark;
+    group->previous_mark = current_mark;
 }
 
 void viewer_mark_group_destroy(ViewerMarkGroup *group)

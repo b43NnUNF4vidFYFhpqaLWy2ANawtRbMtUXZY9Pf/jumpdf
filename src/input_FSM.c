@@ -210,6 +210,8 @@ InputState on_state_mark(Window *window, guint keyval)
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
         viewer_mark_manager_switch_mark(mark_manager, mark_i);
+    } else if (keyval == GDK_KEY_n) {
+        viewer_mark_manager_switch_to_previous_mark(mark_manager);
     } else if (keyval == GDK_KEY_c) {
         next_state = STATE_MARK_CLEAR;
     } else if (keyval == GDK_KEY_o) {

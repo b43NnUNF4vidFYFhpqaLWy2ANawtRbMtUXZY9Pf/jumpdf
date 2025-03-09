@@ -28,7 +28,6 @@ void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *group
     }
 
     manager->current_group = current_group;
-
 }
 
 void viewer_mark_manager_destroy(ViewerMarkManager *manager)
@@ -63,6 +62,7 @@ unsigned int viewer_mark_manager_get_current_group_index(ViewerMarkManager *mana
 
 void viewer_mark_manager_set_current_mark(ViewerMarkManager *manager, unsigned int mark_i)
 {
+    manager->groups[manager->current_group]->previous_mark = manager->groups[manager->current_group]->current_mark;
     manager->groups[manager->current_group]->current_mark = mark_i;
 }
 
@@ -134,4 +134,12 @@ void viewer_mark_manager_overwrite_mark(ViewerMarkManager *manager, unsigned int
         viewer_mark_manager_set_mark(manager, viewer_cursor_copy(current_cursor), group_i, mark_i);
         viewer_mark_manager_set_current_mark(manager, mark_i);
     }
+}
+
+void viewer_mark_manager_switch_to_previous_mark(ViewerMarkManager *manager)
+{
+    unsigned int group_i = viewer_mark_manager_get_current_group_index(manager);
+    unsigned int previous_mark = manager->groups[group_i]->previous_mark;
+
+    viewer_mark_manager_switch_mark(manager, previous_mark);
 }
