@@ -46,11 +46,25 @@ void viewer_destroy(Viewer *viewer)
 
 void viewer_update_current_page_size(Viewer *viewer)
 {
-    PopplerPage *page = viewer_info_get_poppler_page(viewer->info, viewer->cursor->current_page);
+    double max_width = 0;
+    double max_height = 0;
 
-    if (page == NULL) {
-        return;
-    } else {
-        poppler_page_get_size(page, &viewer->info->pdf_width, &viewer->info->pdf_height);
+    int from, to;
+    viewer_cursor_get_visible_pages(viewer->cursor, &from, &to);
+    for (int i = from; i <= to; i++) {
+        PopplerPage *page = viewer_info_get_poppler_page(viewer->info, i);
+        g_assert(page != NULL);
+        
+        double width, height;
+        poppler_page_get_size(page, &width, &height);
+        if (width > max_width) {
+            max_width = width;
+        }
+        if (height > max_height) {
+            max_height = height;
+        }
     }
+
+    viewer->info->pdf_width = max_width;
+    viewer->info->pdf_height = max_height;
 }

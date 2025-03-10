@@ -18,7 +18,7 @@ typedef struct {
     unsigned int draw_links_to;
 } RenderPageData;
 
-static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx);
+static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx, double *base);
 static RenderRequest renderer_generate_request(Renderer *renderer, Viewer *viewer);
 static void renderer_reset_pages(Viewer *viewer, int from, int to);
 static void renderer_queue_page_render(Renderer *renderer, Viewer *viewer, Page* page, unsigned int* const draw_links_from, unsigned int* const draw_links_to);
@@ -74,10 +74,11 @@ void renderer_draw(cairo_t *cr, Viewer *viewer)
 
     viewer_translate(viewer, cr);
 
+    double base = 0;
     int from, to;
     viewer_cursor_get_visible_pages(viewer->cursor, &from, &to);
     for (int i = from; i <= to; i++) {
-        renderer_draw_page(cr, viewer, i);
+        renderer_draw_page(cr, viewer, i, &base);
     }
 
     if (viewer->cursor->dark_mode) {
@@ -113,9 +114,9 @@ void renderer_render_pages(Renderer *renderer, Viewer *viewer, int from, int to)
     }
 }
 
-static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx)
+static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx, double *base)
 {
-    Page* page = viewer->info->pages[page_idx];
+    Page *page = viewer->info->pages[page_idx];
 
     if (page->render_status == PAGE_NOT_RENDERED) {
         return;
@@ -125,22 +126,27 @@ static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx)
     poppler_page_get_size(page->poppler_page, &page_width, &page_height);
     page_width *= viewer->cursor->scale;
     page_height *= viewer->cursor->scale;
+    double center_offset = round((viewer->info->pdf_width * viewer->cursor->scale - page_width) / 2.0);
 
     g_mutex_lock(&page->render_mutex);
     g_assert(page->surface != NULL);
-    cairo_set_source_surface(cr, page->surface, 0, page_idx * page_height);
+    cairo_set_source_surface(cr, page->surface, center_offset, *base);
     g_mutex_unlock(&page->render_mutex);
-    
-    /* Draw page separator */
-    cairo_save(cr);
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_set_line_width(cr, 1.0);
-    cairo_move_to(cr, 0, page_idx * page_height);
-    cairo_rel_line_to(cr, page_width, 0);
-    cairo_stroke(cr);
-    cairo_restore(cr);
+
+    if (page_idx > 0) {
+        /* Draw page separator */
+        cairo_save(cr);
+        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_set_line_width(cr, 1.0);
+        cairo_move_to(cr, 0, *base);
+        cairo_rel_line_to(cr, page_width, 0);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+    }
 
     cairo_paint(cr);
+
+    *base += page_height;
 }
 
 static RenderRequest renderer_generate_request(Renderer *renderer, Viewer *viewer)
@@ -363,7 +369,11 @@ static void viewer_translate(Viewer *viewer, cairo_t *cr)
     const double page_height = viewer->info->pdf_height;
     const double view_width = viewer->info->view_width;
     const double view_height = viewer->info->view_height;
-    const int current_page = viewer->cursor->current_page;
+
+    int visible_from, visible_to;
+    viewer_cursor_get_visible_pages(viewer->cursor, &visible_from, &visible_to);
+    const int page_offset_idx = viewer->cursor->current_page - visible_from;
+    g_assert(page_offset_idx >= 0 && page_offset_idx <= visible_to - visible_from);
 
     const double page_center_x = scale * (page_width / 2.0);
     const double page_center_y = scale * (page_height / 2.0);
@@ -374,7 +384,7 @@ static void viewer_translate(Viewer *viewer, cairo_t *cr)
     const double x_offset_translate = (x_offset / g_config->steps) * page_width;
     const double x_translate = round(x_center_translate + x_offset_translate);
 
-    const double y_page_translate = -current_page * page_height * scale;
+    const double y_page_translate = -page_offset_idx * page_height * scale;
     const double y_center_translate = view_center_y - page_center_y;
     const double y_offset_translate = -(y_offset / g_config->steps) * page_height * scale;
     const double y_translate = round(y_page_translate + y_center_translate + y_offset_translate);
