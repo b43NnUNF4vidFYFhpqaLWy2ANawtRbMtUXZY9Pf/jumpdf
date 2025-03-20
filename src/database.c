@@ -136,6 +136,46 @@ sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor)
     return cursor_id;
 }
 
+void database_delete_cursor(Database *db, int id)
+{
+    const char *sql_delete_cursor =
+        "DELETE FROM cursor "
+        "WHERE id = ?;";
+    const char *sql_delete_group_contains_cursor =
+        "DELETE FROM group_contains_cursor "
+        "WHERE cursor_id = ?;";
+    sqlite3_stmt *stmt;
+    int rc;
+
+    rc = sqlite3_prepare_v2(db->handle, sql_delete_group_contains_cursor, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("database_delete_cursor (DELETE group_contains_cursor): %s\n", sqlite3_errmsg(db->handle));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, id);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        database_printerr_stmt(db, stmt);
+    }
+    sqlite3_finalize(stmt);
+
+    rc = sqlite3_prepare_v2(db->handle, sql_delete_cursor, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("database_delete_cursor (DELETE cursor): %s\n", sqlite3_errmsg(db->handle));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, id);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        database_printerr_stmt(db, stmt);
+    }
+    sqlite3_finalize(stmt);
+}
+
 void database_update_cursor(Database *db, int id, ViewerCursor *cursor)
 {
     const char *sql =
@@ -340,16 +380,16 @@ void database_update_cursor_in_group(Database *db, int group_id, int cursor_inde
     sqlite3_bind_int(stmt, 1, group_id);
     sqlite3_bind_int(stmt, 2, cursor_index);
 
-    while (TRUE) {
-        rc = sqlite3_step(stmt);
-        if (rc == SQLITE_ROW) {
-            cursor_id = sqlite3_column_int(stmt, 0);
-            database_update_cursor(db, cursor_id, cursor);
-        } else if (rc == SQLITE_DONE) {
-            break;
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW) {
+        cursor_id = sqlite3_column_int(stmt, 0);
+        if (cursor == NULL) {
+            database_delete_cursor(db, cursor_id);
         } else {
-            database_printerr_stmt(db, stmt);
+            database_update_cursor(db, cursor_id, cursor);
         }
+    } else if (rc != SQLITE_DONE) {
+        database_printerr_stmt(db, stmt);
     }
 
     sqlite3_finalize(stmt);

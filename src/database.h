@@ -19,6 +19,7 @@ void database_create_tables(Database *db);
 // Cursor
 sqlite3_int64 database_insert_cursor(Database *db, ViewerCursor *cursor);
 void database_update_cursor(Database *db, int id, ViewerCursor *cursor);
+void database_delete_cursor(Database *db, int id);
 ViewerCursor *database_get_cursor(Database *db, int id);
 
 // Group
