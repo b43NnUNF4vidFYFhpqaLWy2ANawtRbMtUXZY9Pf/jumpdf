@@ -14,8 +14,12 @@ input_state_func input_state_funcs[] = {
     on_state_number,
     on_state_follow_links,
     on_state_toc_focus,
+    on_state_group_clear,
+    on_state_group_swap,
+    on_state_group_overwrite,
     on_state_mark,
     on_state_mark_clear,
+    on_state_mark_swap,
     on_state_mark_overwrite,
 };
 
@@ -93,6 +97,14 @@ InputState on_state_g(Window *window, guint keyval)
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
         viewer_mark_manager_switch_group(mark_manager, group_i);
+    } else if (keyval == GDK_KEY_n) {
+        viewer_mark_manager_switch_to_previous_group(mark_manager);
+    } else if (keyval == GDK_KEY_c) {
+        next_state = STATE_GROUP_CLEAR;
+    } else if (keyval == GDK_KEY_s) {
+        next_state = STATE_GROUP_SWAP;
+    } else if (keyval == GDK_KEY_o) {
+        next_state = STATE_GROUP_OVERWRITE;
     } else if (keyval == GDK_KEY_g) {
         viewer->cursor->current_page = 0;
         viewer->cursor->y_offset = 0;
@@ -202,6 +214,45 @@ InputState on_state_toc_focus(Window *window, guint keyval)
     return next_state;
 }
 
+InputState on_state_group_clear(Window *window, guint keyval)
+{
+    InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
+    unsigned int group_i = keyval - GDK_KEY_0 - 1;
+
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        viewer_mark_manager_clear_group(mark_manager, group_i);
+    }
+
+    return next_state;
+}
+
+InputState on_state_group_swap(Window *window, guint keyval)
+{
+    InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
+    unsigned int group_i = keyval - GDK_KEY_0 - 1;
+
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        viewer_mark_manager_swap_group(mark_manager, group_i);
+    }
+
+    return next_state;
+}
+
+InputState on_state_group_overwrite(Window *window, guint keyval)
+{
+    InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
+    unsigned int group_i = keyval - GDK_KEY_0 - 1;
+
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        viewer_mark_manager_overwrite_group(mark_manager, group_i);
+    }
+
+    return next_state;
+}
+
 InputState on_state_mark(Window *window, guint keyval)
 {
     InputState next_state = STATE_NORMAL;
@@ -214,6 +265,8 @@ InputState on_state_mark(Window *window, guint keyval)
         viewer_mark_manager_switch_to_previous_mark(mark_manager);
     } else if (keyval == GDK_KEY_c) {
         next_state = STATE_MARK_CLEAR;
+    } else if (keyval == GDK_KEY_s) {
+        next_state = STATE_MARK_SWAP;
     } else if (keyval == GDK_KEY_o) {
         next_state = STATE_MARK_OVERWRITE;
     }
@@ -229,6 +282,19 @@ InputState on_state_mark_clear(Window *window, guint keyval)
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
         viewer_mark_manager_clear_mark(mark_manager, mark_i);
+    }
+
+    return next_state;
+}
+
+InputState on_state_mark_swap(Window *window, guint keyval)
+{
+    InputState next_state = STATE_NORMAL;
+    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
+    unsigned int mark_i = keyval - GDK_KEY_0 - 1;
+
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+        viewer_mark_manager_swap_mark(mark_manager, mark_i);
     }
 
     return next_state;
