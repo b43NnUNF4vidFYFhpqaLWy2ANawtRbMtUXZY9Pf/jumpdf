@@ -147,11 +147,11 @@ ViewerMarkManager *app_get_mark_manager(App *app, GFile *file)
                     default_cursors[j] = NULL;
                 }
 
-                groups[i] = viewer_mark_group_new(default_cursors, 0);
+                groups[i] = viewer_mark_group_new(default_cursors, 0, 0);
                 free(default_cursors);
             }
 
-            mark_manager = viewer_mark_manager_new(groups, 0);
+            mark_manager = viewer_mark_manager_new(groups, 0, 0);
             free(groups);
 
             database_insert_mark_manager(app->db, uri, mark_manager);

@@ -10,6 +10,6 @@ typedef struct ViewerMarkGroup {
     unsigned int previous_mark;
 } ViewerMarkGroup;
 
-ViewerMarkGroup *viewer_mark_group_new(ViewerCursor *marks[NUM_MARKS], unsigned int current_mark);
-void viewer_mark_group_init(ViewerMarkGroup *group, ViewerCursor *marks[NUM_MARKS], unsigned int current_mark);
+ViewerMarkGroup *viewer_mark_group_new(ViewerCursor *marks[NUM_MARKS], unsigned int current_mark, unsigned int previous_mark);
+void viewer_mark_group_init(ViewerMarkGroup *group, ViewerCursor *marks[NUM_MARKS], unsigned int current_mark, unsigned int previous_mark);
 void viewer_mark_group_destroy(ViewerMarkGroup *group);

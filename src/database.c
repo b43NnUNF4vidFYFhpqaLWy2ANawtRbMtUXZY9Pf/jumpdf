@@ -69,11 +69,13 @@ void database_create_tables(Database *db)
         ");"
         "CREATE TABLE IF NOT EXISTS cursor_group ("
         "   id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "   current_mark INTEGER NOT NULL"
+        "   current_mark INTEGER NOT NULL,"
+        "   previous_mark INTEGER NOT NULL"
         ");"
         "CREATE TABLE IF NOT EXISTS mark_manager ("
         "   uri TEXT PRIMARY KEY,"
-        "   current_group INTEGER NOT NULL"
+        "   current_group INTEGER NOT NULL,"
+        "   previous_group INTEGER NOT NULL"
         ");"
         "CREATE TABLE IF NOT EXISTS group_contains_cursor ("
         "   group_id INTEGER NOT NULL,"
@@ -292,7 +294,9 @@ ViewerCursor *database_get_cursor(Database *db, int id)
 
 sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group)
 {
-    const char *sql = "INSERT INTO cursor_group (current_mark) VALUES (?);";
+    const char *sql =
+        "INSERT INTO cursor_group (current_mark, previous_mark)"
+        "VALUES (?, ?);";
     sqlite3_stmt *stmt;
     int rc;
     sqlite3_int64 group_id = -1;
@@ -305,6 +309,7 @@ sqlite3_int64 database_insert_group(Database *db, ViewerMarkGroup *group)
     }
 
     sqlite3_bind_int(stmt, 1, group->current_mark);
+    sqlite3_bind_int(stmt, 2, group->previous_mark);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -361,7 +366,7 @@ void database_update_group(Database *db, int id, ViewerMarkGroup *group)
 {
     const char *sql =
         "UPDATE cursor_group "
-        "SET current_mark = ? "
+        "SET current_mark = ?, previous_mark = ? "
         "WHERE id = ?;";
     sqlite3_stmt *stmt;
     int rc;
@@ -375,7 +380,8 @@ void database_update_group(Database *db, int id, ViewerMarkGroup *group)
     }
 
     sqlite3_bind_int(stmt, 1, group->current_mark);
-    sqlite3_bind_int(stmt, 2, id);
+    sqlite3_bind_int(stmt, 2, group->previous_mark);
+    sqlite3_bind_int(stmt, 3, id);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -439,11 +445,15 @@ void database_update_cursor_in_group(Database *db, int group_id, int cursor_inde
 
 ViewerMarkGroup *database_get_group(Database *db, int id)
 {
-    const char *sql = "SELECT current_mark FROM cursor_group WHERE id = ?;";
+    const char *sql =
+        "SELECT current_mark, previous_mark "
+        "FROM cursor_group "
+        "WHERE id = ?;";
     sqlite3_stmt *stmt;
     int rc;
     ViewerCursor **cursors;
     int current_mark;
+    int previous_mark;
     ViewerMarkGroup *group = NULL;
 
     rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
@@ -458,7 +468,8 @@ ViewerMarkGroup *database_get_group(Database *db, int id)
     if (rc == SQLITE_ROW) {
         cursors = database_get_group_cursors(db, id);
         current_mark = sqlite3_column_int(stmt, 0);
-        group = viewer_mark_group_new(cursors, current_mark);
+        previous_mark = sqlite3_column_int(stmt, 1);
+        group = viewer_mark_group_new(cursors, current_mark, previous_mark);
 
         free(cursors);
     } else {
@@ -515,7 +526,9 @@ ViewerCursor **database_get_group_cursors(Database *db, int id)
 
 void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManager *manager)
 {
-    const char *sql = "INSERT INTO mark_manager (uri, current_group) VALUES (?, ?);";
+    const char *sql =
+        "INSERT INTO mark_manager (uri, current_group, previous_group) "
+        "VALUES (?, ?, ?);";
     sqlite3_stmt *stmt;
     int rc;
     sqlite3_int64 group_id = -1;
@@ -528,6 +541,7 @@ void database_insert_mark_manager(Database *db, const char *uri, ViewerMarkManag
 
     sqlite3_bind_text(stmt, 1, uri, -1, SQLITE_STATIC);
     sqlite3_bind_int(stmt, 2, manager->current_group);
+    sqlite3_bind_int(stmt, 3, manager->previous_group);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -580,7 +594,7 @@ void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManag
 {
     const char *sql =
         "UPDATE mark_manager "
-        "SET current_group = ? "
+        "SET current_group = ?, previous_group = ? "
         "WHERE uri = ?;";
     sqlite3_stmt *stmt;
     int rc;
@@ -593,7 +607,8 @@ void database_update_mark_manager(Database *db, const char *uri, ViewerMarkManag
     }
 
     sqlite3_bind_int(stmt, 1, manager->current_group);
-    sqlite3_bind_text(stmt, 2, uri, -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 2, manager->previous_group);
+    sqlite3_bind_text(stmt, 3, uri, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -656,10 +671,14 @@ void database_update_groups_in_mark_manager(Database *db, const char *uri, Viewe
 
 ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri)
 {
-    const char *sql = "SELECT current_group FROM mark_manager WHERE uri = ?;";
+    const char *sql =
+        "SELECT current_group, previous_group "
+        "FROM mark_manager "
+        "WHERE uri = ?;";
     sqlite3_stmt *stmt;
     int rc;
     int current_group;
+    int previous_group;
     ViewerMarkGroup **groups = NULL;
     ViewerMarkManager *manager = NULL;
 
@@ -674,8 +693,9 @@ ViewerMarkManager *database_get_mark_manager(Database *db, const char *uri)
     rc = sqlite3_step(stmt);
     if (rc == SQLITE_ROW) {
         current_group = sqlite3_column_int(stmt, 0);
+        previous_group = sqlite3_column_int(stmt, 1);
         groups = database_get_mark_manager_groups(db, uri);
-        manager = viewer_mark_manager_new(groups, current_group);
+        manager = viewer_mark_manager_new(groups, current_group, previous_group);
 
         free(groups);
     } else if (rc == SQLITE_DONE) {

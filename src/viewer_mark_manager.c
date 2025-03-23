@@ -1,23 +1,23 @@
 #include "viewer_mark_manager.h"
 
-ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group)
+ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group, unsigned int previous_group)
 {
     ViewerMarkManager *manager = malloc(sizeof(ViewerMarkManager));
     if (manager == NULL) {
         return NULL;
     }
 
-    viewer_mark_manager_init(manager, groups, current_group);
+    viewer_mark_manager_init(manager, groups, current_group, previous_group);
 
     return manager;
 }
 
 ViewerMarkManager *viewer_mark_manager_copy(ViewerMarkManager *manager)
 {
-    return viewer_mark_manager_new(manager->groups, manager->current_group);
+    return viewer_mark_manager_new(manager->groups, manager->current_group, manager->previous_group);
 }
 
-void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group)
+void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group, unsigned int previous_group)
 {
     if (manager == NULL) {
         return;
@@ -28,7 +28,7 @@ void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *group
     }
 
     manager->current_group = current_group;
-    manager->previous_group = current_group;
+    manager->previous_group = previous_group;
 }
 
 void viewer_mark_manager_destroy(ViewerMarkManager *manager)

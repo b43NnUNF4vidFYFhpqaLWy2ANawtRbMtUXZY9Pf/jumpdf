@@ -1,18 +1,18 @@
 #include "viewer_mark_group.h"
 
-ViewerMarkGroup *viewer_mark_group_new(ViewerCursor *marks[NUM_MARKS], unsigned int current_mark)
+ViewerMarkGroup *viewer_mark_group_new(ViewerCursor *marks[NUM_MARKS], unsigned int current_mark, unsigned int previous_mark)
 {
     ViewerMarkGroup *group = malloc(sizeof(ViewerMarkGroup));
     if (group == NULL) {
         return NULL;
     }
 
-    viewer_mark_group_init(group, marks, current_mark);
+    viewer_mark_group_init(group, marks, current_mark, previous_mark);
 
     return group;
 }
 
-void viewer_mark_group_init(ViewerMarkGroup *group, ViewerCursor *marks[NUM_MARKS], unsigned int current_mark)
+void viewer_mark_group_init(ViewerMarkGroup *group, ViewerCursor *marks[NUM_MARKS], unsigned int current_mark, unsigned int previous_mark)
 {
     if (group == NULL) {
         return;
@@ -23,7 +23,7 @@ void viewer_mark_group_init(ViewerMarkGroup *group, ViewerCursor *marks[NUM_MARK
     }
 
     group->current_mark = current_mark;
-    group->previous_mark = current_mark;
+    group->previous_mark = previous_mark;
 }
 
 void viewer_mark_group_destroy(ViewerMarkGroup *group)

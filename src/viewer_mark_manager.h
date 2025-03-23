@@ -10,9 +10,9 @@ typedef struct ViewerMarkManager {
     unsigned int previous_group;
 } ViewerMarkManager;
 
-ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group);
+ViewerMarkManager *viewer_mark_manager_new(ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group, unsigned int previous_group);
 ViewerMarkManager *viewer_mark_manager_copy(ViewerMarkManager *manager);
-void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group);
+void viewer_mark_manager_init(ViewerMarkManager *manager, ViewerMarkGroup *groups[NUM_GROUPS], unsigned int current_group, unsigned int previous_group);
 void viewer_mark_manager_destroy(ViewerMarkManager *manager);
 
 void viewer_mark_manager_set_mark(ViewerMarkManager *manager, ViewerCursor *cursor, unsigned int group_i, unsigned int mark_i);
