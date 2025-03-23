@@ -8,6 +8,8 @@
 
 // TODO: A lot of repetition in these functions
 
+#define DATABASE_VERSION 1
+
 static void database_printerr_stmt(Database *db, sqlite3_stmt *stmt);
 static void database_printerr_sql(Database *db, char *sql);
 
@@ -54,6 +56,7 @@ void database_close(Database *db)
 void database_create_tables(Database *db)
 {
     const char *sql =
+        "PRAGMA user_version = " G_STRINGIFY(DATABASE_VERSION) ";"
         "CREATE TABLE IF NOT EXISTS cursor ("
         "   id INTEGER PRIMARY KEY AUTOINCREMENT,"
         "   current_page INTEGER NOT NULL,"
@@ -100,6 +103,45 @@ void database_create_tables(Database *db)
     if (rc != SQLITE_OK) {
         g_printerr("database_create_tables: %s\n", errmsg);
         sqlite3_free(errmsg);
+    }
+}
+
+int database_get_version(Database *db)
+{
+    const char *sql = "PRAGMA user_version;";
+    sqlite3_stmt *stmt;
+    int rc;
+    int version = -1;
+
+    rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        g_printerr("database_get_version: %s\n", sqlite3_errmsg(db->handle));
+        return -1;
+    }
+
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW) {
+        version = sqlite3_column_int(stmt, 0);
+    } else {
+        database_printerr_stmt(db, stmt);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return version;
+}
+
+void database_check_update(Database *db, const char *path)
+{
+    int version = database_get_version(db);
+    if (version != DATABASE_VERSION) {
+        g_print("Database version is %d, expected %d. Recreating database\n", version, DATABASE_VERSION);
+
+        database_close(db);
+        /* Dropping the database is acceptable, as it only serves to persist state */
+        remove(path);
+        database_init(db, path);
+        database_create_tables(db);
     }
 }
 
