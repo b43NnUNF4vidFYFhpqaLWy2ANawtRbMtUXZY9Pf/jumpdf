@@ -102,26 +102,6 @@ void viewer_mark_manager_switch_to_previous_group(ViewerMarkManager *manager)
     viewer_mark_manager_switch_group(manager, manager->previous_group);
 }
 
-void viewer_mark_manager_clear_group(ViewerMarkManager *manager, unsigned int group_i)
-{
-    ViewerCursor *current_cursor = viewer_mark_manager_get_current_cursor(manager);
-    ViewerCursor *stored_cursor = NULL;
-
-    for (unsigned int i = 0; i < NUM_MARKS; i++) {
-        stored_cursor = viewer_mark_manager_get_mark(manager, group_i, i);
-        if (stored_cursor != current_cursor) {
-            viewer_cursor_destroy(stored_cursor);
-            free(stored_cursor);
-            viewer_mark_manager_set_mark(manager, NULL, group_i, i);
-        }
-    }
-
-    if (group_i != manager->current_group) {
-        manager->groups[group_i]->current_mark = 0;
-        manager->groups[group_i]->previous_mark = 0;
-    }
-}
-
 void viewer_mark_manager_swap_group(ViewerMarkManager *manager, unsigned int group_i)
 {
     unsigned int current_group_i = manager->current_group;

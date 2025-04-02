@@ -94,9 +94,6 @@ Set current group to <1-9>. If the current mark of the group hasn't been set, it
 .B gn
 Switch to previous group.
 .TP
-.B gc<1-9>
-Clear group <1-9>. If the current group is cleared, the current mark will not be affected.
-.TP
 .B gs<1-9>
 Swap current group with group <1-9> and switch to it.
 .TP

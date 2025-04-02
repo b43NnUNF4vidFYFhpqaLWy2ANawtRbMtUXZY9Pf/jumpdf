@@ -48,7 +48,6 @@ static const Keybinding keybindings[] = {
     {"mo<1-9>", "Overwrite mark <1-9> with the current cursor and switch to it", 0},
     {"g<1-9>", "Set current group to <1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor", 0},
     {"gn", "Switch to previous group", 0},
-    {"gc<1-9>", "Clear group <1-9>. If the current group is cleared, the current mark will not be affected", 0},
     {"gs<1-9>", "Swap current group with group <1-9> and switch to it", 0},
     {"go<1-9>", "Overwrite group <1-9> with the current group and switch to it", 0},
     {"/, Esc", "Show/hide search dialog", 0},

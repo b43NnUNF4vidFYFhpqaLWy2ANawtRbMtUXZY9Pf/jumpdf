@@ -26,7 +26,6 @@ void viewer_mark_manager_set_current_cursor(ViewerMarkManager *manager, ViewerCu
 
 void viewer_mark_manager_switch_group(ViewerMarkManager *manager, unsigned int group_i);
 void viewer_mark_manager_switch_to_previous_group(ViewerMarkManager *manager);
-void viewer_mark_manager_clear_group(ViewerMarkManager *manager, unsigned int group_i);
 void viewer_mark_manager_swap_group(ViewerMarkManager *manager, unsigned int group_i);
 void viewer_mark_manager_overwrite_group(ViewerMarkManager *manager, unsigned int group_i);
 

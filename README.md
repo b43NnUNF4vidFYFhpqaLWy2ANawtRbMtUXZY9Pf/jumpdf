@@ -99,7 +99,6 @@ Note that multiple windows can be opened at the same time.
 - <kbd>mo\<1-9></kbd> (Overwrite mark \<1-9> with the current cursor and switch to it)
 - <kbd>g\<1-9></kbd> (Set current group to \<1-9>. If the current mark of the group hasn't been set, it will be set to the current cursor)
 - <kbd>gn</kbd> (Switch to previous group)
-- <kbd>gc\<1-9></kbd> (Clear group \<1-9>. If the current group is cleared, the current mark will not be affected)
 - <kbd>gs\<1-9></kbd> (Swap current group with group \<1-9> and switch to it)
 - <kbd>go\<1-9></kbd> (Overwrite group \<1-9> with the current group and switch to it)
 - <kbd>/</kbd>, <kbd>Esc</kbd> (Show/hide search dialog)

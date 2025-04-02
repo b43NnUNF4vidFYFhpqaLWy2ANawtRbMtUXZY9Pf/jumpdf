@@ -9,7 +9,6 @@ typedef enum {
     STATE_NUMBER,
     STATE_FOLLOW_LINKS,
     STATE_TOC_FOCUS,
-    STATE_GROUP_CLEAR,
     STATE_GROUP_SWAP,
     STATE_GROUP_OVERWRITE,
     STATE_MARK,
@@ -25,7 +24,6 @@ InputState on_state_g(Window *window, guint keyval);
 InputState on_state_number(Window *window, guint keyval);
 InputState on_state_follow_links(Window *window, guint keyval);
 InputState on_state_toc_focus(Window *window, guint keyval);
-InputState on_state_group_clear(Window *window, guint keyval);
 InputState on_state_group_swap(Window *window, guint keyval);
 InputState on_state_group_overwrite(Window *window, guint keyval);
 InputState on_state_mark(Window *window, guint keyval);

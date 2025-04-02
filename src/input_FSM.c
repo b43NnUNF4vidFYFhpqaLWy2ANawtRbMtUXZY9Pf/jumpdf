@@ -14,7 +14,6 @@ input_state_func input_state_funcs[] = {
     on_state_number,
     on_state_follow_links,
     on_state_toc_focus,
-    on_state_group_clear,
     on_state_group_swap,
     on_state_group_overwrite,
     on_state_mark,
@@ -99,8 +98,6 @@ InputState on_state_g(Window *window, guint keyval)
         viewer_mark_manager_switch_group(mark_manager, group_i);
     } else if (keyval == GDK_KEY_n) {
         viewer_mark_manager_switch_to_previous_group(mark_manager);
-    } else if (keyval == GDK_KEY_c) {
-        next_state = STATE_GROUP_CLEAR;
     } else if (keyval == GDK_KEY_s) {
         next_state = STATE_GROUP_SWAP;
     } else if (keyval == GDK_KEY_o) {
@@ -209,19 +206,6 @@ InputState on_state_toc_focus(Window *window, guint keyval)
 
     if (new_row != NULL) {
         gtk_list_box_select_row(toc_list_box, new_row);
-    }
-
-    return next_state;
-}
-
-InputState on_state_group_clear(Window *window, guint keyval)
-{
-    InputState next_state = STATE_NORMAL;
-    ViewerMarkManager *mark_manager = window_get_mark_manager(window);
-    unsigned int group_i = keyval - GDK_KEY_0 - 1;
-
-    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
-        viewer_mark_manager_clear_group(mark_manager, group_i);
     }
 
     return next_state;
