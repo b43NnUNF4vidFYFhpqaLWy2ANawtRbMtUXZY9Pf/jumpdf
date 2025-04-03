@@ -258,6 +258,9 @@ static void window_finalize(GObject *object)
         viewer_links_destroy(win->viewer->links);
         free(win->viewer->links);
 
+        free(win->viewer->last_command);
+        free(win->viewer->last_jump_command);
+
         free(win->viewer);
     }
 

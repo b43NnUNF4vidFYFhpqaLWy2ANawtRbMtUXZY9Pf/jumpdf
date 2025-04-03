@@ -110,14 +110,10 @@ InputState on_state_g(Window *window, guint keyval)
         command = command_new((CommandExecute)switch_to_previous_group, 1, mark_manager);
         command_execute(command, viewer);
 
-        if (viewer->last_command == viewer->last_jump_command) {
-            free(viewer->last_command);
-        } else {
-            free(viewer->last_command);
-            free(viewer->last_jump_command);
-        }
+        free(viewer->last_command);
+        free(viewer->last_jump_command);
         viewer->last_command = command;
-        viewer->last_jump_command = command;
+        viewer->last_jump_command = command_copy(command);
     } else if (keyval == GDK_KEY_s) {
         next_state = STATE_GROUP_SWAP;
     } else if (keyval == GDK_KEY_o) {
@@ -271,14 +267,10 @@ InputState on_state_mark(Window *window, guint keyval)
         command = command_new((CommandExecute)switch_to_previous_mark, 1, mark_manager);
         command_execute(command, viewer);
 
-        if (viewer->last_command == viewer->last_jump_command) {
-            free(viewer->last_command);
-        } else {
-            free(viewer->last_command);
-            free(viewer->last_jump_command);
-        }
+        free(viewer->last_command);
+        free(viewer->last_jump_command);
         viewer->last_command = command;
-        viewer->last_jump_command = command;
+        viewer->last_jump_command = command_copy(command);
     } else if (keyval == GDK_KEY_c) {
         next_state = STATE_MARK_CLEAR;
     } else if (keyval == GDK_KEY_s) {

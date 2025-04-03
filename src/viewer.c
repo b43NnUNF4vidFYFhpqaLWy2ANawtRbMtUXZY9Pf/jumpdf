@@ -45,12 +45,8 @@ void viewer_destroy(Viewer *viewer)
     viewer_info_destroy(viewer->info);
     free(viewer->info);
 
-    if (viewer->last_command == viewer->last_jump_command) {
-        free(viewer->last_command);
-    } else {
-        free(viewer->last_command);
-        free(viewer->last_jump_command);
-    }
+    free(viewer->last_command);
+    free(viewer->last_jump_command);
 }
 
 void viewer_update_current_page_size(Viewer *viewer)

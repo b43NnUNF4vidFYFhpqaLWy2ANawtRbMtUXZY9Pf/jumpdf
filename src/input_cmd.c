@@ -6,12 +6,24 @@
 Command *command_new(CommandExecute execute, unsigned int repeat_count, void *data)
 {
     Command *command = malloc(sizeof(Command));
+    if (command == NULL) {
+        return NULL;
+    }
 
     command->execute = execute;
     command->repeat_count = repeat_count;
     command->data = data;
 
     return command;
+}
+
+Command *command_copy(Command *command)
+{
+    if (command == NULL) {
+        return NULL;
+    }
+
+    return command_new(command->execute, command->repeat_count, command->data);
 }
 
 void command_execute(Command *command, Viewer *viewer)
