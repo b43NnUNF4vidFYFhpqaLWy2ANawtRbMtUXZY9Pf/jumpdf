@@ -101,6 +101,8 @@ Note that multiple windows can be opened at the same time.
 - <kbd>gn</kbd> (Switch to previous group)
 - <kbd>gs\<1-9></kbd> (Swap current group with group \<1-9> and switch to it)
 - <kbd>go\<1-9></kbd> (Overwrite group \<1-9> with the current group and switch to it)
+- <kbd>.</kbd> (Repeat last command (zoom, scroll, search or switch to previous mark or group))
+- <kbd>,</kbd> (Repeat last jump command (switch to previous mark or group))
 - <kbd>/</kbd>, <kbd>Esc</kbd> (Show/hide search dialog)
 - <kbd>o</kbd> (Open file chooser)
 - <kbd>Tab</kbd> (Toggle table of contents)

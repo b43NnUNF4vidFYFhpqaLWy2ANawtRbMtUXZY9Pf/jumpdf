@@ -92,7 +92,7 @@ PopplerDest *viewer_info_get_dest(ViewerInfo *info, PopplerDest *dest)
 
 PopplerPage *viewer_info_get_poppler_page(ViewerInfo *info, int page_num)
 {
-    if (page_num >= info->n_pages) {
+    if (page_num < 0 || page_num >= info->n_pages) {
         return NULL;
     }
 

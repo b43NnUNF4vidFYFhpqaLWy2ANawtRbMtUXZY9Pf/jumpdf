@@ -9,6 +9,7 @@ sources = [
     'database.c',
     'viewer.c',
     'renderer.c',
+    'input_cmd.c',
     'input_FSM.c',
     'page.c',
     'viewer_info.c',
