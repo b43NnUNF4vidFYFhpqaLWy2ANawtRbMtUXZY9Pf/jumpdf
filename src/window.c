@@ -50,6 +50,8 @@ static const Keybinding keybindings[] = {
     {"gn", "Switch to previous group", 0},
     {"gs<1-9>", "Swap current group with group <1-9> and switch to it", 0},
     {"go<1-9>", "Overwrite group <1-9> with the current group and switch to it", 0},
+    {".", "Repeat last command (zoom, scroll, search or switch to previous mark or group)", 0},
+    {",", "Repeat last jump command (switch to previous mark or group)", 0},
     {"/, Esc", "Show/hide search dialog", 0},
     {"o", "Open file chooser", 0},
     {"Tab", "Toggle table of contents", 0},

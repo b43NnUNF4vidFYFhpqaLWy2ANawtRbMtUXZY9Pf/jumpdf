@@ -1,10 +1,13 @@
 #include "app.h"
 #include "input_FSM.h"
+#include "input_cmd.h"
 #include "config.h"
 #include "viewer_info.h"
 #include "viewer_cursor.h"
 #include "viewer_search.h"
 #include "viewer_links.h"
+
+typedef InputState (*input_state_func)(Window *, guint);
 
 static InputState execute_command(Window *window, guint keyval, unsigned int repeat_count);
 
@@ -78,6 +81,12 @@ InputState on_state_normal(Window *window, guint keyval)
         case GDK_KEY_F11:
             window_toggle_fullscreen(window);
             break;
+        case GDK_KEY_period:
+            command_execute(viewer->last_command, viewer);
+            break;
+        case GDK_KEY_comma:
+            command_execute(viewer->last_jump_command, viewer);
+            break;
         default:
             next_state = execute_command(window, keyval, 1);
             break;
@@ -93,11 +102,22 @@ InputState on_state_g(Window *window, guint keyval)
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     Viewer *viewer = window_get_viewer(window);
     unsigned int group_i = keyval - GDK_KEY_0 - 1;
+    Command *command = NULL;
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
         viewer_mark_manager_switch_group(mark_manager, group_i);
     } else if (keyval == GDK_KEY_n) {
-        viewer_mark_manager_switch_to_previous_group(mark_manager);
+        command = command_new((CommandExecute)switch_to_previous_group, 1, mark_manager);
+        command_execute(command, viewer);
+
+        if (viewer->last_command == viewer->last_jump_command) {
+            free(viewer->last_command);
+        } else {
+            free(viewer->last_command);
+            free(viewer->last_jump_command);
+        }
+        viewer->last_command = command;
+        viewer->last_jump_command = command;
     } else if (keyval == GDK_KEY_s) {
         next_state = STATE_GROUP_SWAP;
     } else if (keyval == GDK_KEY_o) {
@@ -242,11 +262,23 @@ InputState on_state_mark(Window *window, guint keyval)
     InputState next_state = STATE_NORMAL;
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
     unsigned int mark_i = keyval - GDK_KEY_0 - 1;
+    Viewer *viewer = window_get_viewer(window);
+    Command *command = NULL;
 
     if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
         viewer_mark_manager_switch_mark(mark_manager, mark_i);
     } else if (keyval == GDK_KEY_n) {
-        viewer_mark_manager_switch_to_previous_mark(mark_manager);
+        command = command_new((CommandExecute)switch_to_previous_mark, 1, mark_manager);
+        command_execute(command, viewer);
+
+        if (viewer->last_command == viewer->last_jump_command) {
+            free(viewer->last_command);
+        } else {
+            free(viewer->last_command);
+            free(viewer->last_jump_command);
+        }
+        viewer->last_command = command;
+        viewer->last_jump_command = command;
     } else if (keyval == GDK_KEY_c) {
         next_state = STATE_MARK_CLEAR;
     } else if (keyval == GDK_KEY_s) {
@@ -306,56 +338,53 @@ static InputState execute_command(Window *window, guint keyval, unsigned int rep
     InputState next_state = STATE_NORMAL;
     Viewer *viewer = window_get_viewer(window);
     ViewerMarkManager *mark_manager = window_get_mark_manager(window);
-    ViewerCursor *search_new_cursor = NULL;
-    ViewerCursor *current_cursor = viewer_mark_manager_get_current_cursor(mark_manager);
-    unsigned int current_group = viewer_mark_manager_get_current_group_index(mark_manager);
-    unsigned int current_mark = viewer_mark_manager_get_current_mark_index(mark_manager);
 
-    for (unsigned int i = 0; i < repeat_count; i++) {
-        switch (keyval) {
-        case GDK_KEY_plus:
-            viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale + g_config->scale_step);
-            break;
-        case GDK_KEY_minus:
-            viewer_cursor_set_scale(viewer->cursor, viewer->cursor->scale - g_config->scale_step);
-            break;
-        case GDK_KEY_u:
-        case GDK_KEY_Page_Up:
-            viewer->cursor->y_offset -= g_config->steps / 2.0;
-            break;
-        case GDK_KEY_d:
-        case GDK_KEY_Page_Down:
-            viewer->cursor->y_offset += g_config->steps / 2.0;
-            break;
-        case GDK_KEY_h:
-        case GDK_KEY_Left:
-            viewer->cursor->x_offset++;
-            break;
-        case GDK_KEY_j:
-        case GDK_KEY_Down:
-            viewer->cursor->y_offset++;
-            break;
-        case GDK_KEY_k:
-        case GDK_KEY_Up:
-            viewer->cursor->y_offset--;
-            break;
-        case GDK_KEY_l:
-        case GDK_KEY_Right:
-            viewer->cursor->x_offset--;
-            break;
-        case GDK_KEY_n:
-            search_new_cursor = viewer_search_get_next_search(viewer->search, viewer->cursor);
-            break;
-        case GDK_KEY_N:
-            search_new_cursor = viewer_search_get_prev_search(viewer->search, viewer->cursor);
-            break;
-        }
+    Command *command = NULL;
+
+    switch (keyval) {
+    case GDK_KEY_plus:
+        command = command_new((CommandExecute)zoom_in, repeat_count, &g_config->scale_step);
+        break;
+    case GDK_KEY_minus:
+        command = command_new((CommandExecute)zoom_out, repeat_count, &g_config->scale_step);
+        break;
+    case GDK_KEY_u:
+    case GDK_KEY_Page_Up:
+        command = command_new((CommandExecute)scroll_half_page_up, repeat_count, &g_config->steps);
+        break;
+    case GDK_KEY_d:
+    case GDK_KEY_Page_Down:
+        command = command_new((CommandExecute)scroll_half_page_down, repeat_count, &g_config->steps);
+        break;
+    case GDK_KEY_h:
+    case GDK_KEY_Left:
+        command = command_new((CommandExecute)scroll_left, repeat_count, NULL);
+        break;
+    case GDK_KEY_j:
+    case GDK_KEY_Down:
+        command = command_new((CommandExecute)scroll_down, repeat_count, NULL);
+        break;
+    case GDK_KEY_k:
+    case GDK_KEY_Up:
+        command = command_new((CommandExecute)scroll_up, repeat_count, NULL);
+        break;
+    case GDK_KEY_l:
+    case GDK_KEY_Right:
+        command = command_new((CommandExecute)scroll_right, repeat_count, NULL);
+        break;
+    case GDK_KEY_n:
+        command = command_new((CommandExecute)forward_search, repeat_count, mark_manager);
+        break;
+    case GDK_KEY_N:
+        command = command_new((CommandExecute)backward_search, repeat_count, mark_manager);
+        break;
     }
 
-    if (search_new_cursor != NULL) {
-        viewer_cursor_destroy(current_cursor);
-        free(current_cursor);
-        viewer_mark_manager_set_mark(mark_manager, search_new_cursor, current_group, current_mark);
+    if (command != NULL) {
+        command_execute(command, viewer);
+        
+        free(viewer->last_command);
+        viewer->last_command = command;
     }
 
     return next_state;
