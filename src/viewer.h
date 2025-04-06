@@ -11,8 +11,8 @@ typedef struct Viewer {
     ViewerCursor *cursor;
     ViewerSearch *search;
     ViewerLinks *links;
-    Command *last_command;
-    Command *last_jump_command;
+    Command last_command;
+    Command last_jump_command;
 } Viewer;
 
 Viewer *viewer_new(ViewerInfo *info, ViewerCursor *cursor, ViewerSearch *search, ViewerLinks *links);

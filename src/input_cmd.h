@@ -10,8 +10,7 @@ typedef struct {
     void *data;
 } Command;
 
-Command *command_new(CommandExecute execute, unsigned int repeat_count, void *data);
-Command *command_copy(Command *command);
+Command command_copy(Command *command);
 void command_execute(Command *command, struct Viewer *viewer);
 
 void zoom_in(struct Viewer *viewer, unsigned int repeat_count, void *data);

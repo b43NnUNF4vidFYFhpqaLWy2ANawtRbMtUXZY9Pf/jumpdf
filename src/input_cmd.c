@@ -3,27 +3,19 @@
 #include "viewer_mark_manager.h"
 #include "utils.h"
 
-Command *command_new(CommandExecute execute, unsigned int repeat_count, void *data)
+Command command_copy(Command *command)
 {
-    Command *command = malloc(sizeof(Command));
+    Command new_command = {0};
+
     if (command == NULL) {
-        return NULL;
+        return new_command;
     }
 
-    command->execute = execute;
-    command->repeat_count = repeat_count;
-    command->data = data;
+    new_command.execute = command->execute;
+    new_command.repeat_count = command->repeat_count;
+    new_command.data = command->data;
 
-    return command;
-}
-
-Command *command_copy(Command *command)
-{
-    if (command == NULL) {
-        return NULL;
-    }
-
-    return command_new(command->execute, command->repeat_count, command->data);
+    return new_command;
 }
 
 void command_execute(Command *command, Viewer *viewer)

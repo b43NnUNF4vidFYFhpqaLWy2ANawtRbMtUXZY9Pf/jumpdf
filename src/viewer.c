@@ -26,8 +26,9 @@ void viewer_init(Viewer *viewer, ViewerInfo *info, ViewerCursor *cursor, ViewerS
     viewer->cursor = cursor;
     viewer->search = search;
     viewer->links = links;
-    viewer->last_command = NULL;
-    viewer->last_jump_command = NULL;
+
+    viewer->last_command = (Command){0};
+    viewer->last_jump_command = (Command){0};
 }
 
 void viewer_destroy(Viewer *viewer)
@@ -44,9 +45,6 @@ void viewer_destroy(Viewer *viewer)
 
     viewer_info_destroy(viewer->info);
     free(viewer->info);
-
-    free(viewer->last_command);
-    free(viewer->last_jump_command);
 }
 
 void viewer_update_current_page_size(Viewer *viewer)
