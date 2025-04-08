@@ -100,6 +100,12 @@ Swap current group with group <1-9> and switch to it.
 .B go<1-9>
 Overwrite group <1-9> with the current cursor and switch to it.
 .TP
+.B .
+Repeat last command (zoom, scroll, search or switch to previous mark or group)
+.TP
+.B ,
+Repeat last jump command (switch to previous mark or group)
+.TP
 .B /
 Show/hide search dialog.
 .TP
