@@ -384,6 +384,10 @@ static InputState execute_command(Window *window, guint keyval, unsigned int rep
         viewer->last_command.repeat_count = repeat_count;
         viewer->last_command.data = mark_manager;
         break;
+    default:
+        /* Avoid executing the last command if no key was matched */
+        return next_state;
+        break;
     }
 
     command_execute(&viewer->last_command, viewer);
