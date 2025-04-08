@@ -75,7 +75,20 @@ jumpdf <pdf_file>
 jumpdf <pdf_file1> <pdf_file2> ...
 ```
 
-Note that multiple windows can be opened at the same time.
+> [!WARNING]
+> If you are using Flatpak and you encounter the following error when opening a file from the terminal:
+>
+> ```sh
+> Error opening document: No such file or directory
+> ```
+>
+> Then you need to grant access to e.g. the home directory:
+>
+> ```sh
+> flatpak override {--user|--system} io.github.b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf.jumpdf --filesystem=home:ro
+> ```
+>
+> Alternatively, the file chooser does not require any permissions.
 
 ### Keybindings
 
