@@ -48,7 +48,7 @@ void scroll_half_page_up(struct Viewer *viewer, unsigned int repeat_count, void 
     int step = *(int *)data;
 
     for (unsigned int i = 0; i < repeat_count; i++) {
-        viewer->cursor->y_offset -= step / 2;
+        viewer->cursor->y_offset -= step / 2.0;
     }
 }
 
@@ -57,7 +57,7 @@ void scroll_half_page_down(struct Viewer *viewer, unsigned int repeat_count, voi
     int step = *(int *)data;
 
     for (unsigned int i = 0; i < repeat_count; i++) {
-        viewer->cursor->y_offset += step / 2;
+        viewer->cursor->y_offset += step / 2.0;
     }
 }
 
