@@ -305,7 +305,7 @@ static void render_page_async(gpointer data, gpointer user_data)
 
     g_mutex_unlock(&page->render_mutex);
 
-    gtk_widget_queue_draw(view);
+    g_idle_add_once((GSourceOnceFunc)gtk_widget_queue_draw, view);
 
     cairo_destroy(cr);
     g_free(render_page_data);
