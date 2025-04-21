@@ -53,9 +53,14 @@ InputState on_state_normal(Window *window, guint keyval)
         case GDK_KEY_g:
             next_state = STATE_g;
             break;
+        case GDK_KEY_Home:
+            viewer->cursor->current_page = 0;
+            viewer->cursor->y_offset = 0;
+            break;
         case GDK_KEY_G:
+        case GDK_KEY_End:
             viewer->cursor->current_page = viewer->info->n_pages - 1;
-            viewer->cursor->y_offset = g_config->steps - 1;
+            viewer->cursor->y_offset = 0;
             break;
         case GDK_KEY_f:
             viewer->links->follow_links_mode = true;
