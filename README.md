@@ -21,11 +21,9 @@ Jumpdf is a keyboard-focused PDF viewer for documents where one needs to jump be
 
 ## Motivation
 
-When reading a document where one has to switch between various sections, e.g. due to references, it is often necessary to manually scroll back and forth. This is especially inefficient when the sections are far apart.
+A common frustration when reading is the need to manually scroll back and forth between distant locations and references. With jumpdf, one can instead mark locations and jump between them. Unlike marks in similar PDF viewers like [sioyek](https://sioyek.info/) and [zathura](https://pwmt.org/projects/zathura/), however, marks in jumpdf move with the viewer instead of being a static record of some location, thus avoiding the need to manually reset them. In addition, marks are organized into groups, which can be switched between. Besides serving as an organizational tool to help with differentiating sets of related marks, groups can also be opened in separate windows.
 
-Jumpdf solves this by having multiple marks/cursors one can switch between. Instead of scrolling, one can create a new mark at the desired location and jump back and forth. In addition, the marks are grouped into groups, which one can also switch between, enabling one to maintain different sets of related marks. For example, in a textbook, one can have a group with marks for the exercises and solutions and another group for reading the material relevant to the exercises. Having these groups also enables one to have a separate window for each group. See the [keybindings](#keybindings) section for more.
-
-Existing PDF viewers like [sioyek](https://sioyek.info/) and [zathura](https://pwmt.org/projects/zathura/) also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
+For example, a proof in a textbook usually refers to a set of lemmas, theorems, definitions, etc., that are scattered throughout the book. With jumpdf, one first uses <kbd>mo2</kbd> to clone the current location into mark 2. Then, one can either scroll as usual to one of the references or use the follow link mode with <kbd>f</kbd>. Now that the reference has been read, it might, however, take a few jumps back and forth to understand how it was used in the proof. So one can repeatedly use <kbd>mn</kbd> or, more conveniently, just <kbd>,</kbd> to jump back to the previous mark. If one instead wants to view both at the same time, then one must first clone the group with <kbd>go2</kbd> and then open group 2 in a new window.
 
 ## Installation
 

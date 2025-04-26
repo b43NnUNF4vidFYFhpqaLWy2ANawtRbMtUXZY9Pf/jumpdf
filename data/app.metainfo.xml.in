@@ -14,24 +14,26 @@
   
   <description>
     <p>
-      When reading a document where one has to switch between various sections, e.g. due to references, it is often necessary to manually scroll back and forth. This is especially inefficient when the sections are far apart.
+      A common frustration when reading is the need to manually scroll back and forth between distant locations and references. With jumpdf, one can instead mark locations and jump between them. Unlike marks in similar PDF viewers like sioyek and zathura, however, marks in jumpdf move with the viewer instead of being a static record of some location, thus avoiding the need to manually reset them. In addition, marks are organized into groups, which can be switched between. Besides serving as an organizational tool to help with differentiating sets of related marks, groups can also be opened in separate windows.
     </p>
     <p>
-      Jumpdf solves this by having multiple marks/cursors one can switch between. Instead of scrolling, one can create a new mark at the desired location and jump back and forth. In addition, the marks are grouped into groups, which one can also switch between, enabling one to maintain different sets of related marks. For example, in a textbook, one can have a group with marks for the exercises and solutions and another group for reading the material relevant to the exercises. Having these groups also enables one to have a separate window for each group.
-    </p>
-    <p>
-      Existing PDF viewers like sioyek and zathura also have marks. However, their marks only record locations, whereas in jumpdf, the current mark follows the current cursor, functioning more like tabs. This allows for maintaining multiple views of the document without having to manually reset the marks.
-    </p>
-    <p>
-      For more information and to fully use the features, see the GitHub page linked under the "Links" tab near the bottom.
+      Please see the linked GitHub page for more information, including usage, keybindings and configuration.
     </p>
   </description>
 
   <screenshots>
     <screenshot type="default">
-      <caption>jumpdf view</caption>
+      <caption>A view of a document</caption>
       <image>https://raw.githubusercontent.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf/main/data/screenshots/jumpdf.png</image>
-      </screenshot>
+    </screenshot>
+    <screenshot>
+      <caption>Dark mode</caption>
+      <image>https://raw.githubusercontent.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf/main/data/screenshots/jumpdf-dark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Help menu</caption>
+      <image>https://raw.githubusercontent.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf/main/data/screenshots/jumpdf-help.png</image>
+    </screenshot>
   </screenshots>
 
   <releases>
@@ -70,6 +72,8 @@
   </releases>
 
   <url type="homepage">https://github.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf</url>
+  <url type="vcs-browser">https://github.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf</url>
+  <url type="bugtracker">https://github.com/b43NnUNF4vidFYFhpqaLWy2ANawtRbMtUXZY9Pf/jumpdf/issues</url>
   
   <launchable type="desktop-id">@app_id@.desktop</launchable>
   <provides>@app_id@.desktop</provides>
