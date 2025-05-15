@@ -594,6 +594,14 @@ static void window_add_toc_entries(Window *win, PopplerIndexIter *iter, int leve
         if (action && action->type == POPPLER_ACTION_GOTO_DEST) {
             dest = viewer_info_get_dest(win->viewer->info, action->goto_dest.dest);
 
+            if (dest == NULL) {
+                poppler_action_free(action);
+                if (!poppler_index_iter_next(iter)) {
+                    break;
+                }
+                continue;
+            }
+
             title_markup = g_strdup_printf("%*s%s", level * 2, " ", action->any.title);
             title_label = gtk_label_new(title_markup);
             g_free(title_markup);
