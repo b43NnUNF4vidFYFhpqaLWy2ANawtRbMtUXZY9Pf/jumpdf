@@ -62,13 +62,13 @@ void viewer_cursor_destroy(ViewerCursor *cursor)
 
 void viewer_cursor_fit_horizontal(ViewerCursor *cursor)
 {
-    cursor->scale = cursor->info->view_width / cursor->info->pdf_width;
+    cursor->scale = cursor->info->view_width / cursor->info->max_page_width;
     viewer_cursor_center(cursor);
 }
 
 void viewer_cursor_fit_vertical(ViewerCursor *cursor)
 {
-    cursor->scale = cursor->info->view_height / cursor->info->pdf_height;
+    cursor->scale = cursor->info->view_height / cursor->info->max_page_height;
     viewer_cursor_center(cursor);
 }
 
@@ -120,7 +120,7 @@ void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
     }
 
     /* Sanity check for PDFs with invalid dest->top values */
-    if (dest->change_top == 1 && dest->top < cursor->info->pdf_height) {
+    if (dest->change_top == 1 && dest->top < cursor->info->max_page_height) {
         cursor->current_page = dest->page_num - 1;
 
         /*
@@ -128,7 +128,7 @@ void viewer_cursor_goto_poppler_dest(ViewerCursor *cursor, PopplerDest *dest)
         * To get the new y_offset, start from the bottom, g_config->steps,
         * and subtract how much to go up in terms of steps
         */
-        cursor->y_offset = g_config->steps - g_config->steps * (dest->top / cursor->info->pdf_height);
+        cursor->y_offset = g_config->steps - g_config->steps * (dest->top / cursor->info->max_page_height);
         viewer_cursor_fit_vertical(cursor);
     } else {
         viewer_cursor_goto_page(cursor, dest->page_num - 1);
@@ -163,7 +163,7 @@ void viewer_cursor_execute_action(ViewerCursor *cursor, PopplerAction *action)
 void viewer_cursor_get_visible_pages(ViewerCursor *cursor, int *from, int *to)
 {
     const double view_height = cursor->info->view_height;
-    const double page_height = cursor->info->pdf_height;
+    const double page_height = cursor->info->min_page_height;
     const double scale = cursor->scale;
     const double visible_pages = view_height / (scale * page_height);
 

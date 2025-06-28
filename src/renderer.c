@@ -126,7 +126,7 @@ static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx, double
     poppler_page_get_size(page->poppler_page, &page_width, &page_height);
     page_width *= viewer->cursor->scale;
     page_height *= viewer->cursor->scale;
-    double center_offset = round((viewer->info->pdf_width * viewer->cursor->scale - page_width) / 2.0);
+    double center_offset = round((viewer->info->max_page_width * viewer->cursor->scale - page_width) / 2.0);
 
     g_mutex_lock(&page->render_mutex);
     g_assert(page->surface != NULL);
@@ -371,8 +371,8 @@ static void viewer_translate(Viewer *viewer, cairo_t *cr)
     const double x_offset = viewer->cursor->x_offset;
     const double y_offset = viewer->cursor->y_offset;
     const double scale = viewer->cursor->scale;
-    const double page_width = viewer->info->pdf_width;
-    const double page_height = viewer->info->pdf_height;
+    const double page_width = viewer->info->max_page_width;
+    const double page_height = viewer->info->max_page_height;
     const double view_width = viewer->info->view_width;
     const double view_height = viewer->info->view_height;
 
@@ -413,7 +413,7 @@ static void viewer_highlight_search(Viewer *viewer, cairo_t *cr, PopplerPage *pa
     for (GList *elem = matches; elem; elem = elem->next) {
         highlight_rect = elem->data;
         highlight_rect_x = highlight_rect->x1;
-        highlight_rect_y = viewer->info->pdf_height - highlight_rect->y1;
+        highlight_rect_y = viewer->info->max_page_height - highlight_rect->y1;
         highlight_rect_width = highlight_rect->x2 - highlight_rect->x1;
         highlight_rect_height = highlight_rect->y1 - highlight_rect->y2;
 
@@ -441,7 +441,7 @@ static void viewer_draw_links(Viewer *viewer, cairo_t *cr, unsigned int from, un
         link_text = g_strdup_printf("%d", i + 1);
 
         // Outline
-        cairo_move_to(cr, link_mapping->area.x1, viewer->info->pdf_height - link_mapping->area.y1);
+        cairo_move_to(cr, link_mapping->area.x1, viewer->info->max_page_height - link_mapping->area.y1);
         cairo_text_path(cr, link_text);
         cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
         cairo_set_line_width(cr, 2.0);

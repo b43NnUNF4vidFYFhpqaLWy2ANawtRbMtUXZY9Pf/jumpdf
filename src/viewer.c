@@ -49,11 +49,13 @@ void viewer_destroy(Viewer *viewer)
 
 void viewer_update_current_page_size(Viewer *viewer)
 {
-    double max_width = 0;
-    double max_height = 0;
+    double min_width = NAN;
+    double min_height = NAN;
+    double max_width = NAN;
+    double max_height = NAN;
 
     int from, to;
-    if (isnan(viewer->info->pdf_height)) {
+    if (isnan(viewer->info->min_page_height)) {
         from = 0;
         to = viewer->info->n_pages - 1;
     } else {
@@ -66,14 +68,22 @@ void viewer_update_current_page_size(Viewer *viewer)
         
         double width, height;
         poppler_page_get_size(page, &width, &height);
-        if (width > max_width) {
+        if (isnan(min_width) || width < min_width) {
+            min_width = width;
+        }
+        if (isnan(min_height) || height < min_height) {
+            min_height = height;
+        }
+        if (isnan(max_width) || width > max_width) {
             max_width = width;
         }
-        if (height > max_height) {
+        if (isnan(max_height) || height > max_height) {
             max_height = height;
         }
     }
 
-    viewer->info->pdf_width = max_width;
-    viewer->info->pdf_height = max_height;
+    viewer->info->min_page_width = min_width;
+    viewer->info->min_page_height = min_height;
+    viewer->info->max_page_width = max_width;
+    viewer->info->max_page_height = max_height;
 }

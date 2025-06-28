@@ -56,8 +56,10 @@ void viewer_info_init(ViewerInfo *info, PopplerDocument *doc)
 
     info->view_width = NAN;
     info->view_height = NAN;
-    info->pdf_width = NAN;
-    info->pdf_height = NAN;
+    info->min_page_width = NAN;
+    info->min_page_height = NAN;
+    info->max_page_width = NAN;
+    info->max_page_height = NAN;
 }
 
 void viewer_info_destroy(ViewerInfo *info)
