@@ -169,12 +169,18 @@ static RenderRequest renderer_generate_request(Renderer *renderer, Viewer *viewe
     const bool needs_rerender = !visible_pages_invariant || !scale_invariant || !follow_links_mode_invariant || !search_text_invariant;
 
     if (needs_rerender) {
+        const bool visible_pages_subset_of_last =
+            scale_invariant &&
+            (renderer->last_visible_pages_before < visible_pages_before ||
+            visible_pages_after < renderer->last_visible_pages_after);
         const bool scrolling_down =
             scale_invariant &&
+            !visible_pages_subset_of_last &&
             renderer->last_visible_pages_before < visible_pages_before &&
             visible_pages_before <= renderer->last_visible_pages_after;
         const bool scrolling_up =
             scale_invariant &&
+            !visible_pages_subset_of_last &&
             renderer->last_visible_pages_before <= visible_pages_after &&
             visible_pages_after < renderer->last_visible_pages_after;
         g_assert(!(scrolling_down && scrolling_up));
