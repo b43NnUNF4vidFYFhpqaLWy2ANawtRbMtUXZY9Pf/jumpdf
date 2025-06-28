@@ -53,7 +53,13 @@ void viewer_update_current_page_size(Viewer *viewer)
     double max_height = 0;
 
     int from, to;
-    viewer_cursor_get_visible_pages(viewer->cursor, &from, &to);
+    if (isnan(viewer->info->pdf_height)) {
+        from = 0;
+        to = viewer->info->n_pages - 1;
+    } else {
+        viewer_cursor_get_visible_pages(viewer->cursor, &from, &to);
+    }
+
     for (int i = from; i <= to; i++) {
         PopplerPage *page = viewer_info_get_poppler_page(viewer->info, i);
         g_assert(page != NULL);

@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "viewer_info.h"
 
 ViewerInfo *viewer_info_new(PopplerDocument *doc)
@@ -52,10 +54,10 @@ void viewer_info_init(ViewerInfo *info, PopplerDocument *doc)
         }
     }
 
-    info->view_width = 0;
-    info->view_height = 0;
-    info->pdf_width = 0;
-    info->pdf_height = 0;
+    info->view_width = NAN;
+    info->view_height = NAN;
+    info->pdf_width = NAN;
+    info->pdf_height = NAN;
 }
 
 void viewer_info_destroy(ViewerInfo *info)
