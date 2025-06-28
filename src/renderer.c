@@ -138,7 +138,7 @@ static void renderer_draw_page(cairo_t *cr, Viewer *viewer, int page_idx, double
         cairo_save(cr);
         cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
         cairo_set_line_width(cr, 1.0);
-        cairo_move_to(cr, 0, *base);
+        cairo_move_to(cr, center_offset, *base);
         cairo_rel_line_to(cr, page_width, 0);
         cairo_stroke(cr);
         cairo_restore(cr);
